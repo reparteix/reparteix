@@ -1,4 +1,4 @@
-# Splitwise Browser (GitHub Pages)
+# Reparteix
 
 Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectura **local-first**, funcionament **offline**, i sincronització entre usuaris des del navegador.
 
