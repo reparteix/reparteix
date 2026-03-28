@@ -28,12 +28,14 @@ export function SettlementList({ group }: SettlementListProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fromId || !toId || !amount || fromId === toId) return
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum <= 0) return
 
     await addPayment({
       groupId: group.id,
       fromId,
       toId,
-      amount: parseFloat(amount),
+      amount: amountNum,
       date: new Date().toISOString().split('T')[0],
     })
 

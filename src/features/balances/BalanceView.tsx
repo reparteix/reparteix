@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
 import {
@@ -17,6 +18,7 @@ interface BalanceViewProps {
 
 export function BalanceView({ group }: BalanceViewProps) {
   const { expenses, payments, addPayment } = useStore()
+  const [recordedIndex, setRecordedIndex] = useState<number | null>(null)
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const memberIds = activeMembers.map((m) => m.id)
@@ -32,7 +34,7 @@ export function BalanceView({ group }: BalanceViewProps) {
     .filter((e) => !e.deleted)
     .reduce((sum, e) => sum + e.amount, 0)
 
-  const handleRecordPayment = async (fromId: string, toId: string, amount: number) => {
+  const handleRecordPayment = async (fromId: string, toId: string, amount: number, index: number) => {
     await addPayment({
       groupId: group.id,
       fromId,
@@ -40,6 +42,8 @@ export function BalanceView({ group }: BalanceViewProps) {
       amount,
       date: new Date().toISOString().split('T')[0],
     })
+    setRecordedIndex(index)
+    setTimeout(() => setRecordedIndex(null), 1500)
   }
 
   return (
@@ -113,13 +117,19 @@ export function BalanceView({ group }: BalanceViewProps) {
                 <span className="font-semibold text-amber-700">
                   {s.amount.toFixed(2)} {symbol}
                 </span>
-                <button
-                  onClick={() => handleRecordPayment(s.fromId, s.toId, s.amount)}
-                  className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
-                  title="Registrar aquest pagament"
-                >
-                  ✓ Pagar
-                </button>
+                {recordedIndex === i ? (
+                  <span className="px-2 py-1 text-xs text-emerald-600 font-medium">
+                    ✓ Fet!
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleRecordPayment(s.fromId, s.toId, s.amount, i)}
+                    className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                    title="Registrar aquest pagament"
+                  >
+                    ✓ Pagar
+                  </button>
+                )}
               </div>
             </div>
           ))}
