@@ -1,13 +1,16 @@
+import { useEffect, useRef } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 export function PWAUpdatePrompt() {
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined)
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(swUrl, registration) {
       if (registration) {
-        setInterval(() => {
+        intervalRef.current = setInterval(() => {
           registration.update()
         }, 60 * 60 * 1000)
       }
@@ -17,6 +20,14 @@ export function PWAUpdatePrompt() {
       console.error('SW registration error', error)
     },
   })
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
 
   if (!needRefresh) return null
 
