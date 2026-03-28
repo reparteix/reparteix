@@ -67,7 +67,7 @@ export const reparteix = {
   /** Add a member to a group and return it. */
   async addMember(groupId: string, name: string): Promise<Member> {
     const group = await db.groups.get(groupId)
-    if (!group) throw new Error(`Group ${groupId} not found`)
+    if (!group) throw new Error('Group not found')
 
     const timestamp = now()
     const member: Member = {
