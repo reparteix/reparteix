@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../../store'
 import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Users, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 
 export function GroupList() {
   const { groups, loadGroups, addGroup, deleteGroup } = useStore()
@@ -23,68 +42,84 @@ export function GroupList() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">🧾 Reparteix</h1>
-      <p className="text-gray-600 mb-8">
+      <h1 className="text-3xl font-bold mb-2">🧾 Reparteix</h1>
+      <p className="text-muted-foreground mb-8">
         Gestiona despeses compartides de forma local i privada.
       </p>
 
-      <form onSubmit={handleCreate} className="mb-8 p-4 bg-gray-50 rounded-lg border">
-        <h2 className="text-lg font-semibold mb-3">Nou grup</h2>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nom del grup"
-            className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="EUR">EUR €</option>
-            <option value="USD">USD $</option>
-            <option value="GBP">GBP £</option>
-          </select>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          >
-            Crear
-          </button>
-        </div>
-      </form>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Nou grup</CardTitle>
+          <CardDescription>Crea un grup per compartir despeses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="flex gap-2">
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nom del grup"
+              className="flex-1"
+              required
+            />
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EUR">EUR €</SelectItem>
+                <SelectItem value="USD">USD $</SelectItem>
+                <SelectItem value="GBP">GBP £</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button type="submit">
+              <Plus className="h-4 w-4 mr-1" />
+              Crear
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {groups.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           Encara no tens cap grup. Crea&apos;n un per començar!
         </p>
       ) : (
         <div className="space-y-3">
           {groups.map((group) => (
-            <div
+            <Card
               key={group.id}
-              className="flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-sm transition-shadow"
+              className="hover:shadow-sm transition-shadow"
             >
-              <button
-                onClick={() => navigate(`/group/${group.id}`)}
-                className="flex-1 text-left"
-              >
-                <h3 className="font-medium">{group.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {group.members.filter((m) => !m.deleted).length} membres · {group.currency}
-                </p>
-              </button>
-              <button
-                onClick={() => deleteGroup(group.id)}
-                className="ml-2 p-2 text-gray-400 hover:text-red-500 transition-colors"
-                aria-label="Eliminar grup"
-              >
-                🗑️
-              </button>
-            </div>
+              <div className="flex items-center p-4">
+                <button
+                  onClick={() => navigate(`/group/${group.id}`)}
+                  className="flex-1 text-left flex items-center gap-3"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate">{group.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {group.members.filter((m) => !m.deleted).length} membres
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{group.currency}</Badge>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
+                </button>
+                <Separator orientation="vertical" className="mx-2 h-8" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteGroup(group.id)}
+                  aria-label="Eliminar grup"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
           ))}
         </div>
       )}
