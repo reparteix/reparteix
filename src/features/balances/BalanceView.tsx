@@ -16,7 +16,7 @@ interface BalanceViewProps {
 }
 
 export function BalanceView({ group }: BalanceViewProps) {
-  const { expenses, payments } = useStore()
+  const { expenses, payments, addPayment } = useStore()
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const memberIds = activeMembers.map((m) => m.id)
@@ -31,6 +31,16 @@ export function BalanceView({ group }: BalanceViewProps) {
   const totalExpenses = expenses
     .filter((e) => !e.deleted)
     .reduce((sum, e) => sum + e.amount, 0)
+
+  const handleRecordPayment = async (fromId: string, toId: string, amount: number) => {
+    await addPayment({
+      groupId: group.id,
+      fromId,
+      toId,
+      amount,
+      date: new Date().toISOString().split('T')[0],
+    })
+  }
 
   return (
     <div>
@@ -99,9 +109,18 @@ export function BalanceView({ group }: BalanceViewProps) {
                 <span className="text-gray-500"> → </span>
                 <span className="font-medium">{getMemberName(s.toId)}</span>
               </div>
-              <span className="font-semibold text-amber-700">
-                {s.amount.toFixed(2)} {symbol}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-amber-700">
+                  {s.amount.toFixed(2)} {symbol}
+                </span>
+                <button
+                  onClick={() => handleRecordPayment(s.fromId, s.toId, s.amount)}
+                  className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                  title="Registrar aquest pagament"
+                >
+                  ✓ Pagar
+                </button>
+              </div>
             </div>
           ))}
         </div>

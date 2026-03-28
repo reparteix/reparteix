@@ -1,7 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { GroupList } from './features/groups/GroupList'
 import { GroupDetail } from './features/groups/GroupDetail'
-import './App.css'
 
 function App() {
   return (

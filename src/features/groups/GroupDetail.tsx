@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useStore } from '../../store'
 import { ExpenseList } from '../expenses/ExpenseList'
 import { BalanceView } from '../balances/BalanceView'
+import { SettlementList } from '../settlements/SettlementList'
 
-type Tab = 'expenses' | 'balances'
+type Tab = 'expenses' | 'balances' | 'settlements'
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -118,13 +119,25 @@ export function GroupDetail() {
         >
           Balanços
         </button>
+        <button
+          onClick={() => setActiveTab('settlements')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'settlements'
+              ? 'border-b-2 border-emerald-600 text-emerald-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Pagaments
+        </button>
       </div>
 
       {/* Tab content */}
       {activeTab === 'expenses' ? (
         <ExpenseList group={group} />
-      ) : (
+      ) : activeTab === 'balances' ? (
         <BalanceView group={group} />
+      ) : (
+        <SettlementList group={group} />
       )}
     </div>
   )
