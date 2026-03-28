@@ -82,7 +82,7 @@ export function SettlementList({ group }: SettlementListProps) {
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div className="space-y-1">
                     <Label htmlFor="from-member">Qui paga?</Label>
-                    <Select value={fromId} onValueChange={setFromId} required>
+                    <Select value={fromId} onValueChange={setFromId}>
                       <SelectTrigger id="from-member">
                         <SelectValue placeholder="Selecciona..." />
                       </SelectTrigger>
@@ -97,7 +97,7 @@ export function SettlementList({ group }: SettlementListProps) {
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="to-member">A qui?</Label>
-                    <Select value={toId} onValueChange={setToId} required>
+                    <Select value={toId} onValueChange={setToId}>
                       <SelectTrigger id="to-member">
                         <SelectValue placeholder="Selecciona..." />
                       </SelectTrigger>

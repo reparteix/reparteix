@@ -76,6 +76,7 @@ export function GroupDetail() {
                 onClick={() => removeMember(group.id, member.id)}
                 className="ml-1 hover:opacity-75"
                 aria-label={`Eliminar ${member.name}`}
+                title={`Eliminar ${member.name}`}
               >
                 <X className="h-3 w-3" />
               </button>
