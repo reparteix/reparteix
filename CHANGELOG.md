@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/pilipilisbot/reparteix/compare/v1.3.0...v1.4.0) (2026-03-29)
+
+
+### Features
+
+* add proportional expense splitting ([eb5a179](https://github.com/pilipilisbot/reparteix/commit/eb5a17948442226f25f77da099f0e8e23a150f19))
+
 # [1.3.0](https://github.com/pilipilisbot/reparteix/compare/v1.2.0...v1.3.0) (2026-03-29)
 
 
