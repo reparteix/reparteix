@@ -36,18 +36,12 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
-  const wasViewingReceiptRef = useRef(false)
 
-  // Focus modal when it opens; restore focus to trigger button when it closes
+  // Focus modal when it opens
   useEffect(() => {
     if (viewingReceipt) {
-      wasViewingReceiptRef.current = true
       modalRef.current?.focus()
-    } else if (wasViewingReceiptRef.current) {
-      wasViewingReceiptRef.current = false
-      triggerButtonRef.current?.focus()
     }
   }, [viewingReceipt])
 
@@ -79,30 +73,33 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    const input = e.target
+    const resetInput = () => { input.value = '' }
     if (!file) return
 
     setReceiptError(null)
 
     if (!file.type.startsWith('image/')) {
       setReceiptError('El fitxer seleccionat no és una imatge vàlida.')
+      resetInput()
       return
     }
 
     const MAX_SIZE_MB = 5
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setReceiptError(`La imatge no pot superar ${MAX_SIZE_MB} MB.`)
+      resetInput()
       return
     }
 
     const reader = new FileReader()
     reader.onloadend = () => {
       setReceiptImage(reader.result as string)
-      // Reset input so selecting the same file again triggers onChange
-      e.target.value = ''
+      resetInput()
     }
     reader.onerror = () => {
-      setReceiptError('No s\'ha pogut carregar la imatge. Torna-ho a intentar.')
-      e.target.value = ''
+      setReceiptError("No s'ha pogut carregar la imatge. Torna-ho a intentar.")
+      resetInput()
     }
     reader.readAsDataURL(file)
   }
@@ -214,7 +211,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       onChange={handleFileChange}
                     />
@@ -304,10 +300,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            triggerButtonRef.current = e.currentTarget
-                            setViewingReceipt(expense.receiptImage ?? null)
-                          }}
+                          onClick={() => setViewingReceipt(expense.receiptImage ?? null)}
                           aria-label="Veure tiquet"
                           className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-indigo-600"
                         >
