@@ -14,7 +14,7 @@ describe('reparteix SDK', () => {
 
   describe('groups', () => {
     it('creates and lists groups', async () => {
-      const group = await reparteix.createGroup('Viatge', 'EUR')
+      const group = await reparteix.createGroup('Viatge')
 
       expect(group.name).toBe('Viatge')
       expect(group.currency).toBe('EUR')
@@ -27,8 +27,13 @@ describe('reparteix SDK', () => {
       expect(groups[0].id).toBe(group.id)
     })
 
+    it('creates a group with explicit currency', async () => {
+      const group = await reparteix.createGroup('Viatge', 'USD')
+      expect(group.currency).toBe('USD')
+    })
+
     it('gets a group by ID', async () => {
-      const created = await reparteix.createGroup('Sopar', 'EUR')
+      const created = await reparteix.createGroup('Sopar')
       const found = await reparteix.getGroup(created.id)
 
       expect(found).toBeDefined()
@@ -41,7 +46,7 @@ describe('reparteix SDK', () => {
     })
 
     it('soft-deletes a group', async () => {
-      const group = await reparteix.createGroup('Eliminat', 'EUR')
+      const group = await reparteix.createGroup('Eliminat')
       await reparteix.deleteGroup(group.id)
 
       const groups = await reparteix.listGroups()
@@ -50,13 +55,38 @@ describe('reparteix SDK', () => {
       const found = await reparteix.getGroup(group.id)
       expect(found).toBeUndefined()
     })
+
+    it('updates group name, description, icon and currency', async () => {
+      const group = await reparteix.createGroup('Original')
+      const updated = await reparteix.updateGroup(group.id, {
+        name: 'Actualitzat',
+        description: 'Una descripció',
+        icon: '🏖️',
+        currency: 'USD',
+      })
+
+      expect(updated.name).toBe('Actualitzat')
+      expect(updated.description).toBe('Una descripció')
+      expect(updated.icon).toBe('🏖️')
+      expect(updated.currency).toBe('USD')
+
+      const found = await reparteix.getGroup(group.id)
+      expect(found!.name).toBe('Actualitzat')
+      expect(found!.description).toBe('Una descripció')
+    })
+
+    it('throws when updating non-existent group', async () => {
+      await expect(
+        reparteix.updateGroup('non-existent', { name: 'Test' }),
+      ).rejects.toThrow()
+    })
   })
 
   // ─── Members ─────────────────────────────────────────────────────
 
   describe('members', () => {
     it('adds a member to a group', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const member = await reparteix.addMember(group.id, 'Anna')
 
       expect(member.name).toBe('Anna')
@@ -75,7 +105,7 @@ describe('reparteix SDK', () => {
     })
 
     it('soft-deletes a member', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const member = await reparteix.addMember(group.id, 'Bernat')
 
       await reparteix.removeMember(group.id, member.id)
@@ -86,7 +116,7 @@ describe('reparteix SDK', () => {
     })
 
     it('throws when removing a member who has expenses', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const anna = await reparteix.addMember(group.id, 'Anna')
 
       await reparteix.addExpense({
@@ -104,7 +134,7 @@ describe('reparteix SDK', () => {
     })
 
     it('throws when removing a member who has payments', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 
@@ -122,7 +152,7 @@ describe('reparteix SDK', () => {
     })
 
     it('allows removing a member after all their expenses are deleted', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const anna = await reparteix.addMember(group.id, 'Anna')
 
       const expense = await reparteix.addExpense({
@@ -143,7 +173,7 @@ describe('reparteix SDK', () => {
     })
 
     it('renames a member', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const member = await reparteix.addMember(group.id, 'Anna')
 
       await reparteix.renameMember(group.id, member.id, 'Ana')
@@ -160,14 +190,14 @@ describe('reparteix SDK', () => {
     })
 
     it('throws when renaming a non-existent member', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       await expect(
         reparteix.renameMember(group.id, 'non-existent', 'New Name'),
       ).rejects.toThrow()
     })
 
     it('throws when renaming a soft-deleted member', async () => {
-      const group = await reparteix.createGroup('Grup', 'EUR')
+      const group = await reparteix.createGroup('Grup')
       const member = await reparteix.addMember(group.id, 'Anna')
       await reparteix.removeMember(group.id, member.id)
 
@@ -181,7 +211,7 @@ describe('reparteix SDK', () => {
 
   describe('expenses', () => {
     it('adds and lists expenses', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 
@@ -202,7 +232,7 @@ describe('reparteix SDK', () => {
     })
 
     it('updates an expense', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const expense = await reparteix.addExpense({
         groupId: group.id,
@@ -224,7 +254,7 @@ describe('reparteix SDK', () => {
     })
 
     it('soft-deletes an expense', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       await reparteix.addExpense({
         groupId: group.id,
@@ -247,7 +277,7 @@ describe('reparteix SDK', () => {
 
   describe('payments', () => {
     it('adds and lists payments', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 
@@ -267,7 +297,7 @@ describe('reparteix SDK', () => {
     })
 
     it('soft-deletes a payment', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 
@@ -290,7 +320,7 @@ describe('reparteix SDK', () => {
 
   describe('balances and settlements', () => {
     it('calculates balances for a group', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 
@@ -313,7 +343,7 @@ describe('reparteix SDK', () => {
     })
 
     it('calculates settlements for a group', async () => {
-      const group = await reparteix.createGroup('Sopar', 'EUR')
+      const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
 

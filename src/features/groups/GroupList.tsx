@@ -11,20 +11,12 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
 export function GroupList() {
   const { groups, loadGroups, addGroup, deleteGroup } = useStore()
   const [name, setName] = useState('')
-  const [currency, setCurrency] = useState('EUR')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -34,9 +26,8 @@ export function GroupList() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    const group = await addGroup(name.trim(), currency)
+    const group = await addGroup(name.trim())
     setName('')
-    setCurrency('EUR')
     navigate(`/group/${group.id}`)
   }
 
@@ -62,16 +53,6 @@ export function GroupList() {
               className="flex-1"
               required
             />
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EUR">EUR €</SelectItem>
-                <SelectItem value="USD">USD $</SelectItem>
-                <SelectItem value="GBP">GBP £</SelectItem>
-              </SelectContent>
-            </Select>
             <Button type="submit">
               <Plus className="h-4 w-4 mr-1" />
               Crear
@@ -96,8 +77,12 @@ export function GroupList() {
                   onClick={() => navigate(`/group/${group.id}`)}
                   className="flex-1 text-left flex items-center gap-3"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                    <Users className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xl shrink-0">
+                    {group.icon ? (
+                      group.icon
+                    ) : (
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium truncate">{group.name}</h3>

@@ -11,7 +11,8 @@ interface AppState {
   // Actions
   loadGroups: () => Promise<void>
   loadGroupData: (groupId: string) => Promise<void>
-  addGroup: (name: string, currency: string) => Promise<Group>
+  addGroup: (name: string) => Promise<Group>
+  updateGroup: (id: string, updates: { name?: string; description?: string; icon?: string; currency?: string }) => Promise<void>
   deleteGroup: (id: string) => Promise<void>
   addMember: (groupId: string, name: string) => Promise<void>
   removeMember: (groupId: string, memberId: string) => Promise<void>
@@ -43,10 +44,15 @@ export const useStore = create<AppState>((set, get) => ({
     set({ expenses, payments, currentGroupId: groupId })
   },
 
-  addGroup: async (name: string, currency: string) => {
-    const group = await reparteix.createGroup(name, currency)
+  addGroup: async (name: string) => {
+    const group = await reparteix.createGroup(name)
     await get().loadGroups()
     return group
+  },
+
+  updateGroup: async (id: string, updates) => {
+    await reparteix.updateGroup(id, updates)
+    await get().loadGroups()
   },
 
   deleteGroup: async (id: string) => {

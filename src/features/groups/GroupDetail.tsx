@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Pencil, Check } from 'lucide-react'
+import { ArrowLeft, Plus, X, Pencil, Check, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -95,10 +95,23 @@ export function GroupDetail() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          <p className="text-sm text-muted-foreground">{group.currency}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {group.icon && <span className="text-2xl">{group.icon}</span>}
+            <h1 className="text-2xl font-bold truncate">{group.name}</h1>
+          </div>
+          {group.description && (
+            <p className="text-sm text-muted-foreground truncate">{group.description}</p>
+          )}
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(`/group/${groupId}/settings`)}
+          aria-label="Configuració del grup"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* Members section */}

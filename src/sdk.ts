@@ -39,7 +39,7 @@ export const reparteix = {
   },
 
   /** Create a new group and return it. */
-  async createGroup(name: string, currency: string): Promise<Group> {
+  async createGroup(name: string, currency = 'EUR'): Promise<Group> {
     const timestamp = now()
     const group: Group = {
       id: generateId(),
@@ -52,6 +52,23 @@ export const reparteix = {
     }
     await db.groups.add(group)
     return group
+  },
+
+  /** Update group metadata (name, description, icon, currency). */
+  async updateGroup(
+    id: string,
+    updates: {
+      name?: string
+      description?: string
+      icon?: string
+      currency?: string
+    },
+  ): Promise<Group> {
+    const group = await db.groups.get(id)
+    if (!group) throw new Error(`Group not found: ${id}`)
+    const patch: Partial<Group> = { ...updates, updatedAt: now() }
+    await db.groups.update(id, patch)
+    return { ...group, ...patch }
   },
 
   /** Soft-delete a group. */

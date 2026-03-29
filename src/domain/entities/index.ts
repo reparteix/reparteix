@@ -43,6 +43,8 @@ export type Payment = z.infer<typeof PaymentSchema>
 export const GroupSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
+  description: z.string().optional(),
+  icon: z.string().optional(),
   currency: z.string().default('EUR'),
   members: z.array(MemberSchema),
   createdAt: z.string().datetime(),
