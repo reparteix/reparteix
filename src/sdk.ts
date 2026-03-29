@@ -166,6 +166,18 @@ export const reparteix = {
 
   // ─── Expenses ──────────────────────────────────────────────────────
 
+  /** Return a map of groupId → total expense amount for all non-deleted expenses. */
+  async listExpenseTotalsByGroup(): Promise<Record<string, number>> {
+    const expenses = await db.expenses.filter((e) => !e.deleted).toArray()
+    return expenses.reduce(
+      (acc, e) => {
+        acc[e.groupId] = (acc[e.groupId] ?? 0) + e.amount
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+  },
+
   /** List all non-deleted expenses for a group. */
   async listExpenses(groupId: string): Promise<Expense[]> {
     return db.expenses

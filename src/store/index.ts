@@ -4,6 +4,7 @@ import { reparteix } from '../sdk'
 
 interface AppState {
   groups: Group[]
+  groupTotals: Record<string, number>
   expenses: Expense[]
   payments: Payment[]
   currentGroupId: string | null
@@ -27,13 +28,17 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   groups: [],
+  groupTotals: {},
   expenses: [],
   payments: [],
   currentGroupId: null,
 
   loadGroups: async () => {
-    const groups = await reparteix.listGroups()
-    set({ groups })
+    const [groups, groupTotals] = await Promise.all([
+      reparteix.listGroups(),
+      reparteix.listExpenseTotalsByGroup(),
+    ])
+    set({ groups, groupTotals })
   },
 
   loadGroupData: async (groupId: string) => {
@@ -80,18 +85,29 @@ export const useStore = create<AppState>((set, get) => ({
 
   addExpense: async (expense) => {
     await reparteix.addExpense(expense)
-    await get().loadGroupData(expense.groupId)
+    await Promise.all([
+      get().loadGroupData(expense.groupId),
+      get().loadGroups(),
+    ])
   },
 
   updateExpense: async (expense) => {
     await reparteix.updateExpense(expense)
-    await get().loadGroupData(expense.groupId)
+    await Promise.all([
+      get().loadGroupData(expense.groupId),
+      get().loadGroups(),
+    ])
   },
 
   deleteExpense: async (id: string) => {
     const expense = get().expenses.find((e) => e.id === id)
     await reparteix.deleteExpense(id)
-    if (expense) await get().loadGroupData(expense.groupId)
+    if (expense) {
+      await Promise.all([
+        get().loadGroupData(expense.groupId),
+        get().loadGroups(),
+      ])
+    }
   },
 
   addPayment: async (payment) => {

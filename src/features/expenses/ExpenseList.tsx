@@ -133,6 +133,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
 
+  const getMemberColor = (id: string) =>
+    group.members.find((m) => m.id === id)?.color ?? '#6366f1'
+
   const getProportionLabel = (expense: { splitType?: string; splitProportions?: Record<string, number>; splitAmong: string[] }) => {
     if (expense.splitType !== 'proportional' || !expense.splitProportions) return null
     const total = expense.splitAmong.reduce(
@@ -297,7 +300,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       onChange={handleFileChange}
                     />
                     {receiptImage ? (
-                      <div className="relative inline-block">
+                      <div className="relative w-fit">
                         <img
                           src={receiptImage}
                           alt="Tiquet"
@@ -379,7 +382,11 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   <CardContent className="flex items-center justify-between p-3">
                     <div className="flex-1">
                       <div className="font-medium">{expense.description}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: getMemberColor(expense.payerId) }}
+                        />
                         {getMemberName(expense.payerId)} ha pagat · {expense.date}
                       </div>
                       <div className="text-xs text-muted-foreground/70">
@@ -419,6 +426,14 @@ export function ExpenseList({ group }: ExpenseListProps) {
                 </Card>
               )
             })}
+          {expenses.length > 0 && (
+            <div className="flex items-center justify-between px-3 pt-1 text-sm font-medium text-muted-foreground">
+              <span>Total ({expenses.length} despeses)</span>
+              <span>
+                {expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

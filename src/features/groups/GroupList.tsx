@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
 export function GroupList() {
-  const { groups, loadGroups, addGroup, deleteGroup } = useStore()
+  const { groups, groupTotals, loadGroups, addGroup, deleteGroup } = useStore()
   const [name, setName] = useState('')
   const navigate = useNavigate()
 
@@ -90,7 +90,14 @@ export function GroupList() {
                       {group.members.filter((m) => !m.deleted).length} membres
                     </p>
                   </div>
-                  <Badge variant="secondary">{group.currency}</Badge>
+                  <div className="flex flex-col items-end gap-0.5 mr-1">
+                    <Badge variant="secondary">{group.currency}</Badge>
+                    {(groupTotals[group.id] ?? 0) > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {groupTotals[group.id].toFixed(2)}&nbsp;{group.currency}
+                      </span>
+                    )}
+                  </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
                 </button>
                 <Separator orientation="vertical" className="mx-2 h-8" />
