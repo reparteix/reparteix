@@ -29,8 +29,6 @@ export function calculateBalances(
   for (const expense of expenses) {
     if (expense.deleted) continue
 
-    const sharePerPerson = expense.amount / expense.splitAmong.length
-
     // Payer paid for everyone, so they are owed
     balanceMap.set(
       expense.payerId,
@@ -38,11 +36,24 @@ export function calculateBalances(
     )
 
     // Each person who benefited owes their share
-    for (const memberId of expense.splitAmong) {
-      balanceMap.set(
-        memberId,
-        (balanceMap.get(memberId) ?? 0) - sharePerPerson,
+    if (expense.splitType === 'proportional' && expense.splitProportions) {
+      const totalWeight = expense.splitAmong.reduce(
+        (sum, id) => sum + (expense.splitProportions?.[id] ?? 1),
+        0,
       )
+      for (const memberId of expense.splitAmong) {
+        const weight = expense.splitProportions?.[memberId] ?? 1
+        const share = totalWeight > 0 ? expense.amount * (weight / totalWeight) : 0
+        balanceMap.set(memberId, (balanceMap.get(memberId) ?? 0) - share)
+      }
+    } else {
+      const sharePerPerson = expense.amount / expense.splitAmong.length
+      for (const memberId of expense.splitAmong) {
+        balanceMap.set(
+          memberId,
+          (balanceMap.get(memberId) ?? 0) - sharePerPerson,
+        )
+      }
     }
   }
 

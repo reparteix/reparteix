@@ -18,6 +18,8 @@ export const ExpenseSchema = z.object({
   amount: z.number().positive(),
   payerId: z.string(),
   splitAmong: z.array(z.string()).min(1),
+  splitType: z.enum(['equal', 'proportional']).optional(),
+  splitProportions: z.record(z.string(), z.number().positive()).optional(),
   date: z.string(),
   receiptImage: z.string().optional(),
   createdAt: z.string().datetime(),

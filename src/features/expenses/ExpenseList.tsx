@@ -31,6 +31,8 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [amount, setAmount] = useState('')
   const [payerId, setPayerId] = useState('')
   const [splitAmong, setSplitAmong] = useState<string[]>([])
+  const [splitType, setSplitType] = useState<'equal' | 'proportional'>('equal')
+  const [proportions, setProportions] = useState<Record<string, string>>({})
   const [showForm, setShowForm] = useState(false)
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
@@ -52,12 +54,21 @@ export function ExpenseList({ group }: ExpenseListProps) {
     e.preventDefault()
     if (!description.trim() || !amount || !payerId || splitAmong.length === 0) return
 
+    const splitProportions =
+      splitType === 'proportional'
+        ? Object.fromEntries(
+            splitAmong.map((id) => [id, parseFloat(proportions[id] ?? '1') || 1]),
+          )
+        : undefined
+
     await addExpense({
       groupId: group.id,
       description: description.trim(),
       amount: parseFloat(amount),
       payerId,
       splitAmong,
+      splitType,
+      splitProportions,
       date: new Date().toISOString().split('T')[0],
       receiptImage: receiptImage ?? undefined,
     })
@@ -66,6 +77,8 @@ export function ExpenseList({ group }: ExpenseListProps) {
     setAmount('')
     setPayerId('')
     setSplitAmong([])
+    setSplitType('equal')
+    setProportions({})
     setReceiptImage(null)
     setReceiptError(null)
     setShowForm(false)
@@ -118,6 +131,20 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
+
+  const getProportionLabel = (expense: { splitType?: string; splitProportions?: Record<string, number>; splitAmong: string[] }) => {
+    if (expense.splitType !== 'proportional' || !expense.splitProportions) return null
+    const total = expense.splitAmong.reduce(
+      (sum, id) => sum + (expense.splitProportions![id] ?? 1),
+      0,
+    )
+    return expense.splitAmong
+      .map((id) => {
+        const w = expense.splitProportions![id] ?? 1
+        return `${getMemberName(id)} (${w}/${total})`
+      })
+      .join(', ')
+  }
 
   return (
     <div>
@@ -206,6 +233,52 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     </div>
                   </div>
                   <div className="space-y-1">
+                    <Label>Com es reparteix?</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={splitType === 'equal' ? 'default' : 'outline'}
+                        onClick={() => setSplitType('equal')}
+                      >
+                        Per parts iguals
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={splitType === 'proportional' ? 'default' : 'outline'}
+                        onClick={() => setSplitType('proportional')}
+                      >
+                        Proporcional
+                      </Button>
+                    </div>
+                  </div>
+                  {splitType === 'proportional' && splitAmong.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
+                        Proporcions (parts relatives)
+                      </Label>
+                      {splitAmong.map((id) => (
+                        <div key={id} className="flex items-center gap-2">
+                          <span className="text-sm w-24 truncate">{getMemberName(id)}</span>
+                          <Input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={proportions[id] ?? '1'}
+                            onChange={(e) =>
+                              setProportions((prev) => ({
+                                ...prev,
+                                [id]: e.target.value,
+                              }))
+                            }
+                            className="w-24"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-1">
                     <Label>Foto del tiquet</Label>
                     <input
                       ref={fileInputRef}
@@ -279,48 +352,53 @@ export function ExpenseList({ group }: ExpenseListProps) {
         <div className="space-y-2">
           {expenses
             .sort((a, b) => b.date.localeCompare(a.date))
-            .map((expense) => (
-              <Card key={expense.id}>
-                <CardContent className="flex items-center justify-between p-3">
-                  <div className="flex-1">
-                    <div className="font-medium">{expense.description}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {getMemberName(expense.payerId)} ha pagat · {expense.date}
+            .map((expense) => {
+              const proportionLabel = getProportionLabel(expense)
+              return (
+                <Card key={expense.id}>
+                  <CardContent className="flex items-center justify-between p-3">
+                    <div className="flex-1">
+                      <div className="font-medium">{expense.description}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {getMemberName(expense.payerId)} ha pagat · {expense.date}
+                      </div>
+                      <div className="text-xs text-muted-foreground/70">
+                        {proportionLabel
+                          ? `Proporcions: ${proportionLabel}`
+                          : `Repartit entre: ${expense.splitAmong.map(getMemberName).join(', ')}`}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground/70">
-                      Repartit entre: {expense.splitAmong.map(getMemberName).join(', ')}
-                    </div>
-                  </div>
-                  <div className="text-right ml-4 flex flex-col items-end gap-1">
-                    <div className="font-semibold">
-                      {expense.amount.toFixed(2)} {symbol}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {expense.receiptImage && (
+                    <div className="text-right ml-4 flex flex-col items-end gap-1">
+                      <div className="font-semibold">
+                        {expense.amount.toFixed(2)} {symbol}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {expense.receiptImage && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingReceipt(expense.receiptImage ?? null)}
+                            aria-label="Veure tiquet"
+                            className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-indigo-600"
+                          >
+                            <Camera className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setViewingReceipt(expense.receiptImage ?? null)}
-                          aria-label="Veure tiquet"
-                          className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-indigo-600"
+                          onClick={() => deleteExpense(expense.id)}
+                          className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
                         >
-                          <Camera className="h-3 w-3" />
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Eliminar
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteExpense(expense.id)}
-                        className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" />
-                        Eliminar
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
         </div>
       )}
 

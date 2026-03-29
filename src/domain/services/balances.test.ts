@@ -131,6 +131,81 @@ describe('calculateBalances', () => {
     const sum = balances.reduce((s, b) => s + b.total, 0)
     expect(Math.abs(sum)).toBeLessThan(0.02)
   })
+
+  it('calculates correct balances for a proportional split (2:1:1)', () => {
+    // a pays €40, split proportionally: a=2, b=1, c=1 → a owes €20, b owes €10, c owes €10
+    const expenses = [
+      makeExpense({
+        amount: 40,
+        payerId: 'a',
+        splitAmong: ['a', 'b', 'c'],
+        splitType: 'proportional',
+        splitProportions: { a: 2, b: 1, c: 1 },
+      }),
+    ]
+    const balances = calculateBalances(['a', 'b', 'c'], expenses, [])
+
+    // a paid 40, owes 20 (half) → net +20
+    // b paid 0, owes 10 (quarter) → net -10
+    // c paid 0, owes 10 (quarter) → net -10
+    expect(balances.find((b) => b.memberId === 'a')?.total).toBe(20)
+    expect(balances.find((b) => b.memberId === 'b')?.total).toBe(-10)
+    expect(balances.find((b) => b.memberId === 'c')?.total).toBe(-10)
+  })
+
+  it('proportional split with unequal weights', () => {
+    // b pays €30, split proportionally: a=1, b=2 → a owes €10, b owes €20
+    const expenses = [
+      makeExpense({
+        amount: 30,
+        payerId: 'b',
+        splitAmong: ['a', 'b'],
+        splitType: 'proportional',
+        splitProportions: { a: 1, b: 2 },
+      }),
+    ]
+    const balances = calculateBalances(['a', 'b', 'c'], expenses, [])
+
+    // b paid 30, owes 20 → net +10
+    // a paid 0, owes 10 → net -10
+    // c not involved → 0
+    expect(balances.find((b) => b.memberId === 'a')?.total).toBe(-10)
+    expect(balances.find((b) => b.memberId === 'b')?.total).toBe(10)
+    expect(balances.find((b) => b.memberId === 'c')?.total).toBe(0)
+  })
+
+  it('proportional balances sum to zero', () => {
+    const expenses = [
+      makeExpense({
+        amount: 100,
+        payerId: 'a',
+        splitAmong: ['a', 'b', 'c'],
+        splitType: 'proportional',
+        splitProportions: { a: 3, b: 2, c: 1 },
+      }),
+    ]
+    const balances = calculateBalances(['a', 'b', 'c'], expenses, [])
+    const sum = balances.reduce((s, b) => s + b.total, 0)
+    expect(Math.abs(sum)).toBeLessThan(0.02)
+  })
+
+  it('falls back to equal split when splitType is proportional but splitProportions is missing', () => {
+    const expenses = [
+      makeExpense({
+        amount: 30,
+        payerId: 'a',
+        splitAmong: ['a', 'b', 'c'],
+        splitType: 'proportional',
+        // splitProportions intentionally omitted
+      }),
+    ]
+    const balances = calculateBalances(['a', 'b', 'c'], expenses, [])
+
+    // Should fall back to equal split: each owes 10
+    expect(balances.find((b) => b.memberId === 'a')?.total).toBe(20)
+    expect(balances.find((b) => b.memberId === 'b')?.total).toBe(-10)
+    expect(balances.find((b) => b.memberId === 'c')?.total).toBe(-10)
+  })
 })
 
 describe('calculateSettlements', () => {
