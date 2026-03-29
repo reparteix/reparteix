@@ -19,6 +19,7 @@ export const ExpenseSchema = z.object({
   payerId: z.string(),
   splitAmong: z.array(z.string()).min(1),
   date: z.string(),
+  receiptImage: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   deleted: z.boolean().default(false),
