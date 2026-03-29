@@ -1,3 +1,31 @@
+# 1.0.0 (2026-03-29)
+
+
+### Bug Fixes
+
+* add .npmrc with legacy-peer-deps to resolve vite-plugin-pwa peer dep conflict with vite 8 ([8db124d](https://github.com/pilipilisbot/reparteix/commit/8db124da6a7bdea98ff7badc10942b521c0d04a3))
+* add input validation and payment recording feedback ([1191dd5](https://github.com/pilipilisbot/reparteix/commit/1191dd586601630f43b6926abfaa4699cc8078fc))
+* add missing runtime and test dependencies for CI build ([b31cd42](https://github.com/pilipilisbot/reparteix/commit/b31cd42d7454dd885bc5ce464d67030996ab6083))
+* address code review feedback - title attr, remove invalid required on Radix Select ([20c44ac](https://github.com/pilipilisbot/reparteix/commit/20c44ac7ad085c574f41b4c1b98bdd0bc527eea7))
+* clean up setInterval on component unmount in PWAUpdatePrompt ([58282ea](https://github.com/pilipilisbot/reparteix/commit/58282ea99be327b76794a2febe1b4aa46f7464ed))
+* **release:** add missing semantic-release plugins ([4ae00f5](https://github.com/pilipilisbot/reparteix/commit/4ae00f5f18dff4b3bc115b4841baa05a7f2076c3))
+* remove unsupported required attr from Radix Select ([6af69f3](https://github.com/pilipilisbot/reparteix/commit/6af69f30c20733b3262046a4ed69126f582a9abf))
+* use generic error message in SDK addMember ([3175ba8](https://github.com/pilipilisbot/reparteix/commit/3175ba83b6c63678d301a6e594e74a0337362192))
+
+
+### Features
+
+* add footer with version and made with love with AI text ([41d7d5b](https://github.com/pilipilisbot/reparteix/commit/41d7d5b340558c79640cf63364891717a7e21afb))
+* add release workflow and CHANGELOG.md ([8312e17](https://github.com/pilipilisbot/reparteix/commit/8312e1788fcb40f4de755d53b5de6050980ef2b3))
+* add SKILL.md for OpenClaw agent compatibility ([7507ee3](https://github.com/pilipilisbot/reparteix/commit/7507ee38fb27ff178e5176220ae2580b57d36d14))
+* convert app to installable PWA with service worker and offline support ([efc9935](https://github.com/pilipilisbot/reparteix/commit/efc9935c8c49c73eac41bee91f883184c65ee3e6))
+* extract headless SDK and domain barrel exports ([a16c4e8](https://github.com/pilipilisbot/reparteix/commit/a16c4e86f59c78e5f0f7bedc268f3aeae4bcc970))
+* fully automatic releases via semantic-release on merge to main ([744eba9](https://github.com/pilipilisbot/reparteix/commit/744eba98c362b13771d60729a96a6bd0ef859570))
+* implement Phase 0 + Phase 1 MVP - project setup and core local functionality ([b6160ba](https://github.com/pilipilisbot/reparteix/commit/b6160ba587bcababa81af343826614bdf5aebb00))
+* install TailwindCSS v4, Zod, add settlements/payments UI ([5bb93c1](https://github.com/pilipilisbot/reparteix/commit/5bb93c1acf23125fb67a88b15e52ee2e7fe1435b))
+* integrate shadcn/ui components across all features ([99d7af5](https://github.com/pilipilisbot/reparteix/commit/99d7af5d562aa9905c1195992436cb0e1add6e71))
+* scaffold Reparteix app and enable GitHub Pages deployment ([461c057](https://github.com/pilipilisbot/reparteix/commit/461c057af5e80f51b43f56ddd18b67af711b7f56))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
