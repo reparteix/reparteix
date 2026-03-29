@@ -15,6 +15,7 @@ interface AppState {
   deleteGroup: (id: string) => Promise<void>
   addMember: (groupId: string, name: string) => Promise<void>
   removeMember: (groupId: string, memberId: string) => Promise<void>
+  renameMember: (groupId: string, memberId: string, newName: string) => Promise<void>
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>) => Promise<void>
   updateExpense: (expense: Expense) => Promise<void>
   deleteExpense: (id: string) => Promise<void>
@@ -61,6 +62,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   removeMember: async (groupId: string, memberId: string) => {
     await reparteix.removeMember(groupId, memberId)
+    await get().loadGroups()
+    await get().loadGroupData(groupId)
+  },
+
+  renameMember: async (groupId: string, memberId: string, newName: string) => {
+    await reparteix.renameMember(groupId, memberId, newName)
     await get().loadGroups()
     await get().loadGroupData(groupId)
   },

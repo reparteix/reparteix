@@ -84,6 +84,97 @@ describe('reparteix SDK', () => {
       const removed = updated!.members.find((m) => m.id === member.id)
       expect(removed!.deleted).toBe(true)
     })
+
+    it('throws when removing a member who has expenses', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Pizza',
+        amount: 20,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-06-01',
+      })
+
+      await expect(
+        reparteix.removeMember(group.id, anna.id),
+      ).rejects.toThrow()
+    })
+
+    it('throws when removing a member who has payments', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+
+      await reparteix.addPayment({
+        groupId: group.id,
+        fromId: bernat.id,
+        toId: anna.id,
+        amount: 10,
+        date: '2024-06-02',
+      })
+
+      await expect(
+        reparteix.removeMember(group.id, anna.id),
+      ).rejects.toThrow()
+    })
+
+    it('allows removing a member after all their expenses are deleted', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+
+      const expense = await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Pizza',
+        amount: 20,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-06-01',
+      })
+
+      await reparteix.deleteExpense(expense.id)
+      await reparteix.removeMember(group.id, anna.id)
+
+      const updated = await reparteix.getGroup(group.id)
+      const removed = updated!.members.find((m) => m.id === anna.id)
+      expect(removed!.deleted).toBe(true)
+    })
+
+    it('renames a member', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      const member = await reparteix.addMember(group.id, 'Anna')
+
+      await reparteix.renameMember(group.id, member.id, 'Ana')
+
+      const updated = await reparteix.getGroup(group.id)
+      const renamed = updated!.members.find((m) => m.id === member.id)
+      expect(renamed!.name).toBe('Ana')
+    })
+
+    it('throws when renaming a member in a non-existent group', async () => {
+      await expect(
+        reparteix.renameMember('no-group', 'some-id', 'New Name'),
+      ).rejects.toThrow()
+    })
+
+    it('throws when renaming a non-existent member', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      await expect(
+        reparteix.renameMember(group.id, 'non-existent', 'New Name'),
+      ).rejects.toThrow()
+    })
+
+    it('throws when renaming a soft-deleted member', async () => {
+      const group = await reparteix.createGroup('Grup', 'EUR')
+      const member = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.removeMember(group.id, member.id)
+
+      await expect(
+        reparteix.renameMember(group.id, member.id, 'Ana'),
+      ).rejects.toThrow()
+    })
   })
 
   // ─── Expenses ────────────────────────────────────────────────────

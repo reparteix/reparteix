@@ -86,13 +86,60 @@ export const reparteix = {
     return member
   },
 
-  /** Soft-delete a member from a group. */
+  /** Soft-delete a member from a group. Throws if the member has any expenses or payments. */
   async removeMember(groupId: string, memberId: string): Promise<void> {
     const group = await db.groups.get(groupId)
     if (!group) return
 
+    const expenseCount = await db.expenses
+      .where('groupId')
+      .equals(groupId)
+      .filter(
+        (e) =>
+          !e.deleted &&
+          (e.payerId === memberId || e.splitAmong.includes(memberId)),
+      )
+      .count()
+
+    if (expenseCount > 0) {
+      throw new Error('Cannot remove a member who has expenses')
+    }
+
+    const paymentCount = await db.payments
+      .where('groupId')
+      .equals(groupId)
+      .filter(
+        (p) => !p.deleted && (p.fromId === memberId || p.toId === memberId),
+      )
+      .count()
+
+    if (paymentCount > 0) {
+      throw new Error('Cannot remove a member who has payments')
+    }
+
     const updatedMembers = group.members.map((m) =>
       m.id === memberId ? { ...m, deleted: true, updatedAt: now() } : m,
+    )
+    await db.groups.update(groupId, {
+      members: updatedMembers,
+      updatedAt: now(),
+    })
+  },
+
+  /** Rename a member in a group. */
+  async renameMember(
+    groupId: string,
+    memberId: string,
+    newName: string,
+  ): Promise<void> {
+    const group = await db.groups.get(groupId)
+    if (!group) throw new Error('Group not found')
+
+    const member = group.members.find((m) => m.id === memberId)
+    if (!member || member.deleted) throw new Error('Member not found')
+
+    const updatedMembers = group.members.map((m) =>
+      m.id === memberId ? { ...m, name: newName, updatedAt: now() } : m,
     )
     await db.groups.update(groupId, {
       members: updatedMembers,
