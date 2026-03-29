@@ -1,174 +1,146 @@
 # Reparteix
 
-Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectura **local-first**, funcionament **offline**, i sincronització entre usuaris des del navegador.
+Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectura **local-first** i funcionament **100% offline**. Les dades es guarden al navegador.
 
-## Objectiu
+🌐 **App en producció:** <https://pilipilisbot.github.io/reparteix/>
 
-- 100% web app (sense servidor backend propi)
-- Deployable a GitHub Pages
-- Dades locals al navegador
-- Compartició d'un mateix grup entre diverses persones
-- Sincronització eventual (no cal real-time)
-- Privadesa: dades xifrades client-side
+## Funcionalitats
 
-## Stack proposat
+- Crear grups amb membres, icona i moneda (EUR / USD / GBP)
+- Afegir despeses i repartir-les entre els membres del grup
+- Càlcul automàtic de balanços i transferències mínimes
+- Registre de pagaments (settlements)
+- PWA instal·lable amb funcionament offline complet
+- Actualitzacions automàtiques amb avís a l'usuari
+- Headless SDK per a ús programàtic sense UI
 
-- **Frontend:** React + TypeScript + Vite
-- **UI:** TailwindCSS + shadcn/ui
-- **State:** Zustand
-- **Persistència local:** IndexedDB via Dexie
-- **Validació:** Zod
-- **Routing:** React Router
-- **Build/deploy:** GitHub Actions + GitHub Pages
-- **Testing:** Vitest + React Testing Library
+## Stack tècnic
+
+| Capa | Tecnologia |
+|------|-----------|
+| Frontend | React 19 + TypeScript |
+| Build | Vite 8 |
+| Estils | TailwindCSS v4 (classes inline) |
+| Components UI | shadcn/ui (Radix UI + Lucide icons) |
+| Estat global | Zustand 5 |
+| Persistència | Dexie 4 (IndexedDB) |
+| Validació | Zod v4 |
+| Routing | React Router v7 (HashRouter) |
+| PWA | vite-plugin-pwa (Workbox) |
+| Tests | Vitest + @testing-library/jest-dom |
+| Releases | semantic-release (Conventional Commits) |
+| Deploy | GitHub Actions → GitHub Pages |
 
 ## Arquitectura
 
-### 1) Client local-first
-Cada client guarda totes les dades del grup localment (IndexedDB):
-- operacions fluides i offline
-- UI immediata
-- cua de canvis (oplog)
+### Local-first
 
-### 2) Format de dades
-Entitats principals:
-- `groups` (id, nom, moneda, membres)
-- `members` (id, nom, alias, color)
-- `expenses` (id, descripció, import, pagador, data)
-- `splits` (expenseId, memberId, amount)
-- `payments` (id, from, to, amount, date)
-- `oplog` (operations append-only)
+Totes les dades es guarden localment al navegador via IndexedDB. L'app funciona completament sense connexió a internet.
 
-Totes les entitats porten:
-- `id` (ULID/UUID)
-- `updatedAt`
-- `deviceId`
-- `deleted` (soft delete)
+### Model de dades
 
-### 3) Sync sense backend custom
-**Opció MVP:** GitHub Gist com a magatzem de snapshot xifrat.
+Entitats principals (definides amb esquemes Zod a `src/domain/entities/`):
 
-- Cada grup té un `syncTarget` (gist id)
-- `push`: publica snapshot + marcador de versió
-- `pull`: descarrega snapshot i fusiona
-- Resolució de conflictes:
-  - nivell MVP: Last-Write-Wins per registre (`updatedAt`, `deviceId`)
-  - evolució: CRDT lleuger per camps amb edició concurrent
+- **Group** — `id`, `name`, `description?`, `icon?`, `currency`, `members[]`
+- **Member** — `id`, `name`, `color` (embegut dins del grup)
+- **Expense** — `id`, `groupId`, `description`, `amount`, `payerId`, `splitAmong[]`, `date`
+- **Payment** — `id`, `groupId`, `fromId`, `toId`, `amount`, `date`
 
-### 4) Xifrat
-- Derivar clau via passphrase del grup (PBKDF2/WebCrypto)
-- Xifrar payload amb AES-GCM
-- El remot només veu blobs xifrats
+Totes les entitats porten camps comuns: `id` (UUID), `createdAt`, `updatedAt`, `deleted` (soft delete).
 
-### 5) Càlcul de balanços
-Pipeline:
-1. sumar deutes bruts per membre
-2. netejar (creditor/debtor)
-3. minimitzar transferències (greedy matching)
+### Càlcul de balanços
 
-Sortida:
-- “A paga X a B”
-- opcional: consolidar per rondes
+1. Suma les contribucions de cada pagador i resta la part proporcional de cada participant
+2. Incorpora els pagaments registrats
+3. Minimitza el nombre de transferències amb un algorisme greedy (ordenant creditors i deutors per import descendent)
+4. Arrodoniment a 2 decimals: `Math.round(x * 100) / 100`
+
+### SDK headless
+
+L'arxiu `src/sdk.ts` exporta un objecte `reparteix` amb totes les operacions de negoci (CRUD de grups, membres, despeses, pagaments, balanços i liquidacions) sense dependre de la UI. El store Zustand delega al SDK.
 
 ## Estructura del projecte
 
-```txt
-reparteix/
-  src/
-    components/ui/
-    domain/
-      entities/
-      services/
-    infra/
-      db/
-    features/
-      groups/
-      expenses/
-      balances/
-      settlements/
-    store/
-    lib/
-  .github/workflows/
-  public/
+```
+src/
+  domain/
+    entities/         # Esquemes Zod i tipus TypeScript
+    services/         # Lògica pura (sense efectes secundaris)
+  infra/
+    db/               # Dexie — base de dades IndexedDB
+  features/
+    groups/           # GroupList, GroupDetail, GroupSettings
+    expenses/         # ExpenseList
+    balances/         # BalanceView
+    settlements/      # SettlementList
+  store/              # Zustand store (accions + selectors)
+  components/
+    ui/               # Components shadcn/ui (Button, Card, Tabs, etc.)
+    Footer.tsx
+    PWAUpdatePrompt.tsx
+  lib/                # Utilitats (cn() per a classes Tailwind)
+  sdk.ts              # API headless per a ús programàtic
+  sdk.test.ts         # Tests del SDK
+  test/               # Setup global de tests
 ```
 
-## Roadmap (MVP → v1)
-
-### Fase 0 — Setup (1 dia)
-- [ ] Inicialitzar Vite + TS
-- [ ] Configurar Tailwind + linter + format
-- [ ] CI bàsic (test + build)
-
-### Fase 1 — Core local (3-4 dies)
-- [ ] Crear grup i membres
-- [ ] Alta/edició/eliminació de despeses
-- [ ] Càlcul de balanços
-- [ ] Persistència IndexedDB
-
-### Fase 2 — Sync bàsic (3-4 dies)
-- [ ] Configurar passphrase de grup
-- [ ] Snapshot xifrat a Gist
-- [ ] Pull/push manual
-- [ ] Merge LWW + detector de conflictes
-
-### Fase 3 — UX i robustesa (2-3 dies)
-- [ ] Historial d'activitat
-- [ ] Import/export local JSON
-- [ ] Avisos d'errors de sync
-- [ ] Tests de domini
-
-### Fase 4 — Publicació (1 dia)
-- [ ] Deploy GitHub Pages
-- [ ] Documentació d'ús
-- [ ] Dades d'exemple
-
-## Decisions tècniques (ADR resum)
-
-1. **No backend propi** per reduir cost i operativa.
-2. **Local-first** per UX ràpida i offline.
-3. **Sync eventual** suficient per ús personal/grup petit.
-4. **Xifrat client-side** per privadesa en un storage públic/extern.
-5. **LWW al MVP** per simplicitat, amb opció CRDT a futur.
-
-## Riscos i mitigacions
-
-- **Conflictes de sincronització:** mostrar diff resum + resolució guiada
-- **Pèrdua de passphrase:** no recuperable (documentar bé)
-- **Rate limits API:** batching de sync i botó manual “Sincronitza”
-- **Canvi de proveïdor sync:** encapsular `SyncProvider` amb interfície
-
-## Possibles evolucions
-
-- Proveïdors alternatius: Dropbox / WebDAV / Supabase Storage (mateix contracte)
-- Realtime opcional: Yjs + WebRTC
-- PWA instal·lable
-- Compartició amb enllaç + invitació xifrada
-
-## Com començar (quan s’implementi)
+## Com començar
 
 ```bash
+# Instal·lar dependències
 npm install
+
+# Servidor de desenvolupament
 npm run dev
-npm run test
+
+# Lint
+npm run lint
+
+# Tests
+npm run test            # execució única
+npm run test:watch      # mode watch
+
+# Build de producció (inclou typecheck)
 npm run build
 ```
 
-## Publicació a GitHub Pages
+## Desplegament
 
-Aquest repo ja està preparat per desplegar a GitHub Pages amb GitHub Actions.
+L'app es desplega automàticament a **GitHub Pages** amb cada push a `main`.
 
-### Configuració aplicada
-- `vite.config.ts` amb `base: '/reparteix/'`
-- Workflow `.github/workflows/deploy-pages.yml`
-- Build de producció amb `npm run build`
+- `vite.config.ts` configurat amb `base: '/reparteix/'`
+- Workflow: `.github/workflows/deploy-pages.yml`
+- URL: <https://pilipilisbot.github.io/reparteix/>
 
-### Activar Pages (si no queda automàtic)
-1. GitHub repo → **Settings** → **Pages**
-2. A **Build and deployment**, seleccionar **Source: GitHub Actions**
-3. Fer push a `main` i esperar el workflow `Deploy to GitHub Pages`
+### Releases automàtics
 
-URL esperada:
-- `https://pilipilisbot.github.io/reparteix/`
+El projecte usa [semantic-release](https://semantic-release.gitbook.io/semantic-release/) amb [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Prefix | Efecte |
+|--------|--------|
+| `fix:` | patch (`1.0.0` → `1.0.1`) |
+| `feat:` | minor (`1.0.0` → `1.1.0`) |
+| `BREAKING CHANGE` o `!` | major (`1.0.0` → `2.0.0`) |
+| `chore:`, `docs:`, `refactor:`, `test:` | sense release |
+
+Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
+
+## Decisions de disseny
+
+1. **Sense backend propi** — tota la lògica és client-side.
+2. **Local-first** — l'app funciona 100% offline, dades a IndexedDB.
+3. **Soft delete** — les entitats es marquen com `deleted: true`, mai s'esborren físicament.
+4. **HashRouter** — per compatibilitat amb hosting estàtic (GitHub Pages).
+5. **PWA** — instal·lable i amb service worker per a cache offline.
+
+## Possibles evolucions
+
+- Sincronització entre dispositius (snapshot xifrat a GitHub Gist)
+- Xifrat client-side (AES-GCM via WebCrypto, clau derivada amb PBKDF2)
+- Historial d'activitat
+- Import/export de dades
+- Proveïdors de sync alternatius (Dropbox, WebDAV)
+- Realtime opcional (Yjs + WebRTC)
 
 ## Llicència
 

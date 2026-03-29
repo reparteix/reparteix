@@ -28,14 +28,16 @@ src/
     services/       # Lògica pura (sense efectes secundaris), testejada amb Vitest
   infra/
     db/             # Dexie — definició de la base de dades IndexedDB
-    crypto/         # WebCrypto (xifrat AES-GCM)
-    sync/           # Proveïdors de sincronització (Gist, etc.)
   features/
     groups/         # Gestió de grups
     expenses/       # Gestió de despeses
     balances/       # Visualització de balanços i transferències
     settlements/    # Registre de pagaments
   store/            # Zustand store (accions + selectors)
+  components/
+    ui/             # Components shadcn/ui (Button, Card, Tabs, etc.)
+  lib/              # Utilitats (cn() per a classes Tailwind)
+  sdk.ts            # API headless per a ús programàtic
   test/             # Setup global de tests (setup.ts)
 ```
 
@@ -110,10 +112,11 @@ chore: actualitzar dependències
 
 La configuració es troba a `.releaserc.json`.
 
-## Actualització dels fitxers d'agent
+## Actualització dels fitxers de documentació i agents
 
-**Regla important:** Quan un agent (o @copilot) introdueixi un canvi que afecti les convencions, l'arquitectura, l'stack tècnic o el flux de treball del projecte, **ha d'actualitzar** els fitxers d'agent corresponents:
+**Regla important:** Quan un agent (o @copilot) introdueixi un canvi que afecti les convencions, l'arquitectura, l'stack tècnic o el flux de treball del projecte, **ha d'actualitzar** els fitxers corresponents:
 
+- `README.md` — descripció del projecte, stack, funcionalitats, estructura
 - `.github/copilot-instructions.md` — convencions globals, stack, decisions de disseny
 - `.github/agents/add-feature.md` — passos i restriccions per a noves funcionalitats
 - `.github/agents/add-domain-entity.md` — normes d'entitats i serveis del domini
