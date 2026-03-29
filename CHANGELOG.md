@@ -1,3 +1,19 @@
+# [1.3.0](https://github.com/pilipilisbot/reparteix/compare/v1.2.0...v1.3.0) (2026-03-29)
+
+
+### Bug Fixes
+
+* address code review issues in receipt photo feature ([bdb964c](https://github.com/pilipilisbot/reparteix/commit/bdb964c9319225e3efaee2242d3881c4b71afba7))
+* address receipt photo code review issues ([ac0a188](https://github.com/pilipilisbot/reparteix/commit/ac0a1886c40672696f8c273ce2a4e6ba4dae9301))
+* address receipt photo code review issues (capture, reset timing, type safety) ([834edd4](https://github.com/pilipilisbot/reparteix/commit/834edd47b9f26e3d294f6e42a9003dc0f4c1a0a0))
+* improve receipt modal accessibility (aria-modal, keyboard handling, focus management) ([eaec6c2](https://github.com/pilipilisbot/reparteix/commit/eaec6c2c906ea4837dafa3f07f43888adc7ca82f))
+
+
+### Features
+
+* add receipt photo to expenses ([f93601e](https://github.com/pilipilisbot/reparteix/commit/f93601e0c996c78462b4c5fc3b2b5e81a79aff08))
+* add receipt photo to expenses ([8be1b92](https://github.com/pilipilisbot/reparteix/commit/8be1b92bacbc37fe5aeb1093383df924267b411e))
+
 # [1.2.0](https://github.com/pilipilisbot/reparteix/compare/v1.1.0...v1.2.0) (2026-03-29)
 
 
