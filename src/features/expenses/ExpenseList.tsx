@@ -97,13 +97,14 @@ export function ExpenseList({ group }: ExpenseListProps) {
     const reader = new FileReader()
     reader.onloadend = () => {
       setReceiptImage(reader.result as string)
+      // Reset input so selecting the same file again triggers onChange
+      e.target.value = ''
     }
     reader.onerror = () => {
       setReceiptError('No s\'ha pogut carregar la imatge. Torna-ho a intentar.')
+      e.target.value = ''
     }
     reader.readAsDataURL(file)
-    // Reset input so selecting the same file again triggers onChange
-    e.target.value = ''
   }
 
   const toggleSplitMember = (memberId: string) => {
@@ -213,6 +214,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
+                      capture="environment"
                       className="hidden"
                       onChange={handleFileChange}
                     />
@@ -304,7 +306,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                           size="sm"
                           onClick={(e) => {
                             triggerButtonRef.current = e.currentTarget
-                            setViewingReceipt(expense.receiptImage!)
+                            setViewingReceipt(expense.receiptImage ?? null)
                           }}
                           aria-label="Veure tiquet"
                           className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-indigo-600"
