@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Trash2, Camera, X } from 'lucide-react'
 import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
 import { cn } from '@/lib/utils'
@@ -32,6 +32,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [payerId, setPayerId] = useState('')
   const [splitAmong, setSplitAmong] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [receiptImage, setReceiptImage] = useState<string | null>(null)
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
@@ -47,13 +50,49 @@ export function ExpenseList({ group }: ExpenseListProps) {
       payerId,
       splitAmong,
       date: new Date().toISOString().split('T')[0],
+      receiptImage: receiptImage ?? undefined,
     })
 
     setDescription('')
     setAmount('')
     setPayerId('')
     setSplitAmong([])
+    setReceiptImage(null)
+    setReceiptError(null)
     setShowForm(false)
+  }
+
+  const [receiptError, setReceiptError] = useState<string | null>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setReceiptError(null)
+
+    if (!file.type.startsWith('image/')) {
+      setReceiptError('El fitxer seleccionat no és una imatge vàlida.')
+      e.target.value = ''
+      return
+    }
+
+    const MAX_SIZE_MB = 5
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setReceiptError(`La imatge no pot superar ${MAX_SIZE_MB} MB.`)
+      e.target.value = ''
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setReceiptImage(reader.result as string)
+    }
+    reader.onerror = () => {
+      setReceiptError('No s\'ha pogut carregar la imatge. Torna-ho a intentar.')
+    }
+    reader.readAsDataURL(file)
+    // Reset input so selecting the same file again triggers onChange
+    e.target.value = ''
   }
 
   const toggleSplitMember = (memberId: string) => {
@@ -157,6 +196,50 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       ))}
                     </div>
                   </div>
+                  <div className="space-y-1">
+                    <Label>Foto del tiquet</Label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    {receiptImage ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={receiptImage}
+                          alt="Tiquet"
+                          className="max-h-[200px] rounded-md border object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceiptImage(null)
+                            setReceiptError(null)
+                          }}
+                          aria-label="Eliminar foto"
+                          className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow hover:bg-gray-100"
+                        >
+                          <X className="h-4 w-4 text-red-500" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Afegir foto
+                      </Button>
+                    )}
+                    {receiptError && (
+                      <p className="text-xs text-red-500 mt-1">{receiptError}</p>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Button type="submit" className="flex-1">
                       Afegir despesa
@@ -164,7 +247,11 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => setShowForm(false)}
+                      onClick={() => {
+                        setShowForm(false)
+                        setReceiptImage(null)
+                        setReceiptError(null)
+                      }}
                     >
                       Cancel·lar
                     </Button>
@@ -200,19 +287,59 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     <div className="font-semibold">
                       {expense.amount.toFixed(2)} {symbol}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteExpense(expense.id)}
-                      className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Eliminar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {expense.receiptImage && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingReceipt(expense.receiptImage!)}
+                          aria-label="Veure tiquet"
+                          className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-indigo-600"
+                        >
+                          <Camera className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteExpense(expense.id)}
+                        className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" />
+                        Eliminar
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+        </div>
+      )}
+
+      {/* Receipt viewer modal */}
+      {viewingReceipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setViewingReceipt(null)}
+        >
+          <div
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={viewingReceipt}
+              alt="Tiquet"
+              className="max-w-full max-h-[85vh] rounded-lg object-contain shadow-lg"
+            />
+            <button
+              type="button"
+              onClick={() => setViewingReceipt(null)}
+              aria-label="Tancar"
+              className="absolute top-2 right-2 bg-white rounded-full p-1 shadow hover:bg-gray-100"
+            >
+              <X className="h-5 w-5 text-gray-700" />
+            </button>
+          </div>
         </div>
       )}
     </div>

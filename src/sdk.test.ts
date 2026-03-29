@@ -253,6 +253,43 @@ describe('reparteix SDK', () => {
       expect(updated.amount).toBe(15)
     })
 
+    it('stores and returns receiptImage on an expense', async () => {
+      const group = await reparteix.createGroup('Sopar')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+
+      const fakeBase64 = 'data:image/png;base64,iVBORw0KGgo='
+      const expense = await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Tiquet restaurant',
+        amount: 45,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-06-01',
+        receiptImage: fakeBase64,
+      })
+
+      expect(expense.receiptImage).toBe(fakeBase64)
+
+      const [listed] = await reparteix.listExpenses(group.id)
+      expect(listed.receiptImage).toBe(fakeBase64)
+    })
+
+    it('adds an expense without receiptImage', async () => {
+      const group = await reparteix.createGroup('Sopar')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+
+      const expense = await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Cafè',
+        amount: 2.5,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-06-01',
+      })
+
+      expect(expense.receiptImage).toBeUndefined()
+    })
+
     it('soft-deletes an expense', async () => {
       const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
