@@ -13,6 +13,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export function GroupList() {
   const { groups, groupTotals, loadGroups, addGroup, deleteGroup } = useStore()
@@ -101,15 +112,35 @@ export function GroupList() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
                 </button>
                 <Separator orientation="vertical" className="mx-2 h-8" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteGroup(group.id)}
-                  aria-label="Eliminar grup"
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Eliminar grup"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteGroup(group.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </Card>
           ))}

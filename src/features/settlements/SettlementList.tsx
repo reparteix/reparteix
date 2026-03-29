@@ -13,6 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -174,15 +185,34 @@ export function SettlementList({ group }: SettlementListProps) {
                     <span className="font-semibold text-emerald-600">
                       {payment.amount.toFixed(2)} {symbol}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deletePayment(payment.id)}
-                      className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Eliminar pagament</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Estàs segur que vols eliminar aquest pagament de {getMemberName(payment.fromId)} a {getMemberName(payment.toId)}? Aquesta acció no es pot desfer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deletePayment(payment.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>                  </div>
                 </CardContent>
               </Card>
             ))}

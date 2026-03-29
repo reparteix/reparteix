@@ -8,6 +8,17 @@ import { useStore } from '../../store'
 import { ExpenseList } from '../expenses/ExpenseList'
 import { BalanceView } from '../balances/BalanceView'
 import { SettlementList } from '../settlements/SettlementList'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -167,14 +178,34 @@ export function GroupDetail() {
                       <Pencil className="h-3 w-3" />
                     </button>
                     {!hasMovements && (
-                      <button
-                        onClick={() => removeMember(group.id, member.id)}
-                        className="hover:opacity-75"
-                        aria-label={`Eliminar ${member.name}`}
-                        title={`Eliminar ${member.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="hover:opacity-75"
+                            aria-label={`Eliminar ${member.name}`}
+                            title={`Eliminar ${member.name}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminar membre</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Estàs segur que vols eliminar &quot;{member.name}&quot; del grup? Aquesta acció no es pot desfer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => removeMember(group.id, member.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </>
                 )}

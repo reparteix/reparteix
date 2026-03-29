@@ -14,6 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -411,16 +422,35 @@ export function ExpenseList({ group }: ExpenseListProps) {
                             <Camera className="h-3 w-3" />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteExpense(expense.id)}
-                          className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Eliminar
-                        </Button>
-                      </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Eliminar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Estàs segur que vols eliminar la despesa &quot;{expense.description}&quot;? Aquesta acció no es pot desfer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteExpense(expense.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>                      </div>
                     </div>
                   </CardContent>
                 </Card>
