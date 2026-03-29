@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/pilipilisbot/reparteix/compare/v1.5.0...v1.6.0) (2026-03-29)
+
+
+### Features
+
+* millora disseny - total grup, color pagador, fix posició foto tiquet ([6aae86f](https://github.com/pilipilisbot/reparteix/commit/6aae86f69a04e45393e98e00669378dcc0cf6d8d))
+
 # [1.5.0](https://github.com/pilipilisbot/reparteix/compare/v1.4.0...v1.5.0) (2026-03-29)
 
 
