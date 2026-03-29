@@ -38,14 +38,16 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  const wasViewingReceiptRef = useRef(false)
 
   // Focus modal when it opens; restore focus to trigger button when it closes
   useEffect(() => {
     if (viewingReceipt) {
+      wasViewingReceiptRef.current = true
       modalRef.current?.focus()
-    } else {
+    } else if (wasViewingReceiptRef.current) {
+      wasViewingReceiptRef.current = false
       triggerButtonRef.current?.focus()
-      triggerButtonRef.current = null
     }
   }, [viewingReceipt])
 
@@ -83,14 +85,12 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
     if (!file.type.startsWith('image/')) {
       setReceiptError('El fitxer seleccionat no és una imatge vàlida.')
-      e.target.value = ''
       return
     }
 
     const MAX_SIZE_MB = 5
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setReceiptError(`La imatge no pot superar ${MAX_SIZE_MB} MB.`)
-      e.target.value = ''
       return
     }
 
@@ -213,7 +213,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       onChange={handleFileChange}
                     />
@@ -341,8 +340,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
           tabIndex={-1}
           onClick={() => setViewingReceipt(null)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
+            if (e.key === 'Escape') {
               setViewingReceipt(null)
             }
           }}
