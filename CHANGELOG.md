@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/pilipilisbot/reparteix/compare/v1.4.0...v1.5.0) (2026-03-29)
+
+
+### Features
+
+* add direct camera capture option for expense receipts ([9117b25](https://github.com/pilipilisbot/reparteix/commit/9117b25ead20d0bca1a081fead1489f8814937b6))
+
 # [1.4.0](https://github.com/pilipilisbot/reparteix/compare/v1.3.0...v1.4.0) (2026-03-29)
 
 
