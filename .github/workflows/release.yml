@@ -2,11 +2,13 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   release:
@@ -35,48 +37,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Generate changelog
-        id: changelog
-        run: |
-          CURRENT_TAG="${{ github.ref_name }}"
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -1)
-          if [ -z "$PREV_TAG" ]; then
-            LOG=$(git log --pretty=format:"- %s (%h)" HEAD)
-          else
-            LOG=$(git log --pretty=format:"- %s (%h)" "${PREV_TAG}..HEAD")
-          fi
-          echo "log<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$LOG" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Update CHANGELOG.md
-        run: |
-          CURRENT_TAG="${{ github.ref_name }}"
-          DATE=$(date -u +%Y-%m-%d)
-          ENTRY="## [${CURRENT_TAG}] - ${DATE}"$'\n'"${{ steps.changelog.outputs.log }}"
-          if [ -f CHANGELOG.md ]; then
-            CONTENT=$(cat CHANGELOG.md)
-            # Insert after the first heading line
-            echo "${CONTENT/# Changelog/$'# Changelog\n\n'${ENTRY}}" > CHANGELOG.md
-          else
-            printf '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n%s\n' "$ENTRY" > CHANGELOG.md
-          fi
-
-      - name: Commit CHANGELOG.md
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "docs: update CHANGELOG for ${{ github.ref_name }}"
-          git push origin HEAD:main
-
-      - name: Create GitHub release
+      - name: Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          NOTES="${{ steps.changelog.outputs.log }}"
-          gh release create "${{ github.ref_name }}" \
-            --title "Release ${{ github.ref_name }}" \
-            --notes "$NOTES" \
-            dist/**
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
