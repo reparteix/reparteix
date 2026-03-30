@@ -4,6 +4,7 @@ import { GroupList } from './features/groups/GroupList'
 import { GroupDetail } from './features/groups/GroupDetail'
 import { GroupSettings } from './features/groups/GroupSettings'
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
+import { PWAInstallPrompt } from './components/PWAInstallPrompt'
 import { Footer } from './components/Footer'
 import { useFileHandler } from './hooks/useFileHandler'
 
@@ -48,6 +49,7 @@ function App() {
         <Footer />
       </div>
       <FileHandlerBridge />
+      <PWAInstallPrompt />
       <PWAUpdatePrompt />
     </HashRouter>
   )
