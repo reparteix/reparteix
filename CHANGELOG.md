@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/reparteix/reparteix/compare/v1.10.0...v1.11.0) (2026-03-30)
+
+
+### Features
+
+* add PWA install prompt and fix version in deploys ([542c2a2](https://github.com/reparteix/reparteix/commit/542c2a2d2060b4b6d3e59f7026f3d0a3ccc276e1))
+
 # [1.10.0](https://github.com/reparteix/reparteix/compare/v1.9.1...v1.10.0) (2026-03-30)
 
 
