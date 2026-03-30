@@ -1,3 +1,15 @@
+# [1.10.0](https://github.com/reparteix/reparteix/compare/v1.9.1...v1.10.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* address review comments — typo, filename, and jsdoc ([242157b](https://github.com/reparteix/reparteix/commit/242157b48cd552009b1ac3592494c08a4315eadb))
+
+
+### Features
+
+* **pwa:** add ReparteixExportV1 envelope, file handling, and legacy import support ([cd68952](https://github.com/reparteix/reparteix/commit/cd68952f7e2c44f20f2d3cfed3444f361012ccd0))
+
 ## [1.9.1](https://github.com/reparteix/reparteix/compare/v1.9.0...v1.9.1) (2026-03-30)
 
 
