@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/reparteix/reparteix/compare/v1.9.0...v1.9.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **pages:** use root base path for custom domain app.reparteix.cat ([84334ca](https://github.com/reparteix/reparteix/commit/84334ca109c51a1b85300cdd9907f8ee6d8e8912))
+
 # [1.9.0](https://github.com/pilipilisbot/reparteix/compare/v1.8.0...v1.9.0) (2026-03-30)
 
 
