@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,12 +37,13 @@ interface GroupSettingsFormProps {
 
 function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const navigate = useNavigate()
-  const { updateGroup, deleteGroup } = useStore()
+  const { updateGroup, deleteGroup, exportGroup } = useStore()
 
   const [name, setName] = useState(group.name)
   const [description, setDescription] = useState(group.description ?? '')
   const [icon, setIcon] = useState(group.icon ?? '')
   const [currency, setCurrency] = useState(group.currency)
+  const [exportStatus, setExportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,6 +61,17 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
     if (!window.confirm('Segur que vols eliminar el grup? Aquesta acció no es pot desfer.')) return
     await deleteGroup(groupId)
     navigate('/')
+  }
+
+  const handleExport = async () => {
+    try {
+      await exportGroup(groupId)
+      setExportStatus('ok')
+    } catch {
+      setExportStatus('error')
+    } finally {
+      setTimeout(() => setExportStatus('idle'), 3000)
+    }
   }
 
   return (
@@ -148,6 +160,34 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
           Desar canvis
         </Button>
       </form>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Còpia de seguretat</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Exporta totes les dades del grup (membres, despeses i pagaments) a un fitxer JSON per fer-ne una còpia de seguretat o migrar-les.
+          </p>
+          <Button
+            variant="outline"
+            className="w-full"
+            type="button"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar JSON
+          </Button>
+          {exportStatus === 'ok' && (
+            <p className="text-sm text-green-600">Fitxer exportat correctament.</p>
+          )}
+          {exportStatus === 'error' && (
+            <p className="text-sm text-destructive">Error en exportar. Torna-ho a intentar.</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator className="my-8" />
 

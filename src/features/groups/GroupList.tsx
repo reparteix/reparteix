@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Users, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Users, ChevronRight, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -26,8 +26,11 @@ import {
 } from '@/components/ui/alert-dialog'
 
 export function GroupList() {
-  const { groups, groupTotals, loadGroups, addGroup, deleteGroup } = useStore()
+  const { groups, groupTotals, loadGroups, addGroup, deleteGroup, importGroup } = useStore()
   const [name, setName] = useState('')
+  const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
+  const [importError, setImportError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -42,6 +45,28 @@ export function GroupList() {
     navigate(`/group/${group.id}`)
   }
 
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset input so same file can be re-selected after an error
+    e.target.value = ''
+    try {
+      const text = await file.text()
+      const raw = JSON.parse(text)
+      const group = await importGroup(raw)
+      setImportStatus('ok')
+      setImportError('')
+      setTimeout(() => {
+        setImportStatus('idle')
+        navigate(`/group/${group.id}`)
+      }, 1500)
+    } catch (err) {
+      setImportStatus('error')
+      setImportError(err instanceof Error ? err.message : 'Format invàlid')
+      setTimeout(() => setImportStatus('idle'), 4000)
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-2">🧾 Reparteix</h1>
@@ -52,9 +77,9 @@ export function GroupList() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-lg">Nou grup</CardTitle>
-          <CardDescription>Crea un grup per compartir despeses</CardDescription>
+          <CardDescription>Crea un grup per compartir despeses o importa'n un des d'un fitxer JSON</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <form onSubmit={handleCreate} className="flex gap-2">
             <Input
               type="text"
@@ -69,6 +94,32 @@ export function GroupList() {
               Crear
             </Button>
           </form>
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button
+              variant="outline"
+              type="button"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importar des de JSON
+            </Button>
+            {importStatus === 'ok' && (
+              <p className="text-sm text-green-600 mt-1">Grup importat correctament. Redirigint…</p>
+            )}
+            {importStatus === 'error' && (
+              <p className="text-sm text-destructive mt-1">
+                Error en importar: {importError}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -56,3 +56,13 @@ export const GroupSchema = z.object({
 })
 
 export type Group = z.infer<typeof GroupSchema>
+
+export const GroupExportSchema = z.object({
+  schemaVersion: z.literal(1),
+  exportedAt: z.string().datetime(),
+  group: GroupSchema,
+  expenses: z.array(ExpenseSchema),
+  payments: z.array(PaymentSchema),
+})
+
+export type GroupExport = z.infer<typeof GroupExportSchema>

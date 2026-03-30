@@ -24,6 +24,8 @@ interface AppState {
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
   setCurrentGroup: (groupId: string | null) => void
+  exportGroup: (groupId: string) => Promise<void>
+  importGroup: (raw: unknown) => Promise<Group>
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -123,5 +125,24 @@ export const useStore = create<AppState>((set, get) => ({
 
   setCurrentGroup: (groupId) => {
     set({ currentGroupId: groupId })
+  },
+
+  exportGroup: async (groupId: string) => {
+    const data = await reparteix.exportGroup(groupId)
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const groupName = get().groups.find((g) => g.id === groupId)?.name ?? groupId
+    a.download = `reparteix-${groupName.replace(/\s+/g, '-')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
+  importGroup: async (raw: unknown) => {
+    const group = await reparteix.importGroup(raw)
+    await get().loadGroups()
+    return group
   },
 }))

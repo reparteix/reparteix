@@ -1,4 +1,5 @@
-import type { Group, Expense, Payment, Member } from './domain/entities'
+import type { Group, Expense, Payment, Member, GroupExport } from './domain/entities'
+import { GroupExportSchema } from './domain/entities'
 import {
   calculateBalances,
   calculateSettlements,
@@ -7,7 +8,7 @@ import {
 } from './domain/services'
 import { db } from './infra/db'
 
-export type { Group, Expense, Payment, Member, Balance, Settlement }
+export type { Group, Expense, Payment, Member, Balance, Settlement, GroupExport }
 export { calculateBalances, calculateSettlements }
 
 const COLORS = [
@@ -271,5 +272,69 @@ export const reparteix = {
   async getSettlements(groupId: string): Promise<Settlement[]> {
     const balances = await reparteix.getBalances(groupId)
     return calculateSettlements(balances)
+  },
+
+  // ─── Import / Export ───────────────────────────────────────────────
+
+  /** Export a group and all its data as a versioned JSON object. */
+  async exportGroup(groupId: string): Promise<GroupExport> {
+    const group = await db.groups.get(groupId)
+    if (!group) throw new Error(`Group not found: ${groupId}`)
+
+    const expenses = await db.expenses
+      .where('groupId')
+      .equals(groupId)
+      .toArray()
+
+    const payments = await db.payments
+      .where('groupId')
+      .equals(groupId)
+      .toArray()
+
+    return {
+      schemaVersion: 1,
+      exportedAt: now(),
+      group,
+      expenses,
+      payments,
+    }
+  },
+
+  /**
+   * Import a group from a versioned export object.
+   * Validates with Zod before any writes.
+   * Uses Last-Write-Wins (by updatedAt) for ID collisions.
+   * The entire operation runs inside a Dexie transaction — no partial mutations.
+   */
+  async importGroup(raw: unknown): Promise<Group> {
+    const data = GroupExportSchema.parse(raw)
+
+    await db.transaction('rw', [db.groups, db.expenses, db.payments], async () => {
+      // ── Group ──────────────────────────────────────────────────────
+      const existingGroup = await db.groups.get(data.group.id)
+      if (!existingGroup || existingGroup.updatedAt < data.group.updatedAt) {
+        await db.groups.put(data.group)
+      }
+
+      // ── Expenses ───────────────────────────────────────────────────
+      for (const expense of data.expenses) {
+        const existing = await db.expenses.get(expense.id)
+        if (!existing || existing.updatedAt < expense.updatedAt) {
+          await db.expenses.put(expense)
+        }
+      }
+
+      // ── Payments ───────────────────────────────────────────────────
+      for (const payment of data.payments) {
+        const existing = await db.payments.get(payment.id)
+        if (!existing || existing.updatedAt < payment.updatedAt) {
+          await db.payments.put(payment)
+        }
+      }
+    })
+
+    const result = await db.groups.get(data.group.id)
+    if (!result) throw new Error('Import failed: group not found after write')
+    return result
   },
 }

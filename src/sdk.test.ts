@@ -407,4 +407,143 @@ describe('reparteix SDK', () => {
       expect(balances).toEqual([])
     })
   })
+
+  // ─── Import / Export ──────────────────────────────────────────────
+
+  describe('import / export', () => {
+    it('exports a group as a versioned JSON object', async () => {
+      const group = await reparteix.createGroup('Export test')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Sopar',
+        amount: 40,
+        payerId: anna.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-06-01',
+      })
+      await reparteix.addPayment({
+        groupId: group.id,
+        fromId: bernat.id,
+        toId: anna.id,
+        amount: 20,
+        date: '2024-06-02',
+      })
+
+      const exported = await reparteix.exportGroup(group.id)
+
+      expect(exported.schemaVersion).toBe(1)
+      expect(exported.exportedAt).toBeTruthy()
+      expect(exported.group.id).toBe(group.id)
+      expect(exported.group.name).toBe('Export test')
+      expect(exported.expenses).toHaveLength(1)
+      expect(exported.expenses[0].description).toBe('Sopar')
+      expect(exported.payments).toHaveLength(1)
+      expect(exported.payments[0].amount).toBe(20)
+    })
+
+    it('throws when exporting a non-existent group', async () => {
+      await expect(reparteix.exportGroup('nope')).rejects.toThrow('Group not found')
+    })
+
+    it('imports a group from a valid export object', async () => {
+      const group = await reparteix.createGroup('Import test')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Taxi',
+        amount: 24,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-07-01',
+      })
+
+      const exported = await reparteix.exportGroup(group.id)
+
+      // Clear DB and re-import
+      await db.groups.clear()
+      await db.expenses.clear()
+      await db.payments.clear()
+
+      const imported = await reparteix.importGroup(exported)
+
+      expect(imported.id).toBe(group.id)
+      expect(imported.name).toBe('Import test')
+
+      const expenses = await reparteix.listExpenses(group.id)
+      expect(expenses).toHaveLength(1)
+      expect(expenses[0].description).toBe('Taxi')
+    })
+
+    it('includes deleted records in export and restores them on import', async () => {
+      const group = await reparteix.createGroup('Deleted test')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const expense = await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Despesa eliminada',
+        amount: 10,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-07-01',
+      })
+      await reparteix.deleteExpense(expense.id)
+
+      const exported = await reparteix.exportGroup(group.id)
+      expect(exported.expenses).toHaveLength(1)
+      expect(exported.expenses[0].deleted).toBe(true)
+
+      await db.groups.clear()
+      await db.expenses.clear()
+
+      await reparteix.importGroup(exported)
+
+      // listExpenses filters deleted, so we query DB directly
+      const allExpenses = await db.expenses.where('groupId').equals(group.id).toArray()
+      expect(allExpenses).toHaveLength(1)
+      expect(allExpenses[0].deleted).toBe(true)
+    })
+
+    it('uses LWW when importing a record with the same ID', async () => {
+      const group = await reparteix.createGroup('LWW test')
+      const exported = await reparteix.exportGroup(group.id)
+
+      // Locally update the group name after export (newer updatedAt)
+      await reparteix.updateGroup(group.id, { name: 'Nom local (més nou)' })
+
+      // Import the older export — local version should win
+      await reparteix.importGroup(exported)
+
+      const current = await reparteix.getGroup(group.id)
+      expect(current?.name).toBe('Nom local (més nou)')
+    })
+
+    it('overwrites an existing record when the import has a newer updatedAt', async () => {
+      const group = await reparteix.createGroup('LWW overwrite')
+      const exported = await reparteix.exportGroup(group.id)
+
+      // Tamper: make the exported group newer than the local copy
+      const future = new Date(Date.now() + 60_000).toISOString()
+      const newerExport = {
+        ...exported,
+        group: { ...exported.group, name: 'Nom del futur', updatedAt: future },
+      }
+
+      await reparteix.importGroup(newerExport)
+
+      const current = await reparteix.getGroup(group.id)
+      expect(current?.name).toBe('Nom del futur')
+    })
+
+    it('rejects an import with an invalid schema', async () => {
+      await expect(reparteix.importGroup({ foo: 'bar' })).rejects.toThrow()
+    })
+
+    it('does not mutate anything on a failed import', async () => {
+      const before = await reparteix.listGroups()
+      await expect(reparteix.importGroup({ foo: 'bar' })).rejects.toThrow()
+      const after = await reparteix.listGroups()
+      expect(after).toHaveLength(before.length)
+    })
+  })
 })
