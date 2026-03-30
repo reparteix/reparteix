@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/pilipilisbot/reparteix/compare/v1.8.0...v1.9.0) (2026-03-30)
+
+
+### Features
+
+* **sync:** processar JSON per actualitzar un grup (base de sincronització) ([a55aa9b](https://github.com/pilipilisbot/reparteix/commit/a55aa9b88dfe5e59412c28058a115cd646e65938))
+
 # [1.8.0](https://github.com/pilipilisbot/reparteix/compare/v1.7.0...v1.8.0) (2026-03-30)
 
 
