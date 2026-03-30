@@ -4,11 +4,15 @@ export {
   ExpenseSchema,
   PaymentSchema,
   GroupSchema,
+  GroupExportSchema,
+  ReparteixExportV1Schema,
   SyncEnvelopeV1Schema,
   type Member,
   type Expense,
   type Payment,
   type Group,
+  type GroupExport,
+  type ReparteixExportV1,
   type SyncEnvelopeV1,
 } from './entities'
 

@@ -67,6 +67,20 @@ export const GroupExportSchema = z.object({
 
 export type GroupExport = z.infer<typeof GroupExportSchema>
 
+export const ReparteixExportV1Schema = z.object({
+  format: z.literal('reparteix-export'),
+  version: z.literal(1),
+  exportedAt: z.string().datetime(),
+  appVersion: z.string().optional(),
+  data: z.object({
+    groups: z.array(GroupSchema).min(1),
+    expenses: z.array(ExpenseSchema),
+    payments: z.array(PaymentSchema),
+  }),
+})
+
+export type ReparteixExportV1 = z.infer<typeof ReparteixExportV1Schema>
+
 export const SyncEnvelopeV1Schema = z.object({
   version: z.literal(1),
   source: z.string().optional(),

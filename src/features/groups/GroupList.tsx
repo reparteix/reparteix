@@ -98,7 +98,7 @@ export function GroupList() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/json,.json"
+              accept=".reparteix.json,.json,application/json,application/vnd.reparteix+json"
               className="hidden"
               onChange={handleImportFile}
             />
