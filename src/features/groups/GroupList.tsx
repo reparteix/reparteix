@@ -26,7 +26,7 @@ export function GroupList() {
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
   const [importError, setImportError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const createGroupInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function GroupList() {
 
   useEffect(() => {
     if (showForm) {
-      inputRef.current?.focus()
+      createGroupInputRef.current?.focus()
     }
   }, [showForm])
 
@@ -107,7 +107,7 @@ export function GroupList() {
                 {showForm ? (
                   <form onSubmit={handleCreate} className="flex gap-2">
                     <Input
-                      ref={inputRef}
+                      ref={createGroupInputRef}
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -252,7 +252,7 @@ export function GroupList() {
               {showForm ? (
                 <form onSubmit={handleCreate} className="w-full max-w-sm flex flex-col gap-3">
                   <Input
-                    ref={inputRef}
+                    ref={createGroupInputRef}
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
