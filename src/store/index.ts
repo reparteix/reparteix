@@ -130,12 +130,14 @@ export const useStore = create<AppState>((set, get) => ({
   exportGroup: async (groupId: string) => {
     const data = await reparteix.exportGroup(groupId)
     const json = JSON.stringify(data, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
+    const blob = new Blob([json], { type: 'application/vnd.reparteix+json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    const groupName = get().groups.find((g) => g.id === groupId)?.name ?? groupId
-    a.download = `reparteix-${groupName.replace(/\s+/g, '-')}.json`
+    const groupName = get().groups.find((g) => g.id === groupId)?.name ?? 'grup'
+    const slug = groupName.replace(/\s+/g, '-').toLowerCase()
+    const date = new Date().toISOString().slice(0, 10)
+    a.download = `reparteix-export-${slug}-${date}.reparteix.json`
     a.click()
     URL.revokeObjectURL(url)
   },

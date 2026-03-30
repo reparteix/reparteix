@@ -1,5 +1,5 @@
-import type { Group, Expense, Payment, Member, GroupExport, SyncEnvelopeV1 } from './domain/entities'
-import { GroupExportSchema, SyncEnvelopeV1Schema } from './domain/entities'
+import type { Group, Expense, Payment, Member, GroupExport, ReparteixExportV1, SyncEnvelopeV1 } from './domain/entities'
+import { GroupExportSchema, ReparteixExportV1Schema, SyncEnvelopeV1Schema } from './domain/entities'
 import {
   calculateBalances,
   calculateSettlements,
@@ -10,7 +10,7 @@ import {
 } from './domain/services'
 import { db } from './infra/db'
 
-export type { Group, Expense, Payment, Member, Balance, Settlement, GroupExport, SyncEnvelopeV1, SyncReport }
+export type { Group, Expense, Payment, Member, Balance, Settlement, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
 export { calculateBalances, calculateSettlements }
 
 const COLORS = [
@@ -278,8 +278,8 @@ export const reparteix = {
 
   // ─── Import / Export ───────────────────────────────────────────────
 
-  /** Export a group and all its data as a versioned JSON object. */
-  async exportGroup(groupId: string): Promise<GroupExport> {
+  /** Export a group and all its data as a versioned JSON object (ReparteixExportV1 envelope). */
+  async exportGroup(groupId: string): Promise<ReparteixExportV1> {
     const group = await db.groups.get(groupId)
     if (!group) throw new Error(`Group not found: ${groupId}`)
 
@@ -294,32 +294,59 @@ export const reparteix = {
       .toArray()
 
     return {
-      schemaVersion: 1,
+      format: 'reparteix-export',
+      version: 1,
       exportedAt: now(),
-      group,
-      expenses,
-      payments,
+      appVersion: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : undefined,
+      data: {
+        groups: [group],
+        expenses,
+        payments,
+      },
     }
   },
 
   /**
-   * Import a group from a versioned export object.
+   * Import group(s) from a file object. Supports:
+   * - ReparteixExportV1 envelope (format: 'reparteix-export', version: 1)
+   * - Legacy GroupExport format (schemaVersion: 1)
    * Validates with Zod before any writes.
    * Uses Last-Write-Wins (by updatedAt) for ID collisions.
    * The entire operation runs inside a Dexie transaction — no partial mutations.
+   * Returns the first imported group (all groups are persisted).
    */
   async importGroup(raw: unknown): Promise<Group> {
-    const data = GroupExportSchema.parse(raw)
+    // Normalise to canonical internal model
+    let groups: Group[]
+    let expenses: Expense[]
+    let payments: Payment[]
+
+    const obj = raw as Record<string, unknown> | null | undefined
+    if (obj && obj.format === 'reparteix-export') {
+      // ── New envelope format ────────────────────────────────────────
+      const envelope = ReparteixExportV1Schema.parse(raw)
+      groups = envelope.data.groups
+      expenses = envelope.data.expenses
+      payments = envelope.data.payments
+    } else {
+      // ── Legacy format fallback ─────────────────────────────────────
+      const data = GroupExportSchema.parse(raw)
+      groups = [data.group]
+      expenses = data.expenses
+      payments = data.payments
+    }
 
     await db.transaction('rw', [db.groups, db.expenses, db.payments], async () => {
-      // ── Group ──────────────────────────────────────────────────────
-      const existingGroup = await db.groups.get(data.group.id)
-      if (!existingGroup || existingGroup.updatedAt < data.group.updatedAt) {
-        await db.groups.put(data.group)
+      // ── Groups ─────────────────────────────────────────────────────
+      for (const group of groups) {
+        const existingGroup = await db.groups.get(group.id)
+        if (!existingGroup || existingGroup.updatedAt < group.updatedAt) {
+          await db.groups.put(group)
+        }
       }
 
       // ── Expenses ───────────────────────────────────────────────────
-      for (const expense of data.expenses) {
+      for (const expense of expenses) {
         const existing = await db.expenses.get(expense.id)
         if (!existing || existing.updatedAt < expense.updatedAt) {
           await db.expenses.put(expense)
@@ -327,7 +354,7 @@ export const reparteix = {
       }
 
       // ── Payments ───────────────────────────────────────────────────
-      for (const payment of data.payments) {
+      for (const payment of payments) {
         const existing = await db.payments.get(payment.id)
         if (!existing || existing.updatedAt < payment.updatedAt) {
           await db.payments.put(payment)
@@ -335,7 +362,7 @@ export const reparteix = {
       }
     })
 
-    const result = await db.groups.get(data.group.id)
+    const result = await db.groups.get(groups[0].id)
     if (!result) throw new Error('Import failed: group not found after write')
     return result
   },

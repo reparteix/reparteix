@@ -1,7 +1,7 @@
 ---
 name: reparteix
 description: Manage shared expenses — create groups, add members, track expenses (equal or proportional splits) and payments, calculate balances and minimum settlements. Export/import groups as JSON. Sync groups from external JSON snapshots with LWW merge. Local-first, offline-capable PWA.
-version: 1.1.0
+version: 1.2.0
 author: pilipilisbot
 tags:
   - expenses
@@ -37,8 +37,9 @@ Use this skill when the user wants to:
 - Record **payments** (settlements between members).
 - **Calculate balances** — see who owes whom.
 - **Calculate minimum settlements** — find the fewest transfers needed to settle all debts.
-- **Export** a group and all its data to a JSON file for backup.
-- **Import** a group from a previously exported JSON file (Last-Write-Wins conflict resolution).
+- **Export** a group to a versioned `.reparteix.json` file for backup or migration.
+- **Import** a group from a `.reparteix.json` file (new envelope format) or from the legacy JSON format (backward compatible). Uses Last-Write-Wins conflict resolution.
+- **Open files directly** from the installed PWA (File Handling API on Chromium) or via manual file picker (universal fallback).
 - **Sync** a group from an external JSON snapshot using deterministic LWW merge with conflict detection and referential integrity checks.
 
 ## Project Setup
@@ -131,8 +132,8 @@ import { reparteix } from './src/sdk'
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `exportGroup` | `(groupId: string) => Promise<GroupExport>` | Export a group with all its expenses and payments as a versioned JSON object |
-| `importGroup` | `(raw: unknown) => Promise<Group>` | Import a group from a `GroupExport` object. Validates with Zod, uses LWW for ID collisions, runs in a single transaction |
+| `exportGroup` | `(groupId: string) => Promise<ReparteixExportV1>` | Export a group with all its expenses and payments as a `ReparteixExportV1` envelope (`.reparteix.json`) |
+| `importGroup` | `(raw: unknown) => Promise<Group>` | Import a group from a `ReparteixExportV1` envelope or legacy `GroupExport`. Auto-detects format, validates with Zod, uses LWW for ID collisions, runs in a single transaction |
 
 ### Sync
 
@@ -227,7 +228,7 @@ import { reparteix } from './src/sdk'
 }
 ```
 
-### GroupExport
+### GroupExport (legacy)
 
 ```typescript
 {
@@ -236,6 +237,22 @@ import { reparteix } from './src/sdk'
   group: Group
   expenses: Expense[]
   payments: Payment[]
+}
+```
+
+### ReparteixExportV1
+
+```typescript
+{
+  format: 'reparteix-export'
+  version: 1
+  exportedAt: string     // ISO 8601 datetime
+  appVersion?: string    // app version at export time
+  data: {
+    groups: Group[]      // min 1
+    expenses: Expense[]
+    payments: Payment[]
+  }
 }
 ```
 
@@ -327,7 +344,8 @@ await reparteix.addPayment({
 - **Balances**: Positive means the member is owed money (creditor), negative means they owe (debtor).
 - **Settlements**: Use greedy matching to minimize the number of transfers.
 - **Split types**: `equal` (default) divides the expense equally; `proportional` uses `splitProportions` weights.
-- **Import/Export**: Uses `schemaVersion: 1`. LWW (Last-Write-Wins by `updatedAt`) resolves ID collisions.
+- **Import/Export**: New exports use `ReparteixExportV1` envelope (`format: 'reparteix-export'`, `version: 1`, `.reparteix.json` extension). Import auto-detects format: new envelope or legacy `GroupExport` (`schemaVersion: 1`). LWW (Last-Write-Wins by `updatedAt`) resolves ID collisions.
+- **File Handling API**: PWA manifest includes `file_handlers` for `.reparteix.json`. Installed PWA on Chromium can open files directly. Universal fallback via manual file picker.
 - **Sync**: `SyncEnvelopeV1` (version: 1) — deterministic LWW merge, per-item referential integrity validation, Dexie transaction. Conflicts (same timestamp, different payload) are recorded but local data is preserved.
 
 ## Tech Stack

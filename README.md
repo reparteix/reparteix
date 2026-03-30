@@ -12,7 +12,9 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 - Reanomenar membres del grup
 - Càlcul automàtic de balanços i transferències mínimes
 - Registre de pagaments (settlements)
-- Exportació i importació de grups en format JSON (còpia de seguretat i migració)
+- Exportació i importació de grups en format `.reparteix.json` versionat (còpia de seguretat i migració)
+- Obertura directa de fitxers `.reparteix.json` des de la PWA instal·lada (File Handling API)
+- Retrocompatible amb format d'export antic (legacy)
 - PWA instal·lable amb funcionament offline complet
 - Actualitzacions automàtiques amb avís a l'usuari
 - Headless SDK per a ús programàtic sense UI

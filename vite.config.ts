@@ -44,6 +44,15 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        file_handlers: [
+          {
+            action: '/',
+            accept: {
+              'application/json': ['.reparteix.json'],
+              'application/vnd.reparteix+json': ['.reparteix.json'],
+            },
+          },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

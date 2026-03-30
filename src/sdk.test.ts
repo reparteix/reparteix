@@ -701,7 +701,7 @@ describe('reparteix SDK', () => {
   // ─── Import / Export ──────────────────────────────────────────────
 
   describe('import / export', () => {
-    it('exports a group as a versioned JSON object', async () => {
+    it('exports a group as a ReparteixExportV1 envelope', async () => {
       const group = await reparteix.createGroup('Export test')
       const anna = await reparteix.addMember(group.id, 'Anna')
       const bernat = await reparteix.addMember(group.id, 'Bernat')
@@ -723,21 +723,23 @@ describe('reparteix SDK', () => {
 
       const exported = await reparteix.exportGroup(group.id)
 
-      expect(exported.schemaVersion).toBe(1)
+      expect(exported.format).toBe('reparteix-export')
+      expect(exported.version).toBe(1)
       expect(exported.exportedAt).toBeTruthy()
-      expect(exported.group.id).toBe(group.id)
-      expect(exported.group.name).toBe('Export test')
-      expect(exported.expenses).toHaveLength(1)
-      expect(exported.expenses[0].description).toBe('Sopar')
-      expect(exported.payments).toHaveLength(1)
-      expect(exported.payments[0].amount).toBe(20)
+      expect(exported.data.groups).toHaveLength(1)
+      expect(exported.data.groups[0].id).toBe(group.id)
+      expect(exported.data.groups[0].name).toBe('Export test')
+      expect(exported.data.expenses).toHaveLength(1)
+      expect(exported.data.expenses[0].description).toBe('Sopar')
+      expect(exported.data.payments).toHaveLength(1)
+      expect(exported.data.payments[0].amount).toBe(20)
     })
 
     it('throws when exporting a non-existent group', async () => {
       await expect(reparteix.exportGroup('nope')).rejects.toThrow('Group not found')
     })
 
-    it('imports a group from a valid export object', async () => {
+    it('imports a group from a valid ReparteixExportV1 envelope', async () => {
       const group = await reparteix.createGroup('Import test')
       const anna = await reparteix.addMember(group.id, 'Anna')
       await reparteix.addExpense({
@@ -766,6 +768,44 @@ describe('reparteix SDK', () => {
       expect(expenses[0].description).toBe('Taxi')
     })
 
+    it('imports a group from legacy GroupExport format', async () => {
+      const group = await reparteix.createGroup('Legacy test')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Bus',
+        amount: 5,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-08-01',
+      })
+
+      // Build a legacy format object manually
+      const fullGroup = await db.groups.get(group.id)
+      const allExpenses = await db.expenses.where('groupId').equals(group.id).toArray()
+      const legacyExport = {
+        schemaVersion: 1,
+        exportedAt: new Date().toISOString(),
+        group: fullGroup,
+        expenses: allExpenses,
+        payments: [],
+      }
+
+      // Clear and re-import via legacy path
+      await db.groups.clear()
+      await db.expenses.clear()
+      await db.payments.clear()
+
+      const imported = await reparteix.importGroup(legacyExport)
+
+      expect(imported.id).toBe(group.id)
+      expect(imported.name).toBe('Legacy test')
+
+      const expenses = await reparteix.listExpenses(group.id)
+      expect(expenses).toHaveLength(1)
+      expect(expenses[0].description).toBe('Bus')
+    })
+
     it('includes deleted records in export and restores them on import', async () => {
       const group = await reparteix.createGroup('Deleted test')
       const anna = await reparteix.addMember(group.id, 'Anna')
@@ -780,8 +820,8 @@ describe('reparteix SDK', () => {
       await reparteix.deleteExpense(expense.id)
 
       const exported = await reparteix.exportGroup(group.id)
-      expect(exported.expenses).toHaveLength(1)
-      expect(exported.expenses[0].deleted).toBe(true)
+      expect(exported.data.expenses).toHaveLength(1)
+      expect(exported.data.expenses[0].deleted).toBe(true)
 
       await db.groups.clear()
       await db.expenses.clear()
@@ -816,7 +856,10 @@ describe('reparteix SDK', () => {
       const future = new Date(Date.now() + 60_000).toISOString()
       const newerExport = {
         ...exported,
-        group: { ...exported.group, name: 'Nom del futur', updatedAt: future },
+        data: {
+          ...exported.data,
+          groups: [{ ...exported.data.groups[0], name: 'Nom del futur', updatedAt: future }],
+        },
       }
 
       await reparteix.importGroup(newerExport)
@@ -827,6 +870,12 @@ describe('reparteix SDK', () => {
 
     it('rejects an import with an invalid schema', async () => {
       await expect(reparteix.importGroup({ foo: 'bar' })).rejects.toThrow()
+    })
+
+    it('rejects an import with format but invalid data', async () => {
+      await expect(
+        reparteix.importGroup({ format: 'reparteix-export', version: 1, data: {} }),
+      ).rejects.toThrow()
     })
 
     it('does not mutate anything on a failed import', async () => {
