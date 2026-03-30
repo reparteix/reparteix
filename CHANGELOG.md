@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/reparteix/reparteix/compare/v1.12.0...v1.12.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **ci:** restore push trigger for GitHub Pages deploy workflow ([80351c3](https://github.com/reparteix/reparteix/commit/80351c32ab5f902cab8e4905a643342ec76e56c6))
+
 # [1.12.0](https://github.com/reparteix/reparteix/compare/v1.11.0...v1.12.0) (2026-03-30)
 
 
