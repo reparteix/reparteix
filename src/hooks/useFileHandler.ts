@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { reparteix } from '../sdk'
+import { useStore } from '../store'
 
 interface FileHandlerResult {
   status: 'idle' | 'importing' | 'ok' | 'error'
@@ -10,16 +10,6 @@ interface FileHandlerResult {
 /** Maximum file size accepted for import (10 MB). */
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
-async function processFile(file: File): Promise<string> {
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error('El fitxer és massa gran (màxim 10 MB)')
-  }
-  const text = await file.text()
-  const raw: unknown = JSON.parse(text)
-  const group = await reparteix.importGroup(raw)
-  return group.id
-}
-
 /**
  * Hook that consumes files delivered via the File Handling API (launchQueue)
  * when the PWA is opened with a `.reparteix.json` file.
@@ -27,6 +17,7 @@ async function processFile(file: File): Promise<string> {
  */
 export function useFileHandler(): FileHandlerResult {
   const [result, setResult] = useState<FileHandlerResult>({ status: 'idle' })
+  const { importGroup } = useStore()
 
   useEffect(() => {
     if (!('launchQueue' in window)) return
@@ -39,8 +30,13 @@ export function useFileHandler(): FileHandlerResult {
       try {
         const fileHandle = params.files[0]
         const file = await fileHandle.getFile()
-        const groupId = await processFile(file)
-        setResult({ status: 'ok', groupId })
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error('El fitxer és massa gran (màxim 10 MB)')
+        }
+        const text = await file.text()
+        const raw: unknown = JSON.parse(text)
+        const group = await importGroup(raw)
+        setResult({ status: 'ok', groupId: group.id })
       } catch (err) {
         setResult({
           status: 'error',
@@ -48,7 +44,7 @@ export function useFileHandler(): FileHandlerResult {
         })
       }
     })
-  }, [])
+  }, [importGroup])
 
   return result
 }

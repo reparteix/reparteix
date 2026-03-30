@@ -884,5 +884,25 @@ describe('reparteix SDK', () => {
       const after = await reparteix.listGroups()
       expect(after).toHaveLength(before.length)
     })
+
+    it('restores a locally deleted group when importing a non-deleted version', async () => {
+      const group = await reparteix.createGroup('Grup a restaurar')
+      const exported = await reparteix.exportGroup(group.id)
+
+      // Delete the group locally — now local has deleted: true with newer updatedAt
+      await reparteix.deleteGroup(group.id)
+      const deletedGroup = await db.groups.get(group.id)
+      expect(deletedGroup?.deleted).toBe(true)
+
+      // Re-import the older (non-deleted) export — should restore the group
+      const restored = await reparteix.importGroup(exported)
+
+      expect(restored.deleted).toBe(false)
+      expect(restored.id).toBe(group.id)
+
+      // listGroups must now include the restored group
+      const all = await reparteix.listGroups()
+      expect(all.some((g) => g.id === group.id)).toBe(true)
+    })
   })
 })

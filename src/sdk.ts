@@ -340,7 +340,11 @@ export const reparteix = {
       // ── Groups ─────────────────────────────────────────────────────
       for (const group of groups) {
         const existingGroup = await db.groups.get(group.id)
-        if (!existingGroup || existingGroup.updatedAt < group.updatedAt) {
+        if (
+          !existingGroup ||
+          existingGroup.updatedAt < group.updatedAt ||
+          (existingGroup.deleted && !group.deleted)
+        ) {
           await db.groups.put(group)
         }
       }
