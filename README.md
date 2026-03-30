@@ -7,9 +7,12 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 ## Funcionalitats
 
 - Crear grups amb membres, icona i moneda (EUR / USD / GBP)
-- Afegir despeses i repartir-les entre els membres del grup
+- Afegir despeses i repartir-les entre els membres del grup (repartiment igual o proporcional)
+- Adjuntar imatge del rebut a cada despesa
+- Reanomenar membres del grup
 - Càlcul automàtic de balanços i transferències mínimes
 - Registre de pagaments (settlements)
+- Exportació i importació de grups en format JSON (còpia de seguretat i migració)
 - PWA instal·lable amb funcionament offline complet
 - Actualitzacions automàtiques amb avís a l'usuari
 - Headless SDK per a ús programàtic sense UI
@@ -43,7 +46,7 @@ Entitats principals (definides amb esquemes Zod a `src/domain/entities/`):
 
 - **Group** — `id`, `name`, `description?`, `icon?`, `currency`, `members[]`
 - **Member** — `id`, `name`, `color` (embegut dins del grup)
-- **Expense** — `id`, `groupId`, `description`, `amount`, `payerId`, `splitAmong[]`, `date`
+- **Expense** — `id`, `groupId`, `description`, `amount`, `payerId`, `splitAmong[]`, `splitType?`, `splitProportions?`, `date`, `receiptImage?`
 - **Payment** — `id`, `groupId`, `fromId`, `toId`, `amount`, `date`
 
 Totes les entitats porten camps comuns: `id` (UUID), `createdAt`, `updatedAt`, `deleted` (soft delete).
@@ -57,7 +60,7 @@ Totes les entitats porten camps comuns: `id` (UUID), `createdAt`, `updatedAt`, `
 
 ### SDK headless
 
-L'arxiu `src/sdk.ts` exporta un objecte `reparteix` amb totes les operacions de negoci (CRUD de grups, membres, despeses, pagaments, balanços i liquidacions) sense dependre de la UI. El store Zustand delega al SDK.
+L'arxiu `src/sdk.ts` exporta un objecte `reparteix` amb totes les operacions de negoci (CRUD de grups, membres, despeses, pagaments, balanços, liquidacions, i exportació/importació de grups) sense dependre de la UI. El store Zustand delega al SDK.
 
 ## Estructura del projecte
 
@@ -133,12 +136,20 @@ Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
 4. **HashRouter** — per compatibilitat amb hosting estàtic (GitHub Pages).
 5. **PWA** — instal·lable i amb service worker per a cache offline.
 
+## Manteniment de la documentació
+
+> **⚠️ Regla important:** Quan s'introdueixin canvis que afectin les funcionalitats, l'arquitectura, l'stack tècnic o les convencions del projecte, cal actualitzar **immediatament** els fitxers de documentació:
+>
+> - `README.md` — descripció del projecte, stack, funcionalitats, estructura
+> - `SKILL.md` — referència de l'API del SDK, entitats, convencions (actualitza també la `version` del frontmatter)
+> - `.github/copilot-instructions.md` — convencions globals per als agents
+> - `.github/agents/*.md` — instruccions específiques per a cada agent
+
 ## Possibles evolucions
 
 - Sincronització entre dispositius (snapshot xifrat a GitHub Gist)
 - Xifrat client-side (AES-GCM via WebCrypto, clau derivada amb PBKDF2)
 - Historial d'activitat
-- Import/export de dades
 - Proveïdors de sync alternatius (Dropbox, WebDAV)
 - Realtime opcional (Yjs + WebRTC)
 

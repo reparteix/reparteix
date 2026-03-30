@@ -117,6 +117,7 @@ La configuració es troba a `.releaserc.json`.
 **Regla important:** Quan un agent (o @copilot) introdueixi un canvi que afecti les convencions, l'arquitectura, l'stack tècnic o el flux de treball del projecte, **ha d'actualitzar** els fitxers corresponents:
 
 - `README.md` — descripció del projecte, stack, funcionalitats, estructura
+- `SKILL.md` — referència de l'API del SDK, entitats, convencions (actualitza també la `version` del frontmatter seguint semver)
 - `.github/copilot-instructions.md` — convencions globals, stack, decisions de disseny
 - `.github/agents/add-feature.md` — passos i restriccions per a noves funcionalitats
 - `.github/agents/add-domain-entity.md` — normes d'entitats i serveis del domini
@@ -128,6 +129,15 @@ Exemples de canvis que requereixen actualitzar els fitxers:
 - Canviar el patró d'accions del store
 - Canviar la política de migracions de Dexie
 - Modificar l'estructura de carpetes o el routing principal
+- Afegir mètodes nous al SDK (`src/sdk.ts`) o camps nous a les entitats del domini
+- Canviar les convencions de splits, exports, o qualsevol altra funcionalitat visible
+
+### Versionat de SKILL.md
+
+La `version` al frontmatter de `SKILL.md` ha de seguir semver:
+- **Patch** (`x.y.Z`) — correccions de documentació, aclariments.
+- **Minor** (`x.Y.0`) — nous mètodes SDK o camps d'entitat (sense trencar compatibilitat).
+- **Major** (`X.0.0`) — canvis trencadors a l'API del SDK o a les entitats.
 
 ## Comandes de desenvolupament
 
