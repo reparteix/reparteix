@@ -410,8 +410,13 @@ export function ExpenseList({ group }: ExpenseListProps) {
         <div className="space-y-4">
           {expensesByDay.map(({ date, items }) => (
             <div key={date}>
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1 pb-1 capitalize">
-                {formatDate(date)}
+              <div className="flex items-center justify-between px-1 pb-1">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground capitalize">
+                  {formatDate(date)}
+                </div>
+                <div className="text-xs font-semibold text-muted-foreground">
+                  {items.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
+                </div>
               </div>
               <div className="space-y-2">
                 {items.map((expense) => {
