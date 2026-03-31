@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/reparteix/reparteix/compare/v1.12.1...v1.12.2) (2026-03-31)
+
+
+### Bug Fixes
+
+* corregir importació de fitxers - el redirect ara funciona correctament ([f9b714b](https://github.com/reparteix/reparteix/commit/f9b714b078f6b619f262f6ef1f8366240210f1ad))
+
 ## [1.12.1](https://github.com/reparteix/reparteix/compare/v1.12.0...v1.12.1) (2026-03-30)
 
 
