@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/reparteix/reparteix/compare/v1.13.0...v1.14.0) (2026-03-31)
+
+
+### Features
+
+* add dark mode support with theme toggle ([212f333](https://github.com/reparteix/reparteix/commit/212f3333af471405261678df301609c69300106b))
+
 # [1.13.0](https://github.com/reparteix/reparteix/compare/v1.12.3...v1.13.0) (2026-03-31)
 
 
