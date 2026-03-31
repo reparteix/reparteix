@@ -17,6 +17,7 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 - Retrocompatible amb format d'export antic (legacy)
 - PWA instal·lable amb funcionament offline complet
 - Actualitzacions automàtiques amb avís a l'usuari
+- Mode fosc amb detecció automàtica de preferència del sistema i commutador manual (clar / fosc / sistema)
 - Headless SDK per a ús programàtic sense UI
 
 ## Stack tècnic
@@ -82,7 +83,9 @@ src/
   components/
     ui/               # Components shadcn/ui (Button, Card, Tabs, etc.)
     Footer.tsx
+    ThemeToggle.tsx    # Commutador de tema (clar/fosc/sistema)
     PWAUpdatePrompt.tsx
+  hooks/              # Hooks personalitzats (useTheme, useFileHandler)
   lib/                # Utilitats (cn() per a classes Tailwind)
   sdk.ts              # API headless per a ús programàtic
   sdk.test.ts         # Tests del SDK
