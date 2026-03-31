@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/reparteix/reparteix/compare/v1.12.3...v1.13.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* use vitest/config defineConfig and add PR CI workflow ([36e20b2](https://github.com/reparteix/reparteix/commit/36e20b2469e334602e766a622706fe0253f17eb4))
+
+
+### Features
+
+* add store tests, coverage config, and CI coverage reporting ([cd84f46](https://github.com/reparteix/reparteix/commit/cd84f4664bb8ddeb04489ade7a94f8f4b5095402))
+
 ## [1.12.3](https://github.com/reparteix/reparteix/compare/v1.12.2...v1.12.3) (2026-03-31)
 
 
