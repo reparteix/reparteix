@@ -31,7 +31,7 @@ async function createGroupWithMembers(groupName: string, memberNames: string[]) 
 // ─── Groups ───────────────────────────────────────────────────────────────────
 
 describe('groups', () => {
-  it('addGroup crea un grup i apareix a l\'estat del store', async () => {
+  it("addGroup crea un grup i apareix a l'estat del store", async () => {
     const { addGroup } = useStore.getState()
     const group = await addGroup('Sopar')
 
@@ -44,7 +44,7 @@ describe('groups', () => {
     expect(groups[0].name).toBe('Sopar')
   })
 
-  it('updateGroup actualitza les dades del grup a l\'estat', async () => {
+  it("updateGroup actualitza les dades del grup a l'estat", async () => {
     const { addGroup, updateGroup } = useStore.getState()
     const group = await addGroup('Original')
 
@@ -58,7 +58,7 @@ describe('groups', () => {
     expect(updated.currency).toBe('USD')
   })
 
-  it('deleteGroup elimina el grup de l\'estat', async () => {
+  it("deleteGroup elimina el grup de l'estat", async () => {
     const { addGroup, deleteGroup } = useStore.getState()
     const group = await addGroup('Per esborrar')
 
@@ -69,7 +69,7 @@ describe('groups', () => {
     expect(groups).toHaveLength(0)
   })
 
-  it('setCurrentGroup actualitza currentGroupId a l\'estat', async () => {
+  it("setCurrentGroup actualitza currentGroupId a l'estat", async () => {
     const { addGroup, setCurrentGroup } = useStore.getState()
     const group = await addGroup('Grup')
 
@@ -84,7 +84,7 @@ describe('groups', () => {
 // ─── Members ──────────────────────────────────────────────────────────────────
 
 describe('members', () => {
-  it('addMember afegeix un membre i és visible als grups de l\'estat', async () => {
+  it("addMember afegeix un membre i és visible als grups de l'estat", async () => {
     const { addGroup, addMember } = useStore.getState()
     const group = await addGroup('Grup')
 
@@ -111,7 +111,7 @@ describe('members', () => {
     expect(activeMembers).toHaveLength(0)
   })
 
-  it('renameMember canvia el nom d\'un membre', async () => {
+  it("renameMember canvia el nom d'un membre", async () => {
     const { addGroup, addMember, renameMember } = useStore.getState()
     const group = await addGroup('Grup')
     await addMember(group.id, 'Anna')
@@ -149,7 +149,7 @@ describe('expenses', () => {
     expect(groupTotals[group.id]).toBe(60)
   })
 
-  it('updateExpense actualitza les dades de la despesa a l\'estat', async () => {
+  it("updateExpense actualitza les dades de la despesa a l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
 
@@ -171,7 +171,7 @@ describe('expenses', () => {
     expect(expenses[0].amount).toBe(80)
   })
 
-  it('deleteExpense elimina la despesa de l\'estat', async () => {
+  it("deleteExpense elimina la despesa de l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
 
@@ -195,7 +195,7 @@ describe('expenses', () => {
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
 describe('payments', () => {
-  it('addPayment afegeix un pagament visible a l\'estat', async () => {
+  it("addPayment afegeix un pagament visible a l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
 
@@ -215,7 +215,7 @@ describe('payments', () => {
     expect(payments[0].toId).toBe(members[0].id)
   })
 
-  it('deletePayment elimina el pagament de l\'estat', async () => {
+  it("deletePayment elimina el pagament de l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
 
@@ -285,7 +285,7 @@ describe('integration flow', () => {
     expect(balances).toHaveLength(3)
 
     const totalBalance = balances.reduce((sum, b) => sum + b.total, 0)
-    expect(Math.abs(totalBalance)).toBeLessThan(0.01) // la suma ha de ser ~0
+    expect(Math.abs(totalBalance)).toBeLessThan(0.01) // allow floating-point rounding errors
 
     // Anna ha pagat 90, part proporcional 50 → balanç positiu
     const annaBalance = balances.find((b) => b.memberId === anna.id)!
