@@ -97,8 +97,9 @@ export function GroupDetail() {
   const activeMembers = group.members.filter((m) => !m.deleted)
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col">
+      <div className="flex-1 max-w-2xl mx-auto w-full flex flex-col min-h-0 px-4">
+      <div className="flex items-center gap-3 pt-4 pb-3 shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -128,7 +129,7 @@ export function GroupDetail() {
       </div>
 
       {/* Members section */}
-      <div className="mb-6">
+      <div className="mb-6 shrink-0">
         <h2 className="text-lg font-semibold mb-3">Membres</h2>
         <div className="flex flex-wrap gap-2 mb-3">
           {activeMembers.map((member) => {
@@ -231,8 +232,8 @@ export function GroupDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="expenses">
-        <TabsList className="w-full">
+      <Tabs defaultValue="expenses" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="w-full shrink-0">
           <TabsTrigger value="expenses" className="flex-1">
             Despeses
           </TabsTrigger>
@@ -244,16 +245,17 @@ export function GroupDetail() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="expenses">
+        <TabsContent value="expenses" className="flex-1 overflow-y-auto min-h-0 pb-4">
           <ExpenseList group={group} />
         </TabsContent>
-        <TabsContent value="balances">
+        <TabsContent value="balances" className="flex-1 overflow-y-auto min-h-0 pb-4">
           <BalanceView group={group} />
         </TabsContent>
-        <TabsContent value="settlements">
+        <TabsContent value="settlements" className="flex-1 overflow-y-auto min-h-0 pb-4">
           <SettlementList group={group} />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
 }
