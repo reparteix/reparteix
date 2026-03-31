@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -79,6 +80,38 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+  test: {
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        'src/main.tsx',
+        'src/App.tsx',
+        'src/vite-env.d.ts',
+        'src/globals.d.ts',
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'src/test/**',
+        'src/components/**',
+        // UI feature components require @testing-library/react setup; business
+        // logic is covered via the SDK and store tests
+        'src/features/**',
+        'src/hooks/**',
+        'src/lib/**',
+        // barrel re-exports only
+        'src/domain/index.ts',
+        'src/domain/services/index.ts',
+      ],
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        branches: 70,
+        functions: 90,
+      },
     },
   },
 })
