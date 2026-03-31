@@ -1,3 +1,11 @@
+# [1.15.0](https://github.com/reparteix/reparteix/compare/v1.14.0...v1.15.0) (2026-03-31)
+
+
+### Features
+
+* afegir total per dia a la capçalera del grup ([cb649b8](https://github.com/reparteix/reparteix/commit/cb649b8beb8284a12ced65b2b14493b54e9705f9))
+* ordenar i agrupar despeses per dia ([10eca2a](https://github.com/reparteix/reparteix/commit/10eca2a4a757ac30ca6b6e70ba40a9322533dc9d))
+
 # [1.14.0](https://github.com/reparteix/reparteix/compare/v1.13.0...v1.14.0) (2026-03-31)
 
 
