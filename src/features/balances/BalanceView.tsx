@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Check, TrendingDown } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
 import {
@@ -104,26 +104,6 @@ export function BalanceView({ group }: BalanceViewProps) {
       )}
 
       <Separator className="my-6" />
-
-      {/* Netting comparison */}
-      {netting.naiveCount > 0 && netting.savedTransfers > 0 && (
-        <Card className="mb-6 border-emerald-100 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950">
-          <CardContent className="flex items-center gap-3 p-3">
-            <TrendingDown className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div className="text-sm">
-              <span className="font-medium text-emerald-700 dark:text-emerald-300">
-                Deute net optimitzat:
-              </span>{' '}
-              <span className="text-emerald-600 dark:text-emerald-400">
-                {netting.naiveCount} → {netting.minimizedCount} transferències
-              </span>
-              <span className="text-muted-foreground">
-                {' '}(−{netting.reductionPercent}%)
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Settlements */}
       <h3 className="font-semibold mb-3">Transferències suggerides</h3>
