@@ -1,0 +1,148 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for PR preview
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /pr-${{ github.event.pull_request.number }}/
+
+      - name: Deploy to staging repo
+        env:
+          STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          PR_DIR="pr-${PR_NUMBER}"
+          git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" /tmp/staging
+
+          # Remove previous preview if it exists, then copy new build
+          rm -rf "/tmp/staging/${PR_DIR}"
+          cp -r dist "/tmp/staging/${PR_DIR}"
+
+          # Ensure .nojekyll exists at repo root
+          touch /tmp/staging/.nojekyll
+
+          cd /tmp/staging
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "deploy: update preview for PR #${PR_NUMBER}"
+            git push origin main
+          fi
+
+      - name: Comment on PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://staging.reparteix.cat/pr-${prNumber}/`;
+            const body = `🚀 **Preview deployed!**\n\n${previewUrl}`;
+            const marker = '<!-- pr-preview-comment -->';
+            const fullBody = `${marker}\n${body}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: fullBody,
+              });
+            }
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove preview from staging repo
+        env:
+          STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          PR_DIR="pr-${PR_NUMBER}"
+          git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" /tmp/staging
+
+          if [ -d "/tmp/staging/${PR_DIR}" ]; then
+            rm -rf "/tmp/staging/${PR_DIR}"
+            cd /tmp/staging
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "cleanup: remove preview for PR #${PR_NUMBER}"
+              git push origin main
+            fi
+          else
+            echo "Preview directory ${PR_DIR} does not exist, nothing to clean up"
+          fi
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const marker = '<!-- pr-preview-comment -->';
+            const body = `${marker}\n🗑️ **Preview removed.** (PR closed)`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body,
+              });
+            }

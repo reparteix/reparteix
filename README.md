@@ -114,9 +114,30 @@ npm run build
 
 L'app es desplega automàticament a **GitHub Pages** amb cada push a `main`.
 
-- `vite.config.ts` configurat amb `base: '/reparteix/'`
+- `vite.config.ts` configurat amb `base` dinàmic via `VITE_BASE_PATH` (per defecte `/`)
 - Workflow: `.github/workflows/deploy-pages.yml`
-- URL: <https://pilipilisbot.github.io/reparteix/>
+
+### Previews de PR
+
+Cada pull request genera automàticament un desplegament de preview a:
+
+- `https://staging.reparteix.cat/pr-<PR_NUMBER>/`
+
+El workflow `.github/workflows/pr-preview.yml` s'executa en els events `opened`, `synchronize` i `reopened` de PR, i:
+
+1. Compila l'app amb `VITE_BASE_PATH=/pr-<PR_NUMBER>/`
+2. Publica el build al repositori `reparteix/staging`
+3. Comenta a la PR amb l'URL de preview
+
+Quan la PR es tanca, el workflow elimina el directori de preview i actualitza el comentari.
+
+**Requisits:**
+
+- Secret `STAGING_TOKEN` amb permisos d'escriptura al repositori `reparteix/staging`
+- DNS configurat: `staging.reparteix.cat CNAME reparteix.github.io`
+- GitHub Pages habilitat a `reparteix/staging` des de la branca `main`
+
+> **Nota:** Les PRs de forks no generen preview perquè no tenen accés als secrets del repositori.
 
 ### Releases automàtics
 
