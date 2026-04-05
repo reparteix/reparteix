@@ -26,6 +26,45 @@ function now(): string {
   return new Date().toISOString()
 }
 
+// ─── Share helpers (compression + base64url) ───────────────────────────────
+
+const shareHelpers = {
+  async compress(data: string): Promise<Uint8Array<ArrayBuffer>> {
+    const cs = new CompressionStream('deflate-raw')
+    const writer = cs.writable.getWriter()
+    writer.write(new TextEncoder().encode(data))
+    writer.close()
+    return new Uint8Array(await new Response(cs.readable).arrayBuffer())
+  },
+
+  async decompress(data: Uint8Array<ArrayBuffer>): Promise<string> {
+    const ds = new DecompressionStream('deflate-raw')
+    const writer = ds.writable.getWriter()
+    writer.write(data)
+    writer.close()
+    return new TextDecoder().decode(await new Response(ds.readable).arrayBuffer())
+  },
+
+  toBase64Url(data: Uint8Array<ArrayBuffer>): string {
+    let binary = ''
+    for (let i = 0; i < data.length; i++) {
+      binary += String.fromCharCode(data[i])
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  },
+
+  fromBase64Url(str: string): Uint8Array<ArrayBuffer> {
+    const padded = str + '='.repeat((4 - (str.length % 4)) % 4)
+    const base64 = padded.replace(/-/g, '+').replace(/_/g, '/')
+    const binary = atob(base64)
+    const result = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      result[i] = binary.charCodeAt(i)
+    }
+    return result
+  },
+}
+
 /** Headless API for Reparteix — no React or UI dependencies. */
 export const reparteix = {
   // ─── Groups ────────────────────────────────────────────────────────
@@ -369,6 +408,51 @@ export const reparteix = {
     const result = await db.groups.get(groups[0].id)
     if (!result) throw new Error('Import failed: group not found after write')
     return result
+  },
+
+  // ─── Share ─────────────────────────────────────────────────────────
+
+  share: {
+    /**
+     * Encode a group and all its data into a compressed, base64url-encoded share string.
+     * The format is: `v1.<base64url(deflate-raw(JSON(SyncEnvelopeV1)))>`
+     * Use the returned string as the `g` query parameter in an import URL.
+     */
+    async encodeGroup(groupId: string): Promise<string> {
+      const group = await db.groups.get(groupId)
+      if (!group) throw new Error(`Group not found: ${groupId}`)
+
+      const expenses = await db.expenses.where('groupId').equals(groupId).toArray()
+      const payments = await db.payments.where('groupId').equals(groupId).toArray()
+
+      const envelope: SyncEnvelopeV1 = {
+        version: 1,
+        exportedAt: now(),
+        group,
+        expenses,
+        payments,
+      }
+
+      const json = JSON.stringify(envelope)
+      const compressed = await shareHelpers.compress(json)
+      const encoded = shareHelpers.toBase64Url(compressed)
+      return `v1.${encoded}`
+    },
+
+    /**
+     * Decode a share string (as produced by `encodeGroup`) back into a validated SyncEnvelopeV1.
+     * Throws if the format is invalid, the version is unsupported, or schema validation fails.
+     */
+    async decodeGroup(encoded: string): Promise<SyncEnvelopeV1> {
+      if (!encoded.startsWith('v1.')) {
+        throw new Error('Unsupported share format version')
+      }
+      const base64 = encoded.slice(3)
+      const compressed = shareHelpers.fromBase64Url(base64)
+      const json = await shareHelpers.decompress(compressed)
+      const raw: unknown = JSON.parse(json)
+      return SyncEnvelopeV1Schema.parse(raw)
+    },
   },
 
   // ─── Sync ──────────────────────────────────────────────────────────

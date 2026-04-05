@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { GroupList } from './features/groups/GroupList'
 import { GroupDetail } from './features/groups/GroupDetail'
 import { GroupSettings } from './features/groups/GroupSettings'
+import { ImportFromUrl } from './features/groups/ImportFromUrl'
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 import { PWAInstallPrompt } from './components/PWAInstallPrompt'
 import { Footer } from './components/Footer'
@@ -45,6 +46,7 @@ function App() {
           <Route path="/" element={<GroupList />} />
           <Route path="/group/:groupId" element={<GroupDetail />} />
           <Route path="/group/:groupId/settings" element={<GroupSettings />} />
+          <Route path="/import" element={<ImportFromUrl />} />
         </Routes>
         <Footer />
       </div>
