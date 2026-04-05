@@ -39,6 +39,11 @@ jobs:
           STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          if [ -z "${STAGING_TOKEN}" ]; then
+            echo "::warning::STAGING_TOKEN is not set. Skipping preview deployment. Add the secret in repository settings."
+            exit 0
+          fi
+
           PR_DIR="pr-${PR_NUMBER}"
           git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" /tmp/staging
 
@@ -103,6 +108,11 @@ jobs:
           STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          if [ -z "${STAGING_TOKEN}" ]; then
+            echo "::warning::STAGING_TOKEN is not set. Skipping preview cleanup. Add the secret in repository settings."
+            exit 0
+          fi
+
           PR_DIR="pr-${PR_NUMBER}"
           git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" /tmp/staging
 
