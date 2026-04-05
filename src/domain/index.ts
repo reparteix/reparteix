@@ -21,7 +21,6 @@ export {
   calculateBalances,
   calculateSettlements,
   naiveSettlements,
-  minimizeSettlements,
   calculateNetting,
   computeSyncMerge,
   type Balance,

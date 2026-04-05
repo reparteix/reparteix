@@ -7,7 +7,6 @@ export {
 
 export {
   naiveSettlements,
-  minimizeSettlements,
   calculateNetting,
   type NettingResult,
 } from './netting'

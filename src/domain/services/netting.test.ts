@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   naiveSettlements,
-  minimizeSettlements,
   calculateNetting,
 } from './netting'
+import { calculateSettlements } from './balances'
 import type { Balance } from './balances'
 
 describe('naiveSettlements', () => {
@@ -84,17 +84,17 @@ describe('naiveSettlements', () => {
   })
 })
 
-describe('minimizeSettlements', () => {
+describe('minimizeSettlements (via calculateSettlements)', () => {
   it('returns empty list when all balances are zero', () => {
     const balances: Balance[] = [
       { memberId: 'a', total: 0 },
       { memberId: 'b', total: 0 },
     ]
-    expect(minimizeSettlements(balances)).toEqual([])
+    expect(calculateSettlements(balances)).toEqual([])
   })
 
   it('returns single transfer for two members', () => {
-    const result = minimizeSettlements([
+    const result = calculateSettlements([
       { memberId: 'a', total: 10 },
       { memberId: 'b', total: -10 },
     ])
@@ -103,7 +103,7 @@ describe('minimizeSettlements', () => {
   })
 
   it('minimizes 3-person settlements to 2 transfers', () => {
-    const result = minimizeSettlements([
+    const result = calculateSettlements([
       { memberId: 'a', total: 20 },
       { memberId: 'b', total: -10 },
       { memberId: 'c', total: -10 },
@@ -118,7 +118,7 @@ describe('minimizeSettlements', () => {
       { memberId: 'c', total: -25 },
       { memberId: 'd', total: -15 },
     ]
-    const result = minimizeSettlements(balances)
+    const result = calculateSettlements(balances)
     // Greedy: at most n-1 = 3 transfers (typically fewer)
     expect(result.length).toBeLessThanOrEqual(3)
 
@@ -134,7 +134,7 @@ describe('minimizeSettlements', () => {
       { memberId: 'c', total: -12 },
       { memberId: 'd', total: -8 },
     ]
-    const result = minimizeSettlements(balances)
+    const result = calculateSettlements(balances)
     const total = result.reduce((sum, s) => sum + s.amount, 0)
     expect(total).toBeCloseTo(20, 1)
   })
@@ -145,7 +145,7 @@ describe('minimizeSettlements', () => {
       { memberId: 'b', total: -10 },
       { memberId: 'c', total: -20 },
     ]
-    const result = minimizeSettlements(balances)
+    const result = calculateSettlements(balances)
 
     // Verify each member's net is zero after settlements
     const netMap = new Map<string, number>()
@@ -165,7 +165,7 @@ describe('minimizeSettlements', () => {
       { memberId: 'b', total: -16.67 },
       { memberId: 'c', total: -16.66 },
     ]
-    const result = minimizeSettlements(balances)
+    const result = calculateSettlements(balances)
     const total = result.reduce((sum, s) => sum + s.amount, 0)
     expect(Math.abs(total - 33.33)).toBeLessThan(0.02)
   })

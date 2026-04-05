@@ -1,4 +1,5 @@
-import type { Balance, Settlement } from './balances'
+import type { Balance } from './balances'
+import { calculateSettlements, type Settlement } from './balances'
 
 export interface NettingResult {
   /** Naive settlements: each debtor pays each creditor proportionally. */
@@ -59,54 +60,12 @@ export function naiveSettlements(balances: Balance[]): Settlement[] {
 }
 
 /**
- * Minimize settlements using greedy matching.
- * Identical algorithm to calculateSettlements — reused here for clarity.
- */
-export function minimizeSettlements(balances: Balance[]): Settlement[] {
-  const creditors: { id: string; amount: number }[] = []
-  const debtors: { id: string; amount: number }[] = []
-
-  for (const b of balances) {
-    if (b.total > EPSILON) {
-      creditors.push({ id: b.memberId, amount: b.total })
-    } else if (b.total < -EPSILON) {
-      debtors.push({ id: b.memberId, amount: -b.total })
-    }
-  }
-
-  creditors.sort((a, b) => b.amount - a.amount)
-  debtors.sort((a, b) => b.amount - a.amount)
-
-  const settlements: Settlement[] = []
-  let i = 0
-  let j = 0
-
-  while (i < creditors.length && j < debtors.length) {
-    const amount = Math.min(creditors[i].amount, debtors[j].amount)
-    if (amount > EPSILON) {
-      settlements.push({
-        fromId: debtors[j].id,
-        toId: creditors[i].id,
-        amount: round2(amount),
-      })
-    }
-    creditors[i].amount -= amount
-    debtors[j].amount -= amount
-
-    if (creditors[i].amount < EPSILON) i++
-    if (debtors[j].amount < EPSILON) j++
-  }
-
-  return settlements
-}
-
-/**
  * Calculate netting result: compare naive vs minimized settlements.
  * Pure function — no side effects.
  */
 export function calculateNetting(balances: Balance[]): NettingResult {
   const naive = naiveSettlements(balances)
-  const minimized = minimizeSettlements(balances)
+  const minimized = calculateSettlements(balances)
 
   const naiveCount = naive.length
   const minimizedCount = minimized.length

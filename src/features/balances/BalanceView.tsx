@@ -4,8 +4,8 @@ import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
 import {
   calculateBalances,
-} from '../../domain/services/balances'
-import { calculateNetting } from '../../domain/services/netting'
+  calculateNetting,
+} from '../../domain/services'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
