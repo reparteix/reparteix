@@ -1,7 +1,7 @@
 ---
 name: reparteix
 description: Manage shared expenses — create groups, add members, track expenses (equal or proportional splits) and payments, calculate balances and minimum settlements. Export/import groups as JSON. Sync groups from external JSON snapshots with LWW merge. Local-first, offline-capable PWA.
-version: 1.2.0
+version: 1.3.0
 author: pilipilisbot
 tags:
   - expenses
@@ -37,6 +37,7 @@ Use this skill when the user wants to:
 - Record **payments** (settlements between members).
 - **Calculate balances** — see who owes whom.
 - **Calculate minimum settlements** — find the fewest transfers needed to settle all debts.
+- **Compare naive vs optimized netting** — see how many transfers are saved by debt minimization.
 - **Export** a group to a versioned `.reparteix.json` file for backup or migration.
 - **Import** a group from a `.reparteix.json` file (new envelope format) or from the legacy JSON format (backward compatible). Uses Last-Write-Wins conflict resolution.
 - **Open files directly** from the installed PWA (File Handling API on Chromium) or via manual file picker (universal fallback).
@@ -127,6 +128,7 @@ import { reparteix } from './src/sdk'
 |--------|-----------|-------------|
 | `getBalances` | `(groupId: string) => Promise<Balance[]>` | Net balance per member (positive = owed, negative = owes) |
 | `getSettlements` | `(groupId: string) => Promise<Settlement[]>` | Minimum transfers to settle all debts |
+| `getNetting` | `(groupId: string) => Promise<NettingResult>` | Naive vs minimized settlements with comparison stats |
 
 ### Import / Export
 
@@ -225,6 +227,19 @@ import { reparteix } from './src/sdk'
   fromId: string        // debtor member ID
   toId: string          // creditor member ID
   amount: number        // transfer amount
+}
+```
+
+### NettingResult
+
+```typescript
+{
+  naive: Settlement[]       // all pairwise debtor→creditor transfers
+  minimized: Settlement[]   // optimized greedy-matched transfers
+  naiveCount: number        // number of naive transfers
+  minimizedCount: number    // number of minimized transfers
+  savedTransfers: number    // naiveCount − minimizedCount
+  reductionPercent: number  // percentage reduction (0–100)
 }
 ```
 
@@ -342,7 +357,7 @@ await reparteix.addPayment({
 - **Timestamps**: ISO 8601 format via `new Date().toISOString()`.
 - **Currency**: Stored as a string on the group (e.g. `"EUR"`), not enforced beyond that.
 - **Balances**: Positive means the member is owed money (creditor), negative means they owe (debtor).
-- **Settlements**: Use greedy matching to minimize the number of transfers.
+- **Settlements**: Use greedy matching to minimize the number of transfers. The `getNetting` method compares naive (O(debtors × creditors)) vs minimized transfers.
 - **Split types**: `equal` (default) divides the expense equally; `proportional` uses `splitProportions` weights.
 - **Import/Export**: New exports use `ReparteixExportV1` envelope (`format: 'reparteix-export'`, `version: 1`, `.reparteix.json` extension). Import auto-detects format: new envelope or legacy `GroupExport` (`schemaVersion: 1`). LWW (Last-Write-Wins by `updatedAt`) resolves ID collisions.
 - **File Handling API**: PWA manifest includes `file_handlers` for `.reparteix.json`. Installed PWA on Chromium can open files directly. Universal fallback via manual file picker.
