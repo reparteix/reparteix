@@ -64,21 +64,39 @@ export function ImportFromUrl() {
     try {
       const { group, expenses, payments, exportedAt } = state.envelope
       const newGroupId = crypto.randomUUID()
+
+      // Regenerate every member ID so the copy is fully independent of the
+      // original — no shared identity that could cause confusion on future merges.
+      const memberIdMap = new Map(group.members.map((m) => [m.id, crypto.randomUUID()]))
+      const newMembers = group.members.map((m) => ({ ...m, id: memberIdMap.get(m.id)! }))
+
       const newGroup = await reparteix.importGroup({
         format: 'reparteix-export',
         version: 1,
         exportedAt,
         data: {
-          groups: [{ ...group, id: newGroupId }],
+          groups: [{ ...group, id: newGroupId, members: newMembers }],
           expenses: expenses.map((e) => ({
             ...e,
             id: crypto.randomUUID(),
             groupId: newGroupId,
+            payerId: memberIdMap.get(e.payerId) ?? e.payerId,
+            splitAmong: e.splitAmong.map((id) => memberIdMap.get(id) ?? id),
+            splitProportions: e.splitProportions
+              ? Object.fromEntries(
+                  Object.entries(e.splitProportions).map(([id, val]) => [
+                    memberIdMap.get(id) ?? id,
+                    val,
+                  ]),
+                )
+              : undefined,
           })),
           payments: payments.map((p) => ({
             ...p,
             id: crypto.randomUUID(),
             groupId: newGroupId,
+            fromId: memberIdMap.get(p.fromId) ?? p.fromId,
+            toId: memberIdMap.get(p.toId) ?? p.toId,
           })),
         },
       })

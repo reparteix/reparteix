@@ -27,9 +27,23 @@ function now(): string {
 }
 
 // ─── Share helpers (compression + base64url) ───────────────────────────────
+//
+// Requires CompressionStream / DecompressionStream (Compression Streams API).
+// Browser support: Chrome 80+, Firefox 113+, Safari 16.4+ (iOS 16.4+, March 2023).
+// See: https://caniuse.com/compressionstreams
+
+function assertCompressionStreamSupport(): void {
+  if (typeof CompressionStream === 'undefined' || typeof DecompressionStream === 'undefined') {
+    throw new Error(
+      'El teu navegador no suporta la compressió necessària per compartir per enllaç. ' +
+      'Actualitza a Safari 16.4+, Chrome 80+, o Firefox 113+.',
+    )
+  }
+}
 
 const shareHelpers = {
   async compress(data: string): Promise<Uint8Array<ArrayBuffer>> {
+    assertCompressionStreamSupport()
     const cs = new CompressionStream('deflate-raw')
     const writer = cs.writable.getWriter()
     writer.write(new TextEncoder().encode(data))
@@ -38,6 +52,7 @@ const shareHelpers = {
   },
 
   async decompress(data: Uint8Array<ArrayBuffer>): Promise<string> {
+    assertCompressionStreamSupport()
     const ds = new DecompressionStream('deflate-raw')
     const writer = ds.writable.getWriter()
     writer.write(data)

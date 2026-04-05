@@ -998,5 +998,26 @@ describe('reparteix SDK', () => {
       const restored = await reparteix.getGroup(group.id)
       expect(restored?.name).toBe('Share + Sync')
     })
+
+    it('decodeGroup throws a clear error when CompressionStream is unavailable', async () => {
+      const original = globalThis.DecompressionStream
+      // @ts-expect-error — simulate missing API
+      globalThis.DecompressionStream = undefined
+      await expect(reparteix.share.decodeGroup('v1.abc')).rejects.toThrow(
+        'El teu navegador no suporta la compressió',
+      )
+      globalThis.DecompressionStream = original
+    })
+
+    it('encodeGroup throws a clear error when CompressionStream is unavailable', async () => {
+      const group = await reparteix.createGroup('No compress')
+      const original = globalThis.CompressionStream
+      // @ts-expect-error — simulate missing API
+      globalThis.CompressionStream = undefined
+      await expect(reparteix.share.encodeGroup(group.id)).rejects.toThrow(
+        'El teu navegador no suporta la compressió',
+      )
+      globalThis.CompressionStream = original
+    })
   })
 })
