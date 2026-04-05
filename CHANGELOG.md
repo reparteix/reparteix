@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/reparteix/reparteix/compare/v1.16.0...v1.17.0) (2026-04-05)
+
+
+### Features
+
+* de-emphasize add-member action to reduce accidental triggers ([d052315](https://github.com/reparteix/reparteix/commit/d0523154696a063cf719d2c052ed84ae8b0b7316))
+
 # [1.16.0](https://github.com/reparteix/reparteix/compare/v1.15.0...v1.16.0) (2026-03-31)
 
 
