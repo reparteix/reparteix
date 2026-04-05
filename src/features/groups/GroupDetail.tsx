@@ -72,6 +72,11 @@ export function GroupDetail() {
     setEditingName(name)
   }
 
+  const handleCancelAddMember = () => {
+    setShowAddMember(false)
+    setMemberName('')
+  }
+
   const handleCancelEdit = () => {
     setEditingMemberId(null)
     setEditingName('')
@@ -236,7 +241,7 @@ export function GroupDetail() {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => { setShowAddMember(false); setMemberName('') }}
+              onClick={handleCancelAddMember}
               aria-label="Cancel·lar"
             >
               <X className="h-4 w-4" />
