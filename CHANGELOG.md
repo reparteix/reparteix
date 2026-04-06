@@ -1,3 +1,23 @@
+# [1.18.0](https://github.com/reparteix/reparteix/compare/v1.17.0...v1.18.0) (2026-04-06)
+
+
+### Bug Fixes
+
+* guard against missing STAGING_TOKEN in pr-preview workflow ([4530a76](https://github.com/reparteix/reparteix/commit/4530a76f0c572ae7c26b4d7328575b9282248749))
+
+
+### Features
+
+* add GitHub deployment status to PR preview workflow ([5718b8b](https://github.com/reparteix/reparteix/commit/5718b8b7d7e8ee930290efc4b04b855ee340ce45))
+* add PR preview deployments with configurable base path ([77860ea](https://github.com/reparteix/reparteix/commit/77860ea71bbc2788300ac795e20e21d4ba8ddaae))
+
+# [1.17.0](https://github.com/reparteix/reparteix/compare/v1.16.0...v1.17.0) (2026-04-05)
+
+
+### Features
+
+* de-emphasize add-member action to reduce accidental triggers ([d052315](https://github.com/reparteix/reparteix/commit/d0523154696a063cf719d2c052ed84ae8b0b7316))
+
 # [1.16.0](https://github.com/reparteix/reparteix/compare/v1.15.0...v1.16.0) (2026-03-31)
 
 

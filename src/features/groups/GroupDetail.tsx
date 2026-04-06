@@ -35,6 +35,7 @@ export function GroupDetail() {
     renameMember,
   } = useStore()
   const [memberName, setMemberName] = useState('')
+  const [showAddMember, setShowAddMember] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
 
@@ -55,6 +56,7 @@ export function GroupDetail() {
     if (!memberName.trim() || !groupId) return
     await addMember(groupId, memberName.trim())
     setMemberName('')
+    setShowAddMember(false)
   }
 
   // expenses and payments from the store are already filtered for non-deleted items
@@ -68,6 +70,11 @@ export function GroupDetail() {
   const handleStartEdit = (id: string, name: string) => {
     setEditingMemberId(id)
     setEditingName(name)
+  }
+
+  const handleCancelAddMember = () => {
+    setShowAddMember(false)
+    setMemberName('')
   }
 
   const handleCancelEdit = () => {
@@ -216,19 +223,40 @@ export function GroupDetail() {
             )
           })}
         </div>
-        <form onSubmit={handleAddMember} className="flex gap-2">
-          <Input
-            type="text"
-            value={memberName}
-            onChange={(e) => setMemberName(e.target.value)}
-            placeholder="Nom del membre"
-            className="flex-1"
-          />
-          <Button type="submit">
-            <Plus className="h-4 w-4 mr-1" />
-            Afegir
-          </Button>
-        </form>
+        {showAddMember ? (
+          <form onSubmit={handleAddMember} className="flex gap-2">
+            <Input
+              type="text"
+              value={memberName}
+              onChange={(e) => setMemberName(e.target.value)}
+              placeholder="Nom del membre"
+              className="flex-1"
+              autoFocus
+            />
+            <Button type="submit" size="sm">
+              <Check className="h-4 w-4 mr-1" />
+              Afegir
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelAddMember}
+              aria-label="Cancel·lar"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowAddMember(true)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Afegir membre
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
