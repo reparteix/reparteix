@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  deployments: write
 
 concurrency:
   group: pr-preview-${{ github.event.pull_request.number }}
@@ -34,7 +35,38 @@ jobs:
         env:
           VITE_BASE_PATH: /pr-${{ github.event.pull_request.number }}/
 
+      - name: Create deployment
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha,
+              environment: `pr-${context.payload.pull_request.number}`,
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: true,
+              production_environment: false,
+              description: `Preview for PR #${context.payload.pull_request.number}`,
+            });
+            core.setOutput('id', deployment.id);
+
+      - name: Set deployment status to in_progress
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.id }},
+              state: 'in_progress',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
       - name: Deploy to staging repo
+        id: deploy
         env:
           STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -64,6 +96,35 @@ jobs:
             git commit -m "deploy: update preview for PR #${PR_NUMBER}"
             git push origin main
           fi
+
+      - name: Set deployment status to success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://staging.reparteix.cat/pr-${prNumber}/`;
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.id }},
+              state: 'success',
+              environment_url: previewUrl,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+
+      - name: Set deployment status to failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.id }},
+              state: 'failure',
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
 
       - name: Comment on PR with preview URL
         uses: actions/github-script@v7
@@ -131,6 +192,31 @@ jobs:
           else
             echo "Preview directory ${PR_DIR} does not exist, nothing to clean up"
           fi
+
+      - name: Deactivate deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const environment = `pr-${prNumber}`;
+
+            // Find deployments for this environment
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment,
+              per_page: 100,
+            });
+
+            // Mark all deployments for this environment as inactive
+            for (const deployment of deployments) {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+              });
+            }
 
       - name: Update PR comment
         uses: actions/github-script@v7
