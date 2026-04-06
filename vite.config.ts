@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import pkg from './package.json'
 
+const basePath = process.env.VITE_BASE_PATH || '/'
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -24,8 +26,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         lang: 'ca',
-        scope: '/',
-        start_url: '/',
+        scope: basePath,
+        start_url: basePath,
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -46,7 +48,7 @@ export default defineConfig({
         ],
         file_handlers: [
           {
-            action: '/',
+            action: basePath,
             accept: {
               'application/json': ['.reparteix.json'],
               'application/vnd.reparteix+json': ['.reparteix.json'],
@@ -75,7 +77,7 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/',
+  base: basePath,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
