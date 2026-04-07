@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/reparteix/reparteix/compare/v1.18.0...v1.19.0) (2026-04-07)
+
+
+### Features
+
+* fer sticky la data de la despesa a la llista mentre fas scroll ([289b0af](https://github.com/reparteix/reparteix/commit/289b0afcf380b0f52643d0dbba8bb6dd769b30ef))
+
 # [1.18.0](https://github.com/reparteix/reparteix/compare/v1.17.0...v1.18.0) (2026-04-06)
 
 
