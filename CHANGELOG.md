@@ -1,3 +1,15 @@
+# [1.24.0](https://github.com/reparteix/reparteix/compare/v1.23.0...v1.24.0) (2026-04-08)
+
+
+### Bug Fixes
+
+* badge consistency, add SDK archive tests, update SKILL.md and README" ([ed1ba4e](https://github.com/reparteix/reparteix/commit/ed1ba4e1a64964007a3ade24e6b7d0c3de456b28))
+
+
+### Features
+
+* arxivar grups ([00a0074](https://github.com/reparteix/reparteix/commit/00a0074272a2337c8a2bc2332fc2d15c26893271))
+
 # [1.23.0](https://github.com/reparteix/reparteix/compare/v1.22.0...v1.23.0) (2026-04-08)
 
 
