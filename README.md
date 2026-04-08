@@ -8,6 +8,7 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 - Afegir despeses i repartir-les entre els membres del grup (repartiment igual o proporcional)
 - Adjuntar imatge del rebut a cada despesa
 - Reanomenar membres del grup
+- **Arxivar grups** — passa el grup a mode només lectura preservant tot l'historial; desarxivar restaura l'edició
 - Càlcul automàtic de balanços i transferències mínimes
 - Comparativa de deute net: transferències naïves vs optimitzades (% reducció)
 - Registre de pagaments (settlements)
@@ -46,7 +47,7 @@ Totes les dades es guarden localment al navegador via IndexedDB. L'app funciona 
 
 Entitats principals (definides amb esquemes Zod a `src/domain/entities/`):
 
-- **Group** — `id`, `name`, `description?`, `icon?`, `currency`, `members[]`
+- **Group** — `id`, `name`, `description?`, `icon?`, `currency`, `members[]`, `archived` (read-only flag)
 - **Member** — `id`, `name`, `color` (embegut dins del grup)
 - **Expense** — `id`, `groupId`, `description`, `amount`, `payerId`, `splitAmong[]`, `splitType?`, `splitProportions?`, `date`, `receiptImage?`
 - **Payment** — `id`, `groupId`, `fromId`, `toId`, `amount`, `date`

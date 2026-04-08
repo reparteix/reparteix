@@ -268,6 +268,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
       ) : (
         <>
           {!showForm ? (
+            !group.archived && (
             <Button
               onClick={() => {
                 setShowForm(true)
@@ -278,6 +279,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
               <Plus className="mr-2 h-4 w-4" />
               Nova despesa
             </Button>
+            )
           ) : (
             <Card className="mb-6">
               <CardHeader>
@@ -616,6 +618,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                               </Button>
                             )}
                             <AlertDialog>
+                              {!group.archived && (
                               <AlertDialogTrigger asChild>
                                 <Button
                                   variant="ghost"
@@ -626,6 +629,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                   Eliminar
                                 </Button>
                               </AlertDialogTrigger>
+                              )}
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>

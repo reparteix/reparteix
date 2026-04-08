@@ -52,8 +52,8 @@ function canonicalJson(value: unknown): string {
 
 /** Return group fields excluding `members`, for comparison purposes. */
 function groupMeta(g: Group): Omit<Group, 'members'> {
-  const { id, name, description, icon, currency, createdAt, updatedAt, deleted } = g
-  return { id, name, description, icon, currency, createdAt, updatedAt, deleted }
+  const { id, name, description, icon, currency, archived, createdAt, updatedAt, deleted } = g
+  return { id, name, description, icon, currency, archived, createdAt, updatedAt, deleted }
 }
 
 /** Return an error string if the expense fails referential integrity, or null if OK. */

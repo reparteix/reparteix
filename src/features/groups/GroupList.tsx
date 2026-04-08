@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Users, ChevronRight, Upload } from 'lucide-react'
+import { Plus, Trash2, Users, ChevronRight, Upload, Archive, ChevronDown } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -26,6 +26,7 @@ export function GroupList() {
   const [showForm, setShowForm] = useState(false)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
   const [importError, setImportError] = useState('')
+  const [showArchived, setShowArchived] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createGroupInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
@@ -76,7 +77,83 @@ export function GroupList() {
     }
   }
 
+  const activeGroups = groups.filter((g) => !g.archived)
+  const archivedGroups = groups.filter((g) => g.archived)
   const hasGroups = groups.length > 0
+
+  const renderGroupCard = (group: (typeof groups)[number]) => (
+    <Card
+      key={group.id}
+      className={`hover:shadow-md transition-shadow duration-150 ${group.archived ? 'opacity-70' : ''}`}
+    >
+      <div className="flex items-center p-4">
+        <button
+          onClick={() => navigate(`/group/${group.id}`)}
+          className="flex-1 text-left flex items-center gap-3"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950 text-xl shrink-0">
+            {group.icon ? (
+              group.icon
+            ) : (
+              <Users className="h-5 w-5 text-indigo-400 dark:text-indigo-300" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold truncate">{group.name}</h3>
+              {group.archived && (
+                <Badge variant="outline" className="text-xs text-muted-foreground shrink-0">
+                  Arxivat
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {group.members.filter((m) => !m.deleted).length} membres
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-0.5 mr-1">
+            <Badge variant="secondary">{group.currency}</Badge>
+            {(groupTotals[group.id] ?? 0) > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {groupTotals[group.id].toFixed(2)}&nbsp;{group.currency}
+              </span>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
+        </button>
+        <Separator orientation="vertical" className="mx-2 h-8" />
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Eliminar grup"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
+              <AlertDialogDescription>
+                Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteGroup(group.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </Card>
+  )
 
   return (
     <div className="min-h-screen bg-muted/50">
@@ -164,84 +241,43 @@ export function GroupList() {
               </div>
             </Card>
 
-            {/* Groups list */}
+            {/* Active groups list */}
             <div className="mb-3 flex items-center gap-2">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 Els teus grups
               </h2>
               <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                {groups.length}
+                {activeGroups.length}
               </Badge>
             </div>
 
             <div className="space-y-3">
-              {groups.map((group) => (
-                <Card
-                  key={group.id}
-                  className="hover:shadow-md transition-shadow duration-150"
-                >
-                  <div className="flex items-center p-4">
-                    <button
-                      onClick={() => navigate(`/group/${group.id}`)}
-                      className="flex-1 text-left flex items-center gap-3"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950 text-xl shrink-0">
-                        {group.icon ? (
-                          group.icon
-                        ) : (
-                          <Users className="h-5 w-5 text-indigo-400 dark:text-indigo-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">{group.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {group.members.filter((m) => !m.deleted).length} membres
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-0.5 mr-1">
-                        <Badge variant="secondary">{group.currency}</Badge>
-                        {(groupTotals[group.id] ?? 0) > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {groupTotals[group.id].toFixed(2)}&nbsp;{group.currency}
-                          </span>
-                        )}
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
-                    </button>
-                    <Separator orientation="vertical" className="mx-2 h-8" />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Eliminar grup"
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteGroup(group.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Eliminar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </Card>
-              ))}
+              {activeGroups.map(renderGroupCard)}
             </div>
+
+            {/* Archived groups section */}
+            {archivedGroups.length > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowArchived((v) => !v)}
+                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors mb-3"
+                >
+                  <Archive className="h-4 w-4" />
+                  Grups arxivats
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0 normal-case font-normal">
+                    {archivedGroups.length}
+                  </Badge>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${showArchived ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {showArchived && (
+                  <div className="space-y-3">
+                    {archivedGroups.map(renderGroupCard)}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         ) : (
           /* Empty state */

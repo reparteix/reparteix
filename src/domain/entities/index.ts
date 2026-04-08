@@ -52,6 +52,7 @@ export const GroupSchema = z.object({
   icon: z.string().optional(),
   currency: z.string().default('EUR'),
   members: z.array(MemberSchema),
+  archived: z.boolean().default(false),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   deleted: z.boolean().default(false),

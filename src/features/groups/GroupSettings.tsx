@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Download, Share2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Download, Share2, Archive, ArchiveRestore } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,7 +38,7 @@ interface GroupSettingsFormProps {
 
 function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const navigate = useNavigate()
-  const { updateGroup, deleteGroup, exportGroup } = useStore()
+  const { updateGroup, deleteGroup, exportGroup, archiveGroup, unarchiveGroup } = useStore()
 
   const [name, setName] = useState(group.name)
   const [description, setDescription] = useState(group.description ?? '')
@@ -47,9 +47,11 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const [exportStatus, setExportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
   const [shareStatus, setShareStatus] = useState<'idle' | 'ok' | 'error'>('idle')
 
+  const isArchived = group.archived
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || isArchived) return
     await updateGroup(groupId, {
       name: name.trim(),
       description: description.trim() || undefined,
@@ -63,6 +65,16 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
     if (!window.confirm('Segur que vols eliminar el grup? Aquesta acció no es pot desfer.')) return
     await deleteGroup(groupId)
     navigate('/')
+  }
+
+  const handleArchive = async () => {
+    await archiveGroup(groupId)
+    navigate(`/group/${groupId}`)
+  }
+
+  const handleUnarchive = async () => {
+    await unarchiveGroup(groupId)
+    navigate(`/group/${groupId}`)
   }
 
   const handleExport = async () => {
@@ -92,7 +104,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   return (
     <>
       <form onSubmit={handleSave} className="space-y-6">
-        <Card>
+        <Card className={isArchived ? 'opacity-60 pointer-events-none' : ''}>
           <CardContent className="pt-6 space-y-5">
             {/* Icon */}
             <div className="space-y-2">
@@ -108,6 +120,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
                     onChange={(e) => setIcon(e.target.value)}
                     placeholder="Escriu un emoji…"
                     maxLength={MAX_ICON_LENGTH}
+                    disabled={isArchived}
                   />
                   <div className="flex flex-wrap gap-1">
                     {EMOJI_SHORTCUTS.map((emoji) => (
@@ -117,6 +130,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
                         onClick={() => setIcon(emoji)}
                         className="text-lg hover:bg-muted rounded px-1 py-0.5 transition-colors"
                         aria-label={emoji}
+                        disabled={isArchived}
                       >
                         {emoji}
                       </button>
@@ -136,6 +150,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nom del grup"
                 required
+                disabled={isArchived}
               />
             </div>
 
@@ -151,13 +166,14 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Per a qui és aquest grup?"
                 rows={2}
+                disabled={isArchived}
               />
             </div>
 
             {/* Currency */}
             <div className="space-y-1.5">
               <Label htmlFor="group-currency">Moneda</Label>
-              <Select value={currency} onValueChange={setCurrency}>
+              <Select value={currency} onValueChange={setCurrency} disabled={isArchived}>
                 <SelectTrigger id="group-currency">
                   <SelectValue />
                 </SelectTrigger>
@@ -171,9 +187,14 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" disabled={isArchived}>
           Desar canvis
         </Button>
+        {isArchived && (
+          <p className="text-sm text-muted-foreground text-center">
+            El grup és arxivat. Desarxiva'l per poder editar la configuració.
+          </p>
+        )}
       </form>
 
       <Separator className="my-8" />
@@ -228,6 +249,47 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
           )}
           {shareStatus === 'error' && (
             <p className="text-sm text-destructive">Error en generar l'enllaç. Torna-ho a intentar.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Arxivar grup</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {isArchived ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                El grup està arxivat i és de només lectura. Desarxiva'l per tornar a afegir despeses i fer canvis.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                type="button"
+                onClick={handleUnarchive}
+              >
+                <ArchiveRestore className="h-4 w-4 mr-2" />
+                Desarxivar grup
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Arxiva el grup per marcar-lo com a tancat. No es podran afegir ni modificar despeses mentre estigui arxivat.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                type="button"
+                onClick={handleArchive}
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                Arxivar grup
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 ---
 name: reparteix
 description: Manage shared expenses — create groups, add members, track expenses (equal or proportional splits) and payments, calculate balances and minimum settlements. Export/import groups as JSON. Sync groups from external JSON snapshots with LWW merge. Local-first, offline-capable PWA.
-version: 1.3.0
+version: 1.4.0
 author: pilipilisbot
 tags:
   - expenses
@@ -38,6 +38,7 @@ Use this skill when the user wants to:
 - **Calculate balances** — see who owes whom.
 - **Calculate minimum settlements** — find the fewest transfers needed to settle all debts.
 - **Compare naive vs optimized netting** — see how many transfers are saved by debt minimization.
+- **Archive or unarchive** a group — make it read-only while preserving all historical data.
 - **Export** a group to a versioned `.reparteix.json` file for backup or migration.
 - **Import** a group from a `.reparteix.json` file (new envelope format) or from the legacy JSON format (backward compatible). Uses Last-Write-Wins conflict resolution.
 - **Open files directly** from the installed PWA (File Handling API on Chromium) or via manual file picker (universal fallback).
@@ -90,11 +91,13 @@ import { reparteix } from './src/sdk'
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `listGroups` | `() => Promise<Group[]>` | List all non-deleted groups |
+| `listGroups` | `() => Promise<Group[]>` | List all non-deleted groups (includes archived) |
 | `getGroup` | `(id: string) => Promise<Group \| undefined>` | Get a group by ID |
 | `createGroup` | `(name: string, currency?: string) => Promise<Group>` | Create a new group (default currency: `"EUR"`) |
-| `updateGroup` | `(id: string, updates: { name?, description?, icon?, currency? }) => Promise<Group>` | Update group metadata |
+| `updateGroup` | `(id: string, updates: { name?, description?, icon?, currency? }) => Promise<Group>` | Update group metadata. Throws if the group is archived |
 | `deleteGroup` | `(id: string) => Promise<void>` | Soft-delete a group |
+| `archiveGroup` | `(id: string) => Promise<void>` | Archive a group — makes it read-only, preserves all data |
+| `unarchiveGroup` | `(id: string) => Promise<void>` | Unarchive a group — restores full write access |
 
 ### Members
 
@@ -156,6 +159,7 @@ import { reparteix } from './src/sdk'
   icon?: string         // optional emoji icon, e.g. "🍕"
   currency: string      // e.g. "EUR" (default), "USD", "GBP"
   members: Member[]
+  archived: boolean     // if true, group is read-only (no mutations allowed)
   createdAt: string     // ISO 8601 datetime
   updatedAt: string     // ISO 8601 datetime
   deleted: boolean      // soft delete flag
@@ -353,6 +357,7 @@ await reparteix.addPayment({
 
 - **Language**: UI text is in Catalan, code (variables, functions, comments) is in English.
 - **Soft delete**: Entities are never physically removed — they are marked with `deleted: true`.
+- **Archived groups**: Groups marked with `archived: true` are read-only. All write operations (updateGroup, addMember, addExpense, addPayment, etc.) throw an error. Use `unarchiveGroup` to restore write access. Archived groups still appear in `listGroups` and can be fully consulted.
 - **IDs**: Generated with `crypto.randomUUID()`.
 - **Timestamps**: ISO 8601 format via `new Date().toISOString()`.
 - **Currency**: Stored as a string on the group (e.g. `"EUR"`), not enforced beyond that.

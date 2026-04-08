@@ -102,6 +102,7 @@ export const reparteix = {
       name,
       currency,
       members: [],
+      archived: false,
       createdAt: timestamp,
       updatedAt: timestamp,
       deleted: false,
@@ -110,7 +111,7 @@ export const reparteix = {
     return group
   },
 
-  /** Update group metadata (name, description, icon, currency). */
+  /** Update group metadata (name, description, icon, currency). Throws if the group is archived. */
   async updateGroup(
     id: string,
     updates: {
@@ -122,9 +123,26 @@ export const reparteix = {
   ): Promise<Group> {
     const group = await db.groups.get(id)
     if (!group) throw new Error(`Group not found: ${id}`)
+    if (group.archived) throw new Error('Cannot modify an archived group')
     const patch: Partial<Group> = { ...updates, updatedAt: now() }
     await db.groups.update(id, patch)
     return { ...group, ...patch }
+  },
+
+  /** Archive a group (makes it read-only). */
+  async archiveGroup(id: string): Promise<void> {
+    const group = await db.groups.get(id)
+    if (group && !group.deleted) {
+      await db.groups.update(id, { archived: true, updatedAt: now() })
+    }
+  },
+
+  /** Unarchive a group (restores write access). */
+  async unarchiveGroup(id: string): Promise<void> {
+    const group = await db.groups.get(id)
+    if (group && !group.deleted) {
+      await db.groups.update(id, { archived: false, updatedAt: now() })
+    }
   },
 
   /** Soft-delete a group. */
@@ -137,10 +155,11 @@ export const reparteix = {
 
   // ─── Members ───────────────────────────────────────────────────────
 
-  /** Add a member to a group and return it. */
+  /** Add a member to a group and return it. Throws if the group is archived. */
   async addMember(groupId: string, name: string): Promise<Member> {
     const group = await db.groups.get(groupId)
     if (!group) throw new Error('Group not found')
+    if (group.archived) throw new Error('Cannot modify an archived group')
 
     const timestamp = now()
     const member: Member = {
@@ -159,10 +178,11 @@ export const reparteix = {
     return member
   },
 
-  /** Soft-delete a member from a group. Throws if the member has any expenses or payments. */
+  /** Soft-delete a member from a group. Throws if the member has any expenses or payments, or if the group is archived. */
   async removeMember(groupId: string, memberId: string): Promise<void> {
     const group = await db.groups.get(groupId)
     if (!group) return
+    if (group.archived) throw new Error('Cannot modify an archived group')
 
     const expenseCount = await db.expenses
       .where('groupId')
@@ -199,7 +219,7 @@ export const reparteix = {
     })
   },
 
-  /** Rename a member in a group. */
+  /** Rename a member in a group. Throws if the group is archived. */
   async renameMember(
     groupId: string,
     memberId: string,
@@ -207,6 +227,7 @@ export const reparteix = {
   ): Promise<void> {
     const group = await db.groups.get(groupId)
     if (!group) throw new Error('Group not found')
+    if (group.archived) throw new Error('Cannot modify an archived group')
 
     const member = group.members.find((m) => m.id === memberId)
     if (!member || member.deleted) throw new Error('Member not found')
@@ -243,10 +264,12 @@ export const reparteix = {
       .toArray()
   },
 
-  /** Add an expense and return it. */
+  /** Add an expense and return it. Throws if the group is archived. */
   async addExpense(
     expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>,
   ): Promise<Expense> {
+    const group = await db.groups.get(expense.groupId)
+    if (group?.archived) throw new Error('Cannot modify an archived group')
     const timestamp = now()
     const newExpense: Expense = {
       ...expense,
@@ -259,17 +282,21 @@ export const reparteix = {
     return newExpense
   },
 
-  /** Update an existing expense. */
+  /** Update an existing expense. Throws if the group is archived. */
   async updateExpense(expense: Expense): Promise<Expense> {
+    const group = await db.groups.get(expense.groupId)
+    if (group?.archived) throw new Error('Cannot modify an archived group')
     const updated = { ...expense, updatedAt: now() }
     await db.expenses.update(expense.id, updated)
     return updated
   },
 
-  /** Soft-delete an expense. */
+  /** Soft-delete an expense. Throws if the group is archived. */
   async deleteExpense(id: string): Promise<void> {
     const expense = await db.expenses.get(id)
     if (expense) {
+      const group = await db.groups.get(expense.groupId)
+      if (group?.archived) throw new Error('Cannot modify an archived group')
       await db.expenses.update(id, { deleted: true, updatedAt: now() })
     }
   },
@@ -285,10 +312,12 @@ export const reparteix = {
       .toArray()
   },
 
-  /** Add a payment and return it. */
+  /** Add a payment and return it. Throws if the group is archived. */
   async addPayment(
     payment: Omit<Payment, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>,
   ): Promise<Payment> {
+    const group = await db.groups.get(payment.groupId)
+    if (group?.archived) throw new Error('Cannot modify an archived group')
     const timestamp = now()
     const newPayment: Payment = {
       ...payment,
@@ -301,10 +330,12 @@ export const reparteix = {
     return newPayment
   },
 
-  /** Soft-delete a payment. */
+  /** Soft-delete a payment. Throws if the group is archived. */
   async deletePayment(id: string): Promise<void> {
     const payment = await db.payments.get(id)
     if (payment) {
+      const group = await db.groups.get(payment.groupId)
+      if (group?.archived) throw new Error('Cannot modify an archived group')
       await db.payments.update(id, { deleted: true, updatedAt: now() })
     }
   },

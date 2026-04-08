@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Pencil, Check, Settings } from 'lucide-react'
+import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Badge } from '@/components/ui/badge'
 import { useStore } from '../../store'
 import { ExpenseList } from '../expenses/ExpenseList'
 import { BalanceView } from '../balances/BalanceView'
@@ -40,6 +41,7 @@ export function GroupDetail() {
   const [editingName, setEditingName] = useState('')
 
   const group = groups.find((g) => g.id === groupId)
+  const isArchived = group?.archived ?? false
 
   useEffect(() => {
     loadGroups()
@@ -119,6 +121,12 @@ export function GroupDetail() {
           <div className="flex items-center gap-2">
             {group.icon && <span className="text-2xl">{group.icon}</span>}
             <h1 className="text-2xl font-bold truncate">{group.name}</h1>
+            {isArchived && (
+              <Badge variant="outline" className="text-muted-foreground shrink-0 gap-1">
+                <Archive className="h-3 w-3" />
+                Arxivat
+              </Badge>
+            )}
           </div>
           {group.description && (
             <p className="text-sm text-muted-foreground truncate">{group.description}</p>
@@ -135,6 +143,14 @@ export function GroupDetail() {
         <ThemeToggle />
       </div>
 
+      {/* Archived banner */}
+      {isArchived && (
+        <div className="mb-4 shrink-0 rounded-md bg-muted border border-border px-4 py-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <Archive className="h-4 w-4 shrink-0" />
+          <span>Aquest grup és de només lectura. Desarxiva'l per poder fer canvis.</span>
+        </div>
+      )}
+
       {/* Members section */}
       <div className="mb-6 shrink-0">
         <h2 className="text-lg font-semibold mb-3">Membres</h2>
@@ -147,7 +163,7 @@ export function GroupDetail() {
                 className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm text-white"
                 style={{ backgroundColor: member.color }}
               >
-                {editingMemberId === member.id ? (
+                {!isArchived && editingMemberId === member.id ? (
                   <form
                     onSubmit={(e) => handleRenameSubmit(e, member.id)}
                     className="flex items-center gap-1"
@@ -179,15 +195,17 @@ export function GroupDetail() {
                 ) : (
                   <>
                     {member.name}
-                    <button
-                      onClick={() => handleStartEdit(member.id, member.name)}
-                      className="ml-1 hover:opacity-75"
-                      aria-label={`Editar ${member.name}`}
-                      title={`Editar ${member.name}`}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                    {!hasMovements && (
+                    {!isArchived && (
+                      <button
+                        onClick={() => handleStartEdit(member.id, member.name)}
+                        className="ml-1 hover:opacity-75"
+                        aria-label={`Editar ${member.name}`}
+                        title={`Editar ${member.name}`}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                    {!isArchived && !hasMovements && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <button
@@ -223,39 +241,41 @@ export function GroupDetail() {
             )
           })}
         </div>
-        {showAddMember ? (
-          <form onSubmit={handleAddMember} className="flex gap-2">
-            <Input
-              type="text"
-              value={memberName}
-              onChange={(e) => setMemberName(e.target.value)}
-              placeholder="Nom del membre"
-              className="flex-1"
-              autoFocus
-            />
-            <Button type="submit" size="sm">
-              <Check className="h-4 w-4 mr-1" />
-              Afegir
-            </Button>
-            <Button
+        {!isArchived && (
+          showAddMember ? (
+            <form onSubmit={handleAddMember} className="flex gap-2">
+              <Input
+                type="text"
+                value={memberName}
+                onChange={(e) => setMemberName(e.target.value)}
+                placeholder="Nom del membre"
+                className="flex-1"
+                autoFocus
+              />
+              <Button type="submit" size="sm">
+                <Check className="h-4 w-4 mr-1" />
+                Afegir
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelAddMember}
+                aria-label="Cancel·lar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </form>
+          ) : (
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelAddMember}
-              aria-label="Cancel·lar"
+              onClick={() => setShowAddMember(true)}
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
             >
-              <X className="h-4 w-4" />
-            </Button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowAddMember(true)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Afegir membre
-          </button>
+              <Plus className="h-3.5 w-3.5" />
+              Afegir membre
+            </button>
+          )
         )}
       </div>
 

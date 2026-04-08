@@ -82,6 +82,104 @@ describe('reparteix SDK', () => {
     })
   })
 
+  // ─── Archive / Unarchive ─────────────────────────────────────────
+
+  describe('archive / unarchive', () => {
+    it('archiveGroup marks the group as archived', async () => {
+      const group = await reparteix.createGroup('Viatge')
+      expect(group.archived).toBe(false)
+
+      await reparteix.archiveGroup(group.id)
+
+      const found = await reparteix.getGroup(group.id)
+      expect(found!.archived).toBe(true)
+    })
+
+    it('unarchiveGroup restores write access', async () => {
+      const group = await reparteix.createGroup('Sopar')
+      await reparteix.archiveGroup(group.id)
+      await reparteix.unarchiveGroup(group.id)
+
+      const found = await reparteix.getGroup(group.id)
+      expect(found!.archived).toBe(false)
+    })
+
+    it('blocks updateGroup on an archived group', async () => {
+      const group = await reparteix.createGroup('Antic')
+      await reparteix.archiveGroup(group.id)
+
+      await expect(
+        reparteix.updateGroup(group.id, { name: 'Nou nom' }),
+      ).rejects.toThrow('Cannot modify an archived group')
+    })
+
+    it('blocks addMember on an archived group', async () => {
+      const group = await reparteix.createGroup('Pis')
+      await reparteix.archiveGroup(group.id)
+
+      await expect(reparteix.addMember(group.id, 'Anna')).rejects.toThrow(
+        'Cannot modify an archived group',
+      )
+    })
+
+    it('blocks addExpense on an archived group', async () => {
+      const group = await reparteix.createGroup('Grup')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.archiveGroup(group.id)
+
+      await expect(
+        reparteix.addExpense({
+          groupId: group.id,
+          description: 'Pizza',
+          amount: 20,
+          payerId: anna.id,
+          splitAmong: [anna.id],
+          date: '2024-06-01',
+        }),
+      ).rejects.toThrow('Cannot modify an archived group')
+    })
+
+    it('blocks addPayment on an archived group', async () => {
+      const group = await reparteix.createGroup('Grup')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+      await reparteix.archiveGroup(group.id)
+
+      await expect(
+        reparteix.addPayment({
+          groupId: group.id,
+          fromId: bernat.id,
+          toId: anna.id,
+          amount: 10,
+          date: '2024-06-01',
+        }),
+      ).rejects.toThrow('Cannot modify an archived group')
+    })
+
+    it('listGroups returns archived groups', async () => {
+      const g1 = await reparteix.createGroup('Actiu')
+      const g2 = await reparteix.createGroup('Arxivat')
+      await reparteix.archiveGroup(g2.id)
+
+      const all = await reparteix.listGroups()
+      const ids = all.map((g) => g.id)
+      expect(ids).toContain(g1.id)
+      expect(ids).toContain(g2.id)
+
+      const archived = all.find((g) => g.id === g2.id)!
+      expect(archived.archived).toBe(true)
+    })
+
+    it('unarchive allows mutations again', async () => {
+      const group = await reparteix.createGroup('Reactivar')
+      await reparteix.archiveGroup(group.id)
+      await reparteix.unarchiveGroup(group.id)
+
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      expect(anna.name).toBe('Anna')
+    })
+  })
+
   // ─── Members ─────────────────────────────────────────────────────
 
   describe('members', () => {

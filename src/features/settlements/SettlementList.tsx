@@ -77,6 +77,7 @@ export function SettlementList({ group }: SettlementListProps) {
       ) : (
         <>
           {!showForm ? (
+            !group.archived && (
             <Button
               onClick={() => setShowForm(true)}
               className="w-full mb-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
@@ -84,6 +85,7 @@ export function SettlementList({ group }: SettlementListProps) {
               <Plus className="mr-2 h-4 w-4" />
               Nou pagament
             </Button>
+            )
           ) : (
             <Card className="mb-6">
               <CardHeader>
@@ -186,6 +188,7 @@ export function SettlementList({ group }: SettlementListProps) {
                       {payment.amount.toFixed(2)} {symbol}
                     </span>
                     <AlertDialog>
+                      {!group.archived && (
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
@@ -195,6 +198,7 @@ export function SettlementList({ group }: SettlementListProps) {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
+                      )}
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Eliminar pagament</AlertDialogTitle>

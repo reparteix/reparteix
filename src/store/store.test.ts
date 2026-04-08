@@ -296,3 +296,85 @@ describe('integration flow', () => {
     expect(settlements.length).toBeGreaterThan(0)
   })
 })
+
+// ─── Archive / Unarchive ──────────────────────────────────────────────────────
+
+describe('arxivat de grups', () => {
+  it('archiveGroup marca el grup com arxivat', async () => {
+    const { addGroup, archiveGroup } = useStore.getState()
+    const group = await addGroup('Grup a arxivar')
+
+    await archiveGroup(group.id)
+
+    const { groups } = useStore.getState()
+    const archived = groups.find((g) => g.id === group.id)!
+    expect(archived.archived).toBe(true)
+  })
+
+  it('unarchiveGroup torna a activar el grup', async () => {
+    const { addGroup, archiveGroup, unarchiveGroup } = useStore.getState()
+    const group = await addGroup('Grup arxivat')
+
+    await archiveGroup(group.id)
+    await unarchiveGroup(group.id)
+
+    const { groups } = useStore.getState()
+    const unarchived = groups.find((g) => g.id === group.id)!
+    expect(unarchived.archived).toBe(false)
+  })
+
+  it('addExpense llança error si el grup és arxivat', async () => {
+    const group = await createGroupWithMembers('Grup arxivat', ['Anna', 'Bernat'])
+    const members = group.members
+
+    const { archiveGroup, addExpense } = useStore.getState()
+    await archiveGroup(group.id)
+
+    await expect(
+      addExpense({
+        groupId: group.id,
+        description: 'Sopar',
+        amount: 60,
+        payerId: members[0].id,
+        splitAmong: members.map((m) => m.id),
+        date: '2024-01-15',
+      }),
+    ).rejects.toThrow('Cannot modify an archived group')
+  })
+
+  it('addMember llança error si el grup és arxivat', async () => {
+    const { addGroup, archiveGroup, addMember } = useStore.getState()
+    const group = await addGroup('Grup arxivat')
+    await archiveGroup(group.id)
+
+    await expect(addMember(group.id, 'Anna')).rejects.toThrow(
+      'Cannot modify an archived group',
+    )
+  })
+
+  it('updateGroup llança error si el grup és arxivat', async () => {
+    const { addGroup, archiveGroup, updateGroup } = useStore.getState()
+    const group = await addGroup('Grup arxivat')
+    await archiveGroup(group.id)
+
+    await expect(updateGroup(group.id, { name: 'Nou nom' })).rejects.toThrow(
+      'Cannot modify an archived group',
+    )
+  })
+
+  it('grups arxivats es separen dels actius a la llista', async () => {
+    const { addGroup, archiveGroup } = useStore.getState()
+    const active = await addGroup('Actiu')
+    const toArchive = await addGroup('Per arxivar')
+
+    await archiveGroup(toArchive.id)
+
+    const { groups } = useStore.getState()
+    const activeGroups = groups.filter((g) => !g.archived)
+    const archivedGroups = groups.filter((g) => g.archived)
+
+    expect(activeGroups.some((g) => g.id === active.id)).toBe(true)
+    expect(archivedGroups.some((g) => g.id === toArchive.id)).toBe(true)
+    expect(activeGroups.some((g) => g.id === toArchive.id)).toBe(false)
+  })
+})
