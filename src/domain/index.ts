@@ -20,9 +20,12 @@ export {
 export {
   calculateBalances,
   calculateSettlements,
+  naiveSettlements,
+  calculateNetting,
   computeSyncMerge,
   type Balance,
   type Settlement,
+  type NettingResult,
   type SyncReport,
   type SyncMergeDecision,
 } from './services'

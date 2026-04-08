@@ -9,6 +9,7 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 - Adjuntar imatge del rebut a cada despesa
 - Reanomenar membres del grup
 - Càlcul automàtic de balanços i transferències mínimes
+- Comparativa de deute net: transferències naïves vs optimitzades (% reducció)
 - Registre de pagaments (settlements)
 - Exportació i importació de grups en format `.reparteix.json` versionat (còpia de seguretat i migració)
 - Obertura directa de fitxers `.reparteix.json` des de la PWA instal·lada (File Handling API)
@@ -57,7 +58,8 @@ Totes les entitats porten camps comuns: `id` (UUID), `createdAt`, `updatedAt`, `
 1. Suma les contribucions de cada pagador i resta la part proporcional de cada participant
 2. Incorpora els pagaments registrats
 3. Minimitza el nombre de transferències amb un algorisme greedy (ordenant creditors i deutors per import descendent)
-4. Arrodoniment a 2 decimals: `Math.round(x * 100) / 100`
+4. Mòdul de **netting** (`netting.ts`): compara transferències naïves (O(deutors × creditors)) amb les minimitzades, mostrant el nombre estalviat i el % de reducció
+5. Arrodoniment a 2 decimals: `Math.round(x * 100) / 100`
 
 ### SDK headless
 

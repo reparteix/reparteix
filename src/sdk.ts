@@ -3,15 +3,17 @@ import { GroupExportSchema, ReparteixExportV1Schema, SyncEnvelopeV1Schema } from
 import {
   calculateBalances,
   calculateSettlements,
+  calculateNetting,
   computeSyncMerge,
   type Balance,
   type Settlement,
+  type NettingResult,
   type SyncReport,
 } from './domain/services'
 import { db } from './infra/db'
 
-export type { Group, Expense, Payment, Member, Balance, Settlement, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
-export { calculateBalances, calculateSettlements }
+export type { Group, Expense, Payment, Member, Balance, Settlement, NettingResult, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
+export { calculateBalances, calculateSettlements, calculateNetting }
 
 const COLORS = [
   '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6',
@@ -328,6 +330,12 @@ export const reparteix = {
   async getSettlements(groupId: string): Promise<Settlement[]> {
     const balances = await reparteix.getBalances(groupId)
     return calculateSettlements(balances)
+  },
+
+  /** Calculate netting result: naive vs minimized settlements with comparison stats. */
+  async getNetting(groupId: string): Promise<NettingResult> {
+    const balances = await reparteix.getBalances(groupId)
+    return calculateNetting(balances)
   },
 
   // ─── Import / Export ───────────────────────────────────────────────
