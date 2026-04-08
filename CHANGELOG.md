@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/reparteix/reparteix/compare/v1.22.0...v1.23.0) (2026-04-08)
+
+
+### Features
+
+* repartiment flexible de despeses — imports fixos i UX proporcional millorada ([#91](https://github.com/reparteix/reparteix/issues/91)) ([9549610](https://github.com/reparteix/reparteix/commit/9549610386b1d83d895c01a72b3429b63ec9eda2))
+
 # [1.22.0](https://github.com/reparteix/reparteix/compare/v1.21.0...v1.22.0) (2026-04-08)
 
 
