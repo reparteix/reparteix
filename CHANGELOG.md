@@ -1,3 +1,22 @@
+# [1.20.0](https://github.com/reparteix/reparteix/compare/v1.19.0...v1.20.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* regenerate member IDs in copy import; guard CompressionStream compatibility ([faf34be](https://github.com/reparteix/reparteix/commit/faf34be74124b9a18f0c00f44fd1e25ac60a7ae2))
+
+
+### Features
+
+* share group via URL with compressed base64url payload ([50cd1d0](https://github.com/reparteix/reparteix/commit/50cd1d008cd95c13c25a8ad06217689b0868558d))
+
+# [1.19.0](https://github.com/reparteix/reparteix/compare/v1.18.0...v1.19.0) (2026-04-07)
+
+
+### Features
+
+* fer sticky la data de la despesa a la llista mentre fas scroll ([289b0af](https://github.com/reparteix/reparteix/commit/289b0afcf380b0f52643d0dbba8bb6dd769b30ef))
+
 # [1.18.0](https://github.com/reparteix/reparteix/compare/v1.17.0...v1.18.0) (2026-04-06)
 
 

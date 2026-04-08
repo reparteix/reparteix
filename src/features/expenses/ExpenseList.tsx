@@ -410,7 +410,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
         <div className="space-y-4">
           {expensesByDay.map(({ date, items }) => (
             <div key={date}>
-              <div className="flex items-center justify-between px-1 pb-1">
+              <div className="sticky top-0 z-10 bg-background flex items-center justify-between px-1 pb-1 pt-1">
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground capitalize">
                   {formatDate(date)}
                 </div>

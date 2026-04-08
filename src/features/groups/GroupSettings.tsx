@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Download } from 'lucide-react'
+import { ArrowLeft, Trash2, Download, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useStore } from '../../store'
+import { reparteix } from '../../sdk'
 import type { Group } from '../../domain/entities'
 
 const EMOJI_SHORTCUTS = [
@@ -44,6 +45,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const [icon, setIcon] = useState(group.icon ?? '')
   const [currency, setCurrency] = useState(group.currency)
   const [exportStatus, setExportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'ok' | 'error'>('idle')
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +73,19 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
       setExportStatus('error')
     } finally {
       setTimeout(() => setExportStatus('idle'), 3000)
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      const encoded = await reparteix.share.encodeGroup(groupId)
+      const url = `${window.location.origin}${window.location.pathname}#/import?g=${encoded}`
+      await navigator.clipboard.writeText(url)
+      setShareStatus('ok')
+    } catch {
+      setShareStatus('error')
+    } finally {
+      setTimeout(() => setShareStatus('idle'), 3000)
     }
   }
 
@@ -185,6 +200,34 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
           )}
           {exportStatus === 'error' && (
             <p className="text-sm text-destructive">Error en exportar. Torna-ho a intentar.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Compartir per enllaç</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Genera un enllaç per compartir el grup amb una altra persona. L'altra persona podrà previsualitzar i importar-lo al seu dispositiu.
+          </p>
+          <Button
+            variant="outline"
+            className="w-full"
+            type="button"
+            onClick={handleShare}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Copiar enllaç
+          </Button>
+          {shareStatus === 'ok' && (
+            <p className="text-sm text-success">Enllaç copiat al porta-retalls.</p>
+          )}
+          {shareStatus === 'error' && (
+            <p className="text-sm text-destructive">Error en generar l'enllaç. Torna-ho a intentar.</p>
           )}
         </CardContent>
       </Card>

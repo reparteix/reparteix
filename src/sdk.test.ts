@@ -905,4 +905,119 @@ describe('reparteix SDK', () => {
       expect(all.some((g) => g.id === group.id)).toBe(true)
     })
   })
+
+  // ─── Share ────────────────────────────────────────────────────────
+
+  describe('share', () => {
+    it('encodes and decodes a group roundtrip', async () => {
+      const group = await reparteix.createGroup('Compartit')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Sopar',
+        amount: 40,
+        payerId: anna.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-06-01',
+      })
+      await reparteix.addPayment({
+        groupId: group.id,
+        fromId: bernat.id,
+        toId: anna.id,
+        amount: 20,
+        date: '2024-06-02',
+      })
+
+      const encoded = await reparteix.share.encodeGroup(group.id)
+      expect(encoded).toMatch(/^v1\./)
+      expect(encoded.length).toBeGreaterThan(10)
+
+      const envelope = await reparteix.share.decodeGroup(encoded)
+
+      expect(envelope.version).toBe(1)
+      expect(envelope.group.id).toBe(group.id)
+      expect(envelope.group.name).toBe('Compartit')
+      expect(envelope.expenses).toHaveLength(1)
+      expect(envelope.expenses[0].description).toBe('Sopar')
+      expect(envelope.payments).toHaveLength(1)
+      expect(envelope.payments[0].amount).toBe(20)
+    })
+
+    it('decoded payload is a valid SyncEnvelopeV1', async () => {
+      const group = await reparteix.createGroup('Valid')
+      const encoded = await reparteix.share.encodeGroup(group.id)
+      const envelope = await reparteix.share.decodeGroup(encoded)
+
+      expect(envelope.group.members).toEqual([])
+      expect(envelope.expenses).toEqual([])
+      expect(envelope.payments).toEqual([])
+    })
+
+    it('throws for an unsupported version prefix', async () => {
+      await expect(reparteix.share.decodeGroup('v2.abc')).rejects.toThrow(
+        'Unsupported share format version',
+      )
+    })
+
+    it('throws for invalid base64url data', async () => {
+      await expect(reparteix.share.decodeGroup('v1.!!!invalid!!!')).rejects.toThrow()
+    })
+
+    it('throws when encoding a non-existent group', async () => {
+      await expect(reparteix.share.encodeGroup('non-existent')).rejects.toThrow(
+        'Group not found',
+      )
+    })
+
+    it('encoded share can be applied via sync.applyGroupJson', async () => {
+      const group = await reparteix.createGroup('Share + Sync')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Mercat',
+        amount: 30,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-06-01',
+      })
+
+      const encoded = await reparteix.share.encodeGroup(group.id)
+
+      // Clear and re-import via sync
+      await db.groups.clear()
+      await db.expenses.clear()
+      await db.payments.clear()
+
+      const envelope = await reparteix.share.decodeGroup(encoded)
+      const report = await reparteix.sync.applyGroupJson(envelope)
+
+      expect(report.created.groups).toBe(1)
+      expect(report.created.expenses).toBe(1)
+
+      const restored = await reparteix.getGroup(group.id)
+      expect(restored?.name).toBe('Share + Sync')
+    })
+
+    it('decodeGroup throws a clear error when CompressionStream is unavailable', async () => {
+      const original = globalThis.DecompressionStream
+      // @ts-expect-error — simulate missing API
+      globalThis.DecompressionStream = undefined
+      await expect(reparteix.share.decodeGroup('v1.abc')).rejects.toThrow(
+        'El teu navegador no suporta la compressió',
+      )
+      globalThis.DecompressionStream = original
+    })
+
+    it('encodeGroup throws a clear error when CompressionStream is unavailable', async () => {
+      const group = await reparteix.createGroup('No compress')
+      const original = globalThis.CompressionStream
+      // @ts-expect-error — simulate missing API
+      globalThis.CompressionStream = undefined
+      await expect(reparteix.share.encodeGroup(group.id)).rejects.toThrow(
+        'El teu navegador no suporta la compressió',
+      )
+      globalThis.CompressionStream = original
+    })
+  })
 })
