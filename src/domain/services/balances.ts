@@ -12,6 +12,39 @@ export interface Settlement {
 }
 
 /**
+ * Compute the share owed by each member for a given expense.
+ * Returns a map of memberId → share amount.
+ */
+export function computeExpenseShares(expense: Expense): Record<string, number> {
+  const { amount, splitAmong, splitType, splitProportions, splitFixedAmounts } =
+    expense
+
+  if (splitType === 'proportional' && splitProportions) {
+    const totalWeight = splitAmong.reduce(
+      (sum, id) => sum + (splitProportions[id] ?? 1),
+      0,
+    )
+    return Object.fromEntries(
+      splitAmong.map((id) => {
+        const weight = splitProportions[id] ?? 1
+        const share = totalWeight > 0 ? amount * (weight / totalWeight) : 0
+        return [id, share]
+      }),
+    )
+  }
+
+  if (splitType === 'fixed' && splitFixedAmounts) {
+    return Object.fromEntries(
+      splitAmong.map((id) => [id, splitFixedAmounts[id] ?? 0]),
+    )
+  }
+
+  // Default: equal split
+  const sharePerPerson = amount / splitAmong.length
+  return Object.fromEntries(splitAmong.map((id) => [id, sharePerPerson]))
+}
+
+/**
  * Calculate the net balance for each member.
  * Positive = is owed money (creditor), Negative = owes money (debtor).
  */
@@ -36,24 +69,12 @@ export function calculateBalances(
     )
 
     // Each person who benefited owes their share
-    if (expense.splitType === 'proportional' && expense.splitProportions) {
-      const totalWeight = expense.splitAmong.reduce(
-        (sum, id) => sum + (expense.splitProportions?.[id] ?? 1),
-        0,
+    const shares = computeExpenseShares(expense)
+    for (const memberId of expense.splitAmong) {
+      balanceMap.set(
+        memberId,
+        (balanceMap.get(memberId) ?? 0) - (shares[memberId] ?? 0),
       )
-      for (const memberId of expense.splitAmong) {
-        const weight = expense.splitProportions?.[memberId] ?? 1
-        const share = totalWeight > 0 ? expense.amount * (weight / totalWeight) : 0
-        balanceMap.set(memberId, (balanceMap.get(memberId) ?? 0) - share)
-      }
-    } else {
-      const sharePerPerson = expense.amount / expense.splitAmong.length
-      for (const memberId of expense.splitAmong) {
-        balanceMap.set(
-          memberId,
-          (balanceMap.get(memberId) ?? 0) - sharePerPerson,
-        )
-      }
     }
   }
 

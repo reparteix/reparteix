@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { Plus, Trash2, Camera, ImagePlus, X } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
+import { computeExpenseShares } from '../../domain/services/balances'
 import { useStore } from '../../store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -42,8 +43,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [amount, setAmount] = useState('')
   const [payerId, setPayerId] = useState('')
   const [splitAmong, setSplitAmong] = useState<string[]>([])
-  const [splitType, setSplitType] = useState<'equal' | 'proportional'>('equal')
+  const [splitType, setSplitType] = useState<'equal' | 'proportional' | 'fixed'>('equal')
   const [proportions, setProportions] = useState<Record<string, string>>({})
+  const [fixedAmounts, setFixedAmounts] = useState<Record<string, string>>({})
   const [showForm, setShowForm] = useState(false)
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
@@ -62,28 +64,51 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!description.trim() || !amount || !payerId || splitAmong.length === 0) return
-
-    const splitProportions =
+  const buildCurrentSplitFields = () => ({
+    splitType,
+    splitProportions:
       splitType === 'proportional'
         ? Object.fromEntries(
             splitAmong.map((id) => [id, parseFloat(proportions[id] ?? '1') || 1]),
           )
-        : undefined
+        : undefined,
+    splitFixedAmounts:
+      splitType === 'fixed'
+        ? Object.fromEntries(
+            splitAmong.map((id) => [id, parseFloat(fixedAmounts[id] ?? '0') || 0]),
+          )
+        : undefined,
+  })
 
-    await addExpense({
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!description.trim() || !amount || !payerId || splitAmong.length === 0) return
+    if (validationError) return
+
+    const numAmount = parseFloat(amount)
+    const splitFields = buildCurrentSplitFields()
+
+    const expenseData = {
       groupId: group.id,
       description: description.trim(),
-      amount: parseFloat(amount),
+      amount: numAmount,
       payerId,
       splitAmong,
-      splitType,
-      splitProportions,
+      ...splitFields,
       date: new Date().toISOString().split('T')[0],
       receiptImage: receiptImage ?? undefined,
-    })
+    }
+
+    // Compute and persist the immutable breakdown
+    const computedShares = computeExpenseShares({
+      ...expenseData,
+      id: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      deleted: false,
+    } as Expense)
+
+    await addExpense({ ...expenseData, computedShares })
 
     setDescription('')
     setAmount('')
@@ -91,6 +116,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
     setSplitAmong([])
     setSplitType('equal')
     setProportions({})
+    setFixedAmounts({})
     setReceiptImage(null)
     setReceiptError(null)
     setShowForm(false)
@@ -147,18 +173,66 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const getMemberColor = (id: string) =>
     group.members.find((m) => m.id === id)?.color ?? '#6366f1'
 
-  const getProportionLabel = (expense: { splitType?: string; splitProportions?: Record<string, number>; splitAmong: string[] }) => {
-    if (expense.splitType !== 'proportional' || !expense.splitProportions) return null
-    const total = expense.splitAmong.reduce(
-      (sum, id) => sum + (expense.splitProportions![id] ?? 1),
+  // Real-time validation for fixed split type
+  let validationError: string | null = null
+  if (splitType === 'fixed' && splitAmong.length > 0 && amount) {
+    const total = parseFloat(amount) || 0
+    const sum = splitAmong.reduce(
+      (s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0),
       0,
     )
-    return expense.splitAmong
-      .map((id) => {
-        const w = expense.splitProportions![id] ?? 1
-        return `${getMemberName(id)} (${w}/${total})`
-      })
-      .join(', ')
+    if (sum > total + 0.01) {
+      validationError = `Els imports fixos (${sum.toFixed(2)} ${symbol}) superen el total (${total.toFixed(2)} ${symbol}).`
+    } else if (Math.abs(sum - total) > 0.01) {
+      validationError = `Els imports fixos han de sumar el total (${total.toFixed(2)} ${symbol}). Ara sumen ${sum.toFixed(2)} ${symbol}.`
+    }
+  }
+
+  // Live preview of computed shares
+  const numAmountPreview = parseFloat(amount)
+  const previewShares: Record<string, number> | null =
+    numAmountPreview > 0 && splitAmong.length > 0
+      ? computeExpenseShares({
+          id: '',
+          groupId: group.id,
+          description: '',
+          amount: numAmountPreview,
+          payerId: payerId || '',
+          splitAmong,
+          ...buildCurrentSplitFields(),
+          date: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deleted: false,
+        } as Expense)
+      : null
+
+  const getSplitLabel = (expense: Expense) => {
+    if (expense.splitType === 'proportional' && expense.splitProportions) {
+      const total = expense.splitAmong.reduce(
+        (sum, id) => sum + (expense.splitProportions![id] ?? 1),
+        0,
+      )
+      return (
+        'Proporcional: ' +
+        expense.splitAmong
+          .map((id) => {
+            const w = expense.splitProportions![id] ?? 1
+            const pct = total > 0 ? ((w / total) * 100).toFixed(0) : '0'
+            return `${getMemberName(id)} (${pct}%)`
+          })
+          .join(', ')
+      )
+    }
+    if (expense.splitType === 'fixed' && expense.splitFixedAmounts) {
+      return (
+        'Imports fixos: ' +
+        expense.splitAmong
+          .map((id) => `${getMemberName(id)} (${(expense.splitFixedAmounts![id] ?? 0).toFixed(2)} ${symbol})`)
+          .join(', ')
+      )
+    }
+    return `Repartit entre: ${expense.splitAmong.map(getMemberName).join(', ')}`
   }
 
   const formatDate = (date: string) => {
@@ -273,7 +347,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   </div>
                   <div className="space-y-1">
                     <Label>Com es reparteix?</Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
                         size="sm"
@@ -290,31 +364,118 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       >
                         Proporcional
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={splitType === 'fixed' ? 'default' : 'outline'}
+                        onClick={() => setSplitType('fixed')}
+                      >
+                        Imports fixos
+                      </Button>
                     </div>
                   </div>
-                  {splitType === 'proportional' && splitAmong.length > 0 && (
+                  {splitType === 'proportional' && splitAmong.length > 0 && (() => {
+                    const totalWeight = splitAmong.reduce(
+                      (s, id) => s + (parseFloat(proportions[id] ?? '1') || 1),
+                      0,
+                    )
+                    return (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
+                          Proporcions (parts relatives)
+                        </Label>
+                        {splitAmong.map((id) => {
+                          const w = parseFloat(proportions[id] ?? '1') || 1
+                          const pct = totalWeight > 0 ? ((w / totalWeight) * 100).toFixed(1) : '0.0'
+                          return (
+                            <div key={id} className="flex items-center gap-2">
+                              <span className="text-sm w-24 truncate">{getMemberName(id)}</span>
+                              <Input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={proportions[id] ?? '1'}
+                                onChange={(e) =>
+                                  setProportions((prev) => ({
+                                    ...prev,
+                                    [id]: e.target.value,
+                                  }))
+                                }
+                                className="w-24"
+                              />
+                              <span className="text-xs text-muted-foreground w-12 text-right tabular-nums">
+                                {pct}%
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
+                  {splitType === 'fixed' && splitAmong.length > 0 && (
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">
-                        Proporcions (parts relatives)
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">
+                          Imports fixos ({symbol})
+                        </Label>
+                        <span className={cn(
+                          'text-xs font-medium',
+                          amount && Math.abs(splitAmong.reduce((s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0), 0) - (parseFloat(amount) || 0)) <= 0.01
+                            ? 'text-success'
+                            : 'text-destructive',
+                        )}>
+                          {splitAmong.reduce((s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0), 0).toFixed(2)} / {(parseFloat(amount) || 0).toFixed(2)} {symbol}
+                        </span>
+                      </div>
                       {splitAmong.map((id) => (
                         <div key={id} className="flex items-center gap-2">
                           <span className="text-sm w-24 truncate">{getMemberName(id)}</span>
                           <Input
                             type="number"
-                            min="0.01"
+                            min="0"
                             step="0.01"
-                            value={proportions[id] ?? '1'}
+                            value={fixedAmounts[id] ?? ''}
+                            placeholder="0.00"
                             onChange={(e) =>
-                              setProportions((prev) => ({
+                              setFixedAmounts((prev) => ({
                                 ...prev,
                                 [id]: e.target.value,
                               }))
                             }
-                            className="w-24"
+                            className="w-28"
                           />
+                          <span className="text-sm text-muted-foreground">{symbol}</span>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {validationError && (
+                    <p className="text-xs text-destructive">{validationError}</p>
+                  )}
+                  {previewShares && splitAmong.length > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">
+                        Preview del repartiment
+                      </Label>
+                      <div className="rounded-md border p-2 space-y-1 bg-muted/30">
+                        {splitAmong.map((id) => {
+                          const share = previewShares[id] ?? 0
+                          return (
+                            <div key={id} className="flex justify-between text-sm">
+                              <span>{getMemberName(id)}</span>
+                              <span className="font-medium tabular-nums">
+                                {share.toFixed(2)} {symbol}
+                              </span>
+                            </div>
+                          )
+                        })}
+                        <div className="flex justify-between text-xs text-muted-foreground border-t pt-1 mt-1">
+                          <span>Total</span>
+                          <span className="tabular-nums">
+                            {Object.values(previewShares).reduce((s, v) => s + v, 0).toFixed(2)} {symbol}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                   <div className="space-y-1">
@@ -380,7 +541,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button type="submit" className="flex-1">
+                    <Button type="submit" className="flex-1" disabled={!!validationError}>
                       Afegir despesa
                     </Button>
                     <Button
@@ -390,6 +551,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                         setShowForm(false)
                         setReceiptImage(null)
                         setReceiptError(null)
+                        setFixedAmounts({})
                       }}
                     >
                       Cancel·lar
@@ -420,7 +582,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
               </div>
               <div className="space-y-2">
                 {items.map((expense) => {
-                  const proportionLabel = getProportionLabel(expense)
+                  const splitLabel = getSplitLabel(expense)
                   return (
                     <Card key={expense.id}>
                       <CardContent className="flex items-center justify-between p-3">
@@ -434,9 +596,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                             {getMemberName(expense.payerId)} ha pagat
                           </div>
                           <div className="text-xs text-muted-foreground/70">
-                            {proportionLabel
-                              ? `Proporcions: ${proportionLabel}`
-                              : `Repartit entre: ${expense.splitAmong.map(getMemberName).join(', ')}`}
+                            {splitLabel}
                           </div>
                         </div>
                         <div className="text-right ml-4 flex flex-col items-end gap-1">
