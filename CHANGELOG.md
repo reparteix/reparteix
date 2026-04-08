@@ -1,3 +1,16 @@
+# [1.21.0](https://github.com/reparteix/reparteix/compare/v1.20.0...v1.21.0) (2026-04-08)
+
+
+### Bug Fixes
+
+* remove verbose optimization metric from balance UI per review feedback ([33dc723](https://github.com/reparteix/reparteix/commit/33dc7233e82d04c3f090b349744678ad6510af35))
+* use integer-cent matrix with two-pass allocation for exact naive settlement conservation ([8cd9d93](https://github.com/reparteix/reparteix/commit/8cd9d93431a984cdf273caded6a3d075d7e921a3))
+
+
+### Features
+
+* add debt netting module with naive vs minimized transfer comparison ([b859327](https://github.com/reparteix/reparteix/commit/b859327e6540af07a609922a76d31a8d12944019))
+
 # [1.20.0](https://github.com/reparteix/reparteix/compare/v1.19.0...v1.20.0) (2026-04-07)
 
 
