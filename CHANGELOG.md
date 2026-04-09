@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/reparteix/reparteix/compare/v1.24.0...v1.25.0) (2026-04-09)
+
+
+### Features
+
+* arxivar despeses saldades massivament quan tots els balanços són 0 ([#95](https://github.com/reparteix/reparteix/issues/95)) ([8941cea](https://github.com/reparteix/reparteix/commit/8941ceab01bef3e3281e0e427dd33867b9a01133))
+
 # [1.24.0](https://github.com/reparteix/reparteix/compare/v1.23.0...v1.24.0) (2026-04-08)
 
 
