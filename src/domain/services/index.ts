@@ -1,6 +1,7 @@
 export {
   calculateBalances,
   calculateSettlements,
+  isExpenseArchivable,
   type Balance,
   type Settlement,
 } from './balances'

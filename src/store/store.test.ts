@@ -128,6 +128,31 @@ describe('members', () => {
 // ─── Expenses ─────────────────────────────────────────────────────────────────
 
 describe('expenses', () => {
+  async function seedSettledExpense() {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+    const { addExpense, addPayment } = useStore.getState()
+
+    await addExpense({
+      groupId: group.id,
+      description: 'Sopar',
+      amount: 60,
+      payerId: members[0].id,
+      splitAmong: members.map((m) => m.id),
+      date: '2024-01-15',
+    })
+
+    await addPayment({
+      groupId: group.id,
+      fromId: members[1].id,
+      toId: members[0].id,
+      amount: 30,
+      date: '2024-01-16',
+    })
+
+    return { group, members }
+  }
+
   it('addExpense afegeix una despesa i actualitza expenses i groupTotals', async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
@@ -146,6 +171,7 @@ describe('expenses', () => {
     expect(expenses).toHaveLength(1)
     expect(expenses[0].description).toBe('Sopar')
     expect(expenses[0].amount).toBe(60)
+    expect(expenses[0].archived).toBe(false)
     expect(groupTotals[group.id]).toBe(60)
   })
 
@@ -189,6 +215,27 @@ describe('expenses', () => {
     await deleteExpense(expenseId)
 
     expect(useStore.getState().expenses).toHaveLength(0)
+  })
+
+  it('archiveAllSettledExpenses arxiva les despeses saldades i refresca la llista', async () => {
+    const { group } = await seedSettledExpense()
+
+    const archivedCount = await useStore.getState().archiveAllSettledExpenses(group.id)
+
+    expect(archivedCount).toBe(1)
+    expect(useStore.getState().expenses).toHaveLength(1)
+    expect(useStore.getState().expenses[0].archived).toBe(true)
+  })
+
+  it('unarchiveExpense restaura una despesa arxivada a la vista activa', async () => {
+    const { group } = await seedSettledExpense()
+    await useStore.getState().archiveAllSettledExpenses(group.id)
+
+    const archivedExpense = useStore.getState().expenses[0]
+    await useStore.getState().unarchiveExpense(archivedExpense.id)
+
+    expect(useStore.getState().expenses).toHaveLength(1)
+    expect(useStore.getState().expenses[0].archived).toBe(false)
   })
 })
 

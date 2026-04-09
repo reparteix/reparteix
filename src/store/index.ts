@@ -20,9 +20,11 @@ interface AppState {
   addMember: (groupId: string, name: string) => Promise<void>
   removeMember: (groupId: string, memberId: string) => Promise<void>
   renameMember: (groupId: string, memberId: string, newName: string) => Promise<void>
-  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>) => Promise<void>
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted' | 'archived'>) => Promise<void>
   updateExpense: (expense: Expense) => Promise<void>
   deleteExpense: (id: string) => Promise<void>
+  archiveAllSettledExpenses: (groupId: string) => Promise<number>
+  unarchiveExpense: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
   setCurrentGroup: (groupId: string | null) => void
@@ -122,6 +124,18 @@ export const useStore = create<AppState>((set, get) => ({
         get().loadGroups(),
       ])
     }
+  },
+
+  archiveAllSettledExpenses: async (groupId: string) => {
+    const count = await reparteix.archiveAllSettledExpenses(groupId)
+    if (count > 0) await get().loadGroupData(groupId)
+    return count
+  },
+
+  unarchiveExpense: async (id: string) => {
+    const expense = get().expenses.find((e) => e.id === id)
+    await reparteix.unarchiveExpense(id)
+    if (expense) await get().loadGroupData(expense.groupId)
   },
 
   addPayment: async (payment) => {

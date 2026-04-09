@@ -30,4 +30,21 @@ db.version(2)
       })
   })
 
+db.version(3)
+  .stores({
+    groups: 'id, name, deleted, archived',
+    expenses: 'id, groupId, deleted, archived',
+    payments: 'id, groupId, deleted',
+  })
+  .upgrade((tx) => {
+    return tx
+      .table('expenses')
+      .toCollection()
+      .modify((expense: Record<string, unknown>) => {
+        if (expense['archived'] === undefined) {
+          expense['archived'] = false
+        }
+      })
+  })
+
 export { db }

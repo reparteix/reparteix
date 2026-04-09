@@ -406,6 +406,43 @@ describe('reparteix SDK', () => {
       const remaining = await reparteix.listExpenses(group.id)
       expect(remaining).toHaveLength(0)
     })
+
+    it('archives and unarchives a settled expense', async () => {
+      const group = await reparteix.createGroup('Sopar')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+
+      const expense = await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Pizza',
+        amount: 20,
+        payerId: anna.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-06-01',
+      })
+
+      await reparteix.addPayment({
+        groupId: group.id,
+        fromId: bernat.id,
+        toId: anna.id,
+        amount: 10,
+        date: '2024-06-02',
+      })
+
+      const archivedCount = await reparteix.archiveAllSettledExpenses(group.id)
+      expect(archivedCount).toBe(1)
+
+      const archivedExpense = await db.expenses.get(expense.id)
+      expect(archivedExpense?.archived).toBe(true)
+
+      await reparteix.unarchiveExpense(expense.id)
+      const restoredExpense = await db.expenses.get(expense.id)
+      expect(restoredExpense?.archived).toBe(false)
+    })
+
+    it('returns 0 when archiving settled expenses for an unknown group', async () => {
+      await expect(reparteix.archiveAllSettledExpenses('missing-group')).resolves.toBe(0)
+    })
   })
 
   // ─── Payments ────────────────────────────────────────────────────

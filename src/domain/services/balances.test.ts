@@ -3,6 +3,7 @@ import {
   calculateBalances,
   calculateSettlements,
   computeExpenseShares,
+  isExpenseArchivable,
 } from './balances'
 import type { Expense, Payment } from '../entities'
 
@@ -14,6 +15,7 @@ function makeExpense(
     groupId: 'g1',
     description: 'Test',
     date: '2024-01-01',
+    archived: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deleted: false,
@@ -350,5 +352,73 @@ describe('calculateSettlements', () => {
     // Verify conservation: total from = total to
     const totalFrom = settlements.reduce((s, t) => s + t.amount, 0)
     expect(totalFrom).toBe(20)
+  })
+})
+
+describe('isExpenseArchivable', () => {
+  it('returns true when all involved members have zero balance', () => {
+    const expense = makeExpense({ amount: 30, payerId: 'a', splitAmong: ['a', 'b', 'c'] })
+    const balances = [
+      { memberId: 'a', total: 0 },
+      { memberId: 'b', total: 0 },
+      { memberId: 'c', total: 0 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(true)
+  })
+
+  it('returns false when the payer has a non-zero balance', () => {
+    const expense = makeExpense({ amount: 30, payerId: 'a', splitAmong: ['a', 'b', 'c'] })
+    const balances = [
+      { memberId: 'a', total: 20 },
+      { memberId: 'b', total: -10 },
+      { memberId: 'c', total: -10 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(false)
+  })
+
+  it('returns false when a splitAmong member has a non-zero balance', () => {
+    const expense = makeExpense({ amount: 30, payerId: 'a', splitAmong: ['a', 'b', 'c'] })
+    const balances = [
+      { memberId: 'a', total: 0 },
+      { memberId: 'b', total: 0 },
+      { memberId: 'c', total: -10 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(false)
+  })
+
+  it('returns true when balance is within floating-point tolerance', () => {
+    const expense = makeExpense({ amount: 30, payerId: 'a', splitAmong: ['a', 'b'] })
+    const balances = [
+      { memberId: 'a', total: 0.005 },
+      { memberId: 'b', total: -0.005 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(true)
+  })
+
+  it('returns true when a member is not in the balances list', () => {
+    const expense = makeExpense({ amount: 10, payerId: 'a', splitAmong: ['a', 'b'] })
+    // member 'b' not in balances (e.g. removed)
+    const balances = [{ memberId: 'a', total: 0 }]
+    expect(isExpenseArchivable(expense, balances)).toBe(true)
+  })
+
+  it('considers payer even when payer is not in splitAmong', () => {
+    const expense = makeExpense({ amount: 20, payerId: 'a', splitAmong: ['b', 'c'] })
+    const balances = [
+      { memberId: 'a', total: 0 },
+      { memberId: 'b', total: 0 },
+      { memberId: 'c', total: 0 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(true)
+  })
+
+  it('returns false when payer (not in splitAmong) has non-zero balance', () => {
+    const expense = makeExpense({ amount: 20, payerId: 'a', splitAmong: ['b', 'c'] })
+    const balances = [
+      { memberId: 'a', total: 20 },
+      { memberId: 'b', total: -10 },
+      { memberId: 'c', total: -10 },
+    ]
+    expect(isExpenseArchivable(expense, balances)).toBe(false)
   })
 })
