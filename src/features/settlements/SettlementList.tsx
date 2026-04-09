@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { ArrowRight, Plus, Trash2 } from 'lucide-react'
-import type { Group } from '../../domain/entities'
+import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import type { Group, Payment } from '../../domain/entities'
 import { useStore } from '../../store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,8 +36,9 @@ interface SettlementListProps {
 }
 
 export function SettlementList({ group }: SettlementListProps) {
-  const { payments, addPayment, deletePayment } = useStore()
+  const { payments, addPayment, updatePayment, deletePayment } = useStore()
   const [showForm, setShowForm] = useState(false)
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
   const [fromId, setFromId] = useState('')
   const [toId, setToId] = useState('')
   const [amount, setAmount] = useState('')
@@ -48,24 +49,48 @@ export function SettlementList({ group }: SettlementListProps) {
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
 
+  const resetForm = () => {
+    setEditingPaymentId(null)
+    setFromId('')
+    setToId('')
+    setAmount('')
+    setShowForm(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fromId || !toId || !amount || fromId === toId) return
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) return
 
-    await addPayment({
-      groupId: group.id,
-      fromId,
-      toId,
-      amount: amountNum,
-      date: new Date().toISOString().split('T')[0],
-    })
+    if (editingPaymentId) {
+      const existing = payments.find((payment) => payment.id === editingPaymentId)
+      if (!existing) return
+      await updatePayment({
+        ...existing,
+        fromId,
+        toId,
+        amount: amountNum,
+      })
+    } else {
+      await addPayment({
+        groupId: group.id,
+        fromId,
+        toId,
+        amount: amountNum,
+        date: new Date().toISOString().split('T')[0],
+      })
+    }
 
-    setFromId('')
-    setToId('')
-    setAmount('')
-    setShowForm(false)
+    resetForm()
+  }
+
+  const startEditing = (payment: Payment) => {
+    setEditingPaymentId(payment.id)
+    setFromId(payment.fromId)
+    setToId(payment.toId)
+    setAmount(payment.amount.toString())
+    setShowForm(true)
   }
 
   return (
@@ -78,18 +103,18 @@ export function SettlementList({ group }: SettlementListProps) {
         <>
           {!showForm ? (
             !group.archived && (
-            <Button
-              onClick={() => setShowForm(true)}
-              className="w-full mb-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nou pagament
-            </Button>
+              <Button
+                onClick={() => setShowForm(true)}
+                className="w-full mb-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nou pagament
+              </Button>
             )
           ) : (
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Nou pagament</CardTitle>
+                <CardTitle>{editingPaymentId ? 'Editar pagament' : 'Nou pagament'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-3">
@@ -145,12 +170,12 @@ export function SettlementList({ group }: SettlementListProps) {
                       type="submit"
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                     >
-                      Registrar pagament
+                      {editingPaymentId ? 'Guardar canvis' : 'Registrar pagament'}
                     </Button>
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => setShowForm(false)}
+                      onClick={resetForm}
                     >
                       Cancel·lar
                     </Button>
@@ -187,17 +212,29 @@ export function SettlementList({ group }: SettlementListProps) {
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                       {payment.amount.toFixed(2)} {symbol}
                     </span>
+                    {!group.archived && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => startEditing(payment)}
+                        title="Editar pagament"
+                        aria-label="Editar pagament"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     <AlertDialog>
                       {!group.archived && (
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
                       )}
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -216,7 +253,8 @@ export function SettlementList({ group }: SettlementListProps) {
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
-                    </AlertDialog>                  </div>
+                    </AlertDialog>
+                  </div>
                 </CardContent>
               </Card>
             ))}

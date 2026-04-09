@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -38,7 +38,8 @@ interface ExpenseListProps {
 }
 
 export function ExpenseList({ group }: ExpenseListProps) {
-  const { expenses, payments, addExpense, deleteExpense, archiveAllSettledExpenses, unarchiveExpense } = useStore()
+  const { expenses, payments, addExpense, updateExpense, deleteExpense, archiveAllSettledExpenses, unarchiveExpense } = useStore()
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [payerId, setPayerId] = useState('')
@@ -55,7 +56,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  // Focus modal when it opens
   useEffect(() => {
     if (viewingReceipt) {
       modalRef.current?.focus()
@@ -73,6 +73,20 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const visibleExpenses = showArchived ? archivedExpenses : activeExpenses
   const archivableCount = activeExpenses.filter((e) => isExpenseArchivable(e, balances)).length
 
+  const resetForm = () => {
+    setEditingExpenseId(null)
+    setDescription('')
+    setAmount('')
+    setPayerId('')
+    setSplitAmong([])
+    setSplitType('equal')
+    setProportions({})
+    setFixedAmounts({})
+    setReceiptImage(null)
+    setReceiptError(null)
+    setShowForm(false)
+  }
+
   const buildCurrentSplitFields = () => ({
     splitType,
     splitProportions:
@@ -89,6 +103,34 @@ export function ExpenseList({ group }: ExpenseListProps) {
         : undefined,
   })
 
+  const startCreate = () => {
+    resetForm()
+    setShowForm(true)
+    setSplitAmong(activeMembers.map((m) => m.id))
+  }
+
+  const startEdit = (expense: Expense) => {
+    setEditingExpenseId(expense.id)
+    setDescription(expense.description)
+    setAmount(expense.amount.toString())
+    setPayerId(expense.payerId)
+    setSplitAmong(expense.splitAmong)
+    setSplitType(expense.splitType ?? 'equal')
+    setProportions(
+      Object.fromEntries(
+        expense.splitAmong.map((id) => [id, String(expense.splitProportions?.[id] ?? 1)]),
+      ),
+    )
+    setFixedAmounts(
+      Object.fromEntries(
+        expense.splitAmong.map((id) => [id, String(expense.splitFixedAmounts?.[id] ?? '')]),
+      ),
+    )
+    setReceiptImage(expense.receiptImage ?? null)
+    setReceiptError(null)
+    setShowForm(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!description.trim() || !amount || !payerId || splitAmong.length === 0) return
@@ -96,8 +138,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
     const numAmount = parseFloat(amount)
     const splitFields = buildCurrentSplitFields()
-
-    const expenseData = {
+    const baseExpense = {
       groupId: group.id,
       description: description.trim(),
       amount: numAmount,
@@ -108,27 +149,29 @@ export function ExpenseList({ group }: ExpenseListProps) {
       receiptImage: receiptImage ?? undefined,
     }
 
-    // Compute and persist the immutable breakdown
     const computedShares = computeExpenseShares({
-      ...expenseData,
-      id: '',
+      ...baseExpense,
+      id: editingExpenseId ?? '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      archived: false,
       deleted: false,
     } as Expense)
 
-    await addExpense({ ...expenseData, computedShares })
+    if (editingExpenseId) {
+      const existing = expenses.find((expense) => expense.id === editingExpenseId)
+      if (!existing) return
+      await updateExpense({
+        ...existing,
+        ...baseExpense,
+        date: existing.date,
+        computedShares,
+      })
+    } else {
+      await addExpense({ ...baseExpense, computedShares })
+    }
 
-    setDescription('')
-    setAmount('')
-    setPayerId('')
-    setSplitAmong([])
-    setSplitType('equal')
-    setProportions({})
-    setFixedAmounts({})
-    setReceiptImage(null)
-    setReceiptError(null)
-    setShowForm(false)
+    resetForm()
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,17 +215,12 @@ export function ExpenseList({ group }: ExpenseListProps) {
     )
   }
 
-  const selectAllMembers = () => {
-    setSplitAmong(activeMembers.map((m) => m.id))
-  }
-
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
 
   const getMemberColor = (id: string) =>
     group.members.find((m) => m.id === id)?.color ?? '#6366f1'
 
-  // Real-time validation for fixed split type
   let validationError: string | null = null
   if (splitType === 'fixed' && splitAmong.length > 0 && amount) {
     const total = parseFloat(amount) || 0
@@ -197,12 +235,11 @@ export function ExpenseList({ group }: ExpenseListProps) {
     }
   }
 
-  // Live preview of computed shares
   const numAmountPreview = parseFloat(amount)
   const previewShares: Record<string, number> | null =
     numAmountPreview > 0 && splitAmong.length > 0
       ? computeExpenseShares({
-          id: '',
+          id: editingExpenseId ?? '',
           groupId: group.id,
           description: '',
           amount: numAmountPreview,
@@ -212,6 +249,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
           date: '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          archived: false,
           deleted: false,
         } as Expense)
       : null
@@ -280,10 +318,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
             <div className="flex gap-2 mb-4">
               {!group.archived && (
                 <Button
-                  onClick={() => {
-                    setShowForm(true)
-                    selectAllMembers()
-                  }}
+                  onClick={startCreate}
                   className="flex-1"
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -323,7 +358,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
           ) : (
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle className="text-lg">Nova despesa</CardTitle>
+                <CardTitle className="text-lg">{editingExpenseId ? 'Editar despesa' : 'Nova despesa'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-3">
@@ -584,17 +619,12 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" className="flex-1" disabled={!!validationError}>
-                      Afegir despesa
+                      {editingExpenseId ? 'Guardar canvis' : 'Afegir despesa'}
                     </Button>
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => {
-                        setShowForm(false)
-                        setReceiptImage(null)
-                        setReceiptError(null)
-                        setFixedAmounts({})
-                      }}
+                      onClick={resetForm}
                     >
                       Cancel·lar
                     </Button>
@@ -657,6 +687,17 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                 <Camera className="h-3 w-3" />
                               </Button>
                             )}
+                            {!showArchived && !group.archived && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(expense)}
+                                className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="mr-1 h-3 w-3" />
+                                Editar
+                              </Button>
+                            )}
                             {showArchived ? (
                               !group.archived && (
                                 <Button
@@ -672,16 +713,16 @@ export function ExpenseList({ group }: ExpenseListProps) {
                             ) : (
                               <AlertDialog>
                                 {!group.archived && (
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
-                                  >
-                                    <Trash2 className="mr-1 h-3 w-3" />
-                                    Eliminar
-                                  </Button>
-                                </AlertDialogTrigger>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                                    >
+                                      <Trash2 className="mr-1 h-3 w-3" />
+                                      Eliminar
+                                    </Button>
+                                  </AlertDialogTrigger>
                                 )}
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
@@ -694,13 +735,13 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                     <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => deleteExpense(expense.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Eliminar
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                           </div>
                         </div>
@@ -722,7 +763,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
         </div>
       )}
 
-      {/* Receipt viewer modal */}
       {viewingReceipt && (
         <div
           ref={modalRef}

@@ -376,6 +376,15 @@ export const reparteix = {
     return newPayment
   },
 
+  /** Update an existing payment. Throws if the group is archived. */
+  async updatePayment(payment: Payment): Promise<Payment> {
+    const group = await db.groups.get(payment.groupId)
+    if (group?.archived) throw new Error('Cannot modify an archived group')
+    const updated = { ...payment, updatedAt: now() }
+    await db.payments.update(payment.id, updated)
+    return updated
+  },
+
   /** Soft-delete a payment. Throws if the group is archived. */
   async deletePayment(id: string): Promise<void> {
     const payment = await db.payments.get(id)

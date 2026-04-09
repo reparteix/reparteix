@@ -26,6 +26,7 @@ interface AppState {
   archiveAllSettledExpenses: (groupId: string) => Promise<number>
   unarchiveExpense: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>) => Promise<void>
+  updatePayment: (payment: Payment) => Promise<void>
   deletePayment: (id: string) => Promise<void>
   setCurrentGroup: (groupId: string | null) => void
   exportGroup: (groupId: string) => Promise<void>
@@ -140,6 +141,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   addPayment: async (payment) => {
     await reparteix.addPayment(payment)
+    await get().loadGroupData(payment.groupId)
+  },
+
+  updatePayment: async (payment) => {
+    await reparteix.updatePayment(payment)
     await get().loadGroupData(payment.groupId)
   },
 

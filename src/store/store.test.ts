@@ -262,6 +262,25 @@ describe('payments', () => {
     expect(payments[0].toId).toBe(members[0].id)
   })
 
+  it("updatePayment actualitza el pagament a l'estat", async () => {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+
+    const { addPayment, updatePayment } = useStore.getState()
+    await addPayment({
+      groupId: group.id,
+      fromId: members[1].id,
+      toId: members[0].id,
+      amount: 30,
+      date: '2024-01-20',
+    })
+
+    const payment = useStore.getState().payments[0]
+    await updatePayment({ ...payment, amount: 42 })
+
+    expect(useStore.getState().payments[0].amount).toBe(42)
+  })
+
   it("deletePayment elimina el pagament de l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members

@@ -468,6 +468,30 @@ describe('reparteix SDK', () => {
       expect(payments).toHaveLength(1)
     })
 
+    it('updates a payment', async () => {
+      const group = await reparteix.createGroup('Sopar')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+
+      const payment = await reparteix.addPayment({
+        groupId: group.id,
+        fromId: bernat.id,
+        toId: anna.id,
+        amount: 10,
+        date: '2024-06-02',
+      })
+
+      const updated = await reparteix.updatePayment({
+        ...payment,
+        amount: 12,
+      })
+
+      expect(updated.amount).toBe(12)
+
+      const [stored] = await reparteix.listPayments(group.id)
+      expect(stored.amount).toBe(12)
+    })
+
     it('soft-deletes a payment', async () => {
       const group = await reparteix.createGroup('Sopar')
       const anna = await reparteix.addMember(group.id, 'Anna')
