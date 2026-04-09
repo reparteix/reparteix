@@ -266,12 +266,13 @@ export const reparteix = {
 
   /** Add an expense and return it. Throws if the group is archived. */
   async addExpense(
-    expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted'>,
+    expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'deleted' | 'archived'>,
   ): Promise<Expense> {
     const group = await db.groups.get(expense.groupId)
     if (group?.archived) throw new Error('Cannot modify an archived group')
     const timestamp = now()
     const newExpense: Expense = {
+      archived: false,
       ...expense,
       id: generateId(),
       createdAt: timestamp,
@@ -298,6 +299,26 @@ export const reparteix = {
       const group = await db.groups.get(expense.groupId)
       if (group?.archived) throw new Error('Cannot modify an archived group')
       await db.expenses.update(id, { deleted: true, updatedAt: now() })
+    }
+  },
+
+  /** Archive an expense (hides it from the active list). Throws if the group is archived. */
+  async archiveExpense(id: string): Promise<void> {
+    const expense = await db.expenses.get(id)
+    if (expense) {
+      const group = await db.groups.get(expense.groupId)
+      if (group?.archived) throw new Error('Cannot modify an archived group')
+      await db.expenses.update(id, { archived: true, updatedAt: now() })
+    }
+  },
+
+  /** Unarchive an expense (restores it to the active list). Throws if the group is archived. */
+  async unarchiveExpense(id: string): Promise<void> {
+    const expense = await db.expenses.get(id)
+    if (expense) {
+      const group = await db.groups.get(expense.groupId)
+      if (group?.archived) throw new Error('Cannot modify an archived group')
+      await db.expenses.update(id, { archived: false, updatedAt: now() })
     }
   },
 

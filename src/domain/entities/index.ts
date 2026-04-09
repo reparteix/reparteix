@@ -24,6 +24,7 @@ export const ExpenseSchema = z.object({
   computedShares: z.record(z.string(), z.number()).optional(),
   date: z.string(),
   receiptImage: z.string().optional(),
+  archived: z.boolean().default(false),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   deleted: z.boolean().default(false),

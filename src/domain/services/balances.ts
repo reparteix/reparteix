@@ -98,6 +98,19 @@ export function calculateBalances(
 }
 
 /**
+ * Determine whether an expense can be archived.
+ * An expense is archivable when all members involved (payer + splitAmong)
+ * have a net group balance of 0.
+ */
+export function isExpenseArchivable(expense: Expense, balances: Balance[]): boolean {
+  const involvedIds = new Set([expense.payerId, ...expense.splitAmong])
+  return [...involvedIds].every((id) => {
+    const balance = balances.find((b) => b.memberId === id)
+    return balance === undefined || Math.abs(balance.total) < 0.01
+  })
+}
+
+/**
  * Minimize settlements using greedy matching.
  * Returns a list of transfers that settle all debts.
  */

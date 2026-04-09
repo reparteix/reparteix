@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
-import { computeExpenseShares } from '../../domain/services/balances'
+import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,7 @@ interface ExpenseListProps {
 }
 
 export function ExpenseList({ group }: ExpenseListProps) {
-  const { expenses, addExpense, deleteExpense } = useStore()
+  const { expenses, payments, addExpense, deleteExpense, archiveExpense, unarchiveExpense } = useStore()
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [payerId, setPayerId] = useState('')
@@ -50,6 +50,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -63,6 +64,13 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
+
+  const memberIds = activeMembers.map((m) => m.id)
+  const balances = calculateBalances(memberIds, expenses, payments)
+
+  const activeExpenses = expenses.filter((e) => !e.archived)
+  const archivedExpenses = expenses.filter((e) => e.archived)
+  const visibleExpenses = showArchived ? archivedExpenses : activeExpenses
 
   const buildCurrentSplitFields = () => ({
     splitType,
@@ -246,7 +254,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   }
 
   const expensesByDay = useMemo(() => {
-    const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date))
+    const sorted = [...visibleExpenses].sort((a, b) => b.date.localeCompare(a.date))
     const groups: { date: string; items: Expense[] }[] = []
     for (const expense of sorted) {
       const last = groups[groups.length - 1]
@@ -257,7 +265,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
       }
     }
     return groups
-  }, [expenses])
+  }, [visibleExpenses])
 
   return (
     <div>
@@ -268,18 +276,39 @@ export function ExpenseList({ group }: ExpenseListProps) {
       ) : (
         <>
           {!showForm ? (
-            !group.archived && (
-            <Button
-              onClick={() => {
-                setShowForm(true)
-                selectAllMembers()
-              }}
-              className="w-full mb-4"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nova despesa
-            </Button>
-            )
+            <div className="flex gap-2 mb-4">
+              {!group.archived && (
+                <Button
+                  onClick={() => {
+                    setShowForm(true)
+                    selectAllMembers()
+                  }}
+                  className="flex-1"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova despesa
+                </Button>
+              )}
+              {archivedExpenses.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowArchived((v) => !v)}
+                  title={showArchived ? 'Mostrar actives' : 'Mostrar arxivades'}
+                >
+                  {showArchived ? (
+                    <>
+                      <ArchiveRestore className="mr-2 h-4 w-4" />
+                      Actives
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="mr-2 h-4 w-4" />
+                      Arxivades ({archivedExpenses.length})
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           ) : (
             <Card className="mb-6">
               <CardHeader>
@@ -566,9 +595,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
         </>
       )}
 
-      {expenses.length === 0 ? (
+      {visibleExpenses.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">
-          Encara no hi ha despeses.
+          {showArchived ? 'No hi ha despeses arxivades.' : 'Encara no hi ha despeses.'}
         </p>
       ) : (
         <div className="space-y-4">
@@ -585,8 +614,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
               <div className="space-y-2">
                 {items.map((expense) => {
                   const splitLabel = getSplitLabel(expense)
+                  const canArchive = !showArchived && !group.archived && isExpenseArchivable(expense, balances)
                   return (
-                    <Card key={expense.id}>
+                    <Card key={expense.id} className={cn(showArchived && 'opacity-75')}>
                       <CardContent className="flex items-center justify-between p-3">
                         <div className="flex-1">
                           <div className="font-medium">{expense.description}</div>
@@ -617,37 +647,66 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                 <Camera className="h-3 w-3" />
                               </Button>
                             )}
-                            <AlertDialog>
-                              {!group.archived && (
-                              <AlertDialogTrigger asChild>
+                            {showArchived ? (
+                              !group.archived && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                                  onClick={() => unarchiveExpense(expense.id)}
+                                  className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
                                 >
-                                  <Trash2 className="mr-1 h-3 w-3" />
-                                  Eliminar
+                                  <ArchiveRestore className="mr-1 h-3 w-3" />
+                                  Desarxivar
                                 </Button>
-                              </AlertDialogTrigger>
-                              )}
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Estàs segur que vols eliminar la despesa &quot;{expense.description}&quot;? Aquesta acció no es pot desfer.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteExpense(expense.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              )
+                            ) : (
+                              <>
+                                {canArchive && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => archiveExpense(expense.id)}
+                                    className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                                    title="Arxivar despesa (el balanç és 0)"
                                   >
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>                      </div>
+                                    <Archive className="mr-1 h-3 w-3" />
+                                    Arxivar
+                                  </Button>
+                                )}
+                                <AlertDialog>
+                                  {!group.archived && (
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                                    >
+                                      <Trash2 className="mr-1 h-3 w-3" />
+                                      Eliminar
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  )}
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Estàs segur que vols eliminar la despesa &quot;{expense.description}&quot;? Aquesta acció no es pot desfer.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteExpense(expense.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -656,11 +715,11 @@ export function ExpenseList({ group }: ExpenseListProps) {
               </div>
             </div>
           ))}
-          {expenses.length > 0 && (
+          {visibleExpenses.length > 0 && (
             <div className="flex items-center justify-between px-3 pt-1 text-sm font-medium text-muted-foreground">
-              <span>Total ({expenses.length} despeses)</span>
+              <span>Total ({visibleExpenses.length} despeses)</span>
               <span>
-                {expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
+                {visibleExpenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
               </span>
             </div>
           )}
