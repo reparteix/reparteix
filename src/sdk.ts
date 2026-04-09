@@ -4,6 +4,7 @@ import {
   calculateBalances,
   calculateSettlements,
   calculateNetting,
+  isExpenseArchivable,
   computeSyncMerge,
   getMemberColor,
   type Balance,
@@ -320,6 +321,30 @@ export const reparteix = {
       if (group?.archived) throw new Error('Cannot modify an archived group')
       await db.expenses.update(id, { archived: false, updatedAt: now() })
     }
+  },
+
+  /**
+   * Archive all fully-settled expenses in a group.
+   * An expense is settled when all members involved (payer + splitAmong) have a net balance of 0.
+   * Returns the number of expenses that were archived.
+   * Throws if the group is archived.
+   */
+  async archiveAllSettledExpenses(groupId: string): Promise<number> {
+    const group = await db.groups.get(groupId)
+    if (!group) return 0
+    if (group.archived) throw new Error('Cannot modify an archived group')
+
+    const memberIds = group.members.filter((m) => !m.deleted).map((m) => m.id)
+    const expenses = await reparteix.listExpenses(groupId)
+    const payments = await reparteix.listPayments(groupId)
+    const balances = calculateBalances(memberIds, expenses, payments)
+
+    const toArchive = expenses.filter((e) => !e.archived && isExpenseArchivable(e, balances))
+    const timestamp = now()
+    await Promise.all(
+      toArchive.map((e) => db.expenses.update(e.id, { archived: true, updatedAt: timestamp })),
+    )
+    return toArchive.length
   },
 
   // ─── Payments ──────────────────────────────────────────────────────
