@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/reparteix/reparteix/compare/v1.27.0...v1.28.0) (2026-04-10)
+
+
+### Features
+
+* Liquidació 1-click per període ([#102](https://github.com/reparteix/reparteix/issues/102)) ([5588a0d](https://github.com/reparteix/reparteix/commit/5588a0da85f5438ffd98c434ab9cc94452fd0dd3))
+
 # [1.27.0](https://github.com/reparteix/reparteix/compare/v1.26.0...v1.27.0) (2026-04-10)
 
 
