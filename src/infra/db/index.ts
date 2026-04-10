@@ -1,10 +1,11 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Group, Expense, Payment } from '../../domain/entities'
+import type { Group, Expense, Payment, Liquidation } from '../../domain/entities'
 
 const db = new Dexie('reparteix') as Dexie & {
   groups: EntityTable<Group, 'id'>
   expenses: EntityTable<Expense, 'id'>
   payments: EntityTable<Payment, 'id'>
+  liquidations: EntityTable<Liquidation, 'id'>
 }
 
 db.version(1).stores({
@@ -48,3 +49,10 @@ db.version(3)
   })
 
 export { db }
+
+db.version(4).stores({
+  groups: 'id, name, deleted, archived',
+  expenses: 'id, groupId, deleted, archived',
+  payments: 'id, groupId, deleted',
+  liquidations: 'id, groupId, createdAt',
+})
