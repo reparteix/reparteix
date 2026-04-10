@@ -19,6 +19,8 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 - Actualitzacions automàtiques amb avís a l'usuari
 - Mode fosc amb detecció automàtica de preferència del sistema i commutador manual (clar / fosc / sistema)
 - Headless SDK per a ús programàtic sense UI
+- **Sincronització P2P** entre dispositius via WebRTC — xifrat extrem a extrem (AES-256-GCM)
+- Configuració flexible: servidors públics per defecte, o PeerJS/STUN/TURN propis (self-hosted)
 
 ## Stack tècnic
 
@@ -36,6 +38,8 @@ Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectur
 | Tests | Vitest + @testing-library/jest-dom |
 | Releases | semantic-release (Conventional Commits) |
 | Deploy | GitHub Actions → GitHub Pages |
+| Transport P2P | PeerJS 1.x (WebRTC data channels) |
+| Xifrat | WebCrypto API (AES-256-GCM + PBKDF2) |
 
 ## Arquitectura
 
@@ -65,6 +69,24 @@ Totes les entitats porten camps comuns: `id` (UUID), `createdAt`, `updatedAt`, `
 ### SDK headless
 
 L'arxiu `src/sdk.ts` exporta un objecte `reparteix` amb totes les operacions de negoci (CRUD de grups, membres, despeses, pagaments, balanços, liquidacions, i exportació/importació de grups) sense dependre de la UI. El store Zustand delega al SDK.
+
+### Sincronització P2P
+
+Sincronització directa entre navegadors sense servidor propi:
+
+- **Transport**: WebRTC data channels via PeerJS (signaling públic per defecte)
+- **Xifrat**: AES-256-GCM amb clau derivada de contrasenya de grup (PBKDF2, 100.000 iteracions)
+- **Protocol**: missatges tipats (hello, request-sync, sync-data, sync-ack, error) validats amb Zod
+- **Merge**: Last-Write-Wins per `updatedAt` amb detecció de conflictes i integritat referencial
+- **Configuració**: servidors PeerJS/STUN/TURN configurables per a instal·lacions self-hosted
+
+Flux de sincronització:
+1. Dispositiu A prem «Compartir» → s'obre sessió i espera peer
+2. Dispositiu B prem «Rebre» amb la mateixa contrasenya → es connecta automàticament
+3. Les dades es xifren, s'intercanvien i es fusionen amb LWW
+4. Ambdós dispositius queden sincronitzats
+
+Documentació detallada: `docs/adr/001-sync-architecture.md`
 
 ## Estructura del projecte
 
@@ -174,11 +196,9 @@ Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
 
 ## Possibles evolucions
 
-- Sincronització P2P entre dispositius (WebRTC + PeerJS) — PoC en curs, veure `docs/adr/001-sync-architecture.md`
-- Xifrat app-level (AES-256-GCM via WebCrypto, clau derivada amb PBKDF2) — implementat a `src/domain/services/crypto.ts`
 - Historial d'activitat
 - Proveïdors de sync alternatius (Dropbox, WebDAV)
-- Configuració de PeerJS/STUN/TURN propis (self-hosted) sense canviar el frontend
+- Sincronització amb relay persistent per a sync asíncron (quan els peers no coincideixen online)
 
 ## Llicència
 

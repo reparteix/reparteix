@@ -25,3 +25,10 @@ export {
   type PeerManagerOptions,
   createPeerManager,
 } from './peer-manager'
+
+export {
+  createSyncSession,
+  type SyncSessionState,
+  type SyncSessionStatus,
+  type SyncSessionListener,
+} from './sync-session'

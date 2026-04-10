@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useStore } from '../../store'
 import { reparteix } from '../../sdk'
+import { SyncPanel } from './SyncPanel'
 import type { Group } from '../../domain/entities'
 
 const EMOJI_SHORTCUTS = [
@@ -252,6 +253,10 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
           )}
         </CardContent>
       </Card>
+
+      <Separator className="my-8" />
+
+      <SyncPanel groupId={groupId} />
 
       <Separator className="my-8" />
 
