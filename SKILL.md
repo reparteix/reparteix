@@ -1,7 +1,7 @@
 ---
 name: reparteix
 description: Manage shared expenses — create groups, add members, track expenses (equal or proportional splits) and payments, calculate balances and minimum settlements. Export/import groups as JSON. Sync groups from external JSON snapshots with LWW merge. Local-first, offline-capable PWA.
-version: 1.4.0
+version: 1.5.0
 author: pilipilisbot
 tags:
   - expenses
@@ -43,6 +43,8 @@ Use this skill when the user wants to:
 - **Import** a group from a `.reparteix.json` file (new envelope format) or from the legacy JSON format (backward compatible). Uses Last-Write-Wins conflict resolution.
 - **Open files directly** from the installed PWA (File Handling API on Chromium) or via manual file picker (universal fallback).
 - **Sync** a group from an external JSON snapshot using deterministic LWW merge with conflict detection and referential integrity checks.
+- **Encrypt/decrypt** sync payloads end-to-end using AES-256-GCM with PBKDF2 key derivation from a group passphrase.
+- **P2P sync** (PoC) — connect peers via WebRTC + PeerJS for browser-to-browser sync with configurable STUN/TURN.
 
 ## Project Setup
 
@@ -384,6 +386,8 @@ await reparteix.addPayment({
 | Tests | Vitest + @testing-library/jest-dom |
 | Releases | semantic-release (Conventional Commits) |
 | Deploy | GitHub Actions → GitHub Pages |
+| P2P Transport | PeerJS 1.x (WebRTC data channels) |
+| Encryption | WebCrypto API (AES-256-GCM + PBKDF2) |
 
 ## Maintenance
 

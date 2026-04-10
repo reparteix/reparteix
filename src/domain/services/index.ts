@@ -22,3 +22,13 @@ export {
 } from './sync'
 
 export { getMemberColor } from './colors'
+
+export {
+  generateSalt,
+  deriveGroupKey,
+  encryptPayload,
+  decryptPayload,
+  encryptSyncPayload,
+  decryptSyncPayload,
+  type EncryptedPayload,
+} from './crypto'

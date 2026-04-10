@@ -174,11 +174,11 @@ Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
 
 ## Possibles evolucions
 
-- Sincronització entre dispositius (snapshot xifrat a GitHub Gist)
-- Xifrat client-side (AES-GCM via WebCrypto, clau derivada amb PBKDF2)
+- Sincronització P2P entre dispositius (WebRTC + PeerJS) — PoC en curs, veure `docs/adr/001-sync-architecture.md`
+- Xifrat app-level (AES-256-GCM via WebCrypto, clau derivada amb PBKDF2) — implementat a `src/domain/services/crypto.ts`
 - Historial d'activitat
 - Proveïdors de sync alternatius (Dropbox, WebDAV)
-- Realtime opcional (Yjs + WebRTC)
+- Configuració de PeerJS/STUN/TURN propis (self-hosted) sense canviar el frontend
 
 ## Llicència
 
