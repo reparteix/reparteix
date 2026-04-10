@@ -48,6 +48,8 @@ export interface SyncSessionStatus {
   passphrase: string
   error: string | null
   report: SyncReport | null
+  lastAttemptAt: string | null
+  lastSuccessAt: string | null
   /** Human-readable progress message */
   message: string
 }
@@ -72,6 +74,8 @@ export function createSyncSession(
     passphrase,
     error: null,
     report: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
     message: 'Inicialitzant…',
   }
 
@@ -248,6 +252,7 @@ export function createSyncSession(
       update({
         state: 'completed',
         report,
+        lastSuccessAt: new Date().toISOString(),
         message: buildReportSummary(report),
       })
     } catch (err) {
@@ -362,7 +367,12 @@ export function createSyncSession(
 
     /** Start as host: initialise peer and wait for a remote peer to connect. */
     async startAsHost(): Promise<string> {
-      update({ state: 'initializing', message: 'Connectant al servidor de senyalització…' })
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Connectant al servidor de senyalització…',
+      })
 
       try {
         const roomPeerId = await buildGroupPeerId()
@@ -382,7 +392,12 @@ export function createSyncSession(
 
     /** Start as guest: connect to the host peer and begin sync. */
     async joinSession(): Promise<void> {
-      update({ state: 'initializing', message: 'Connectant al servidor de senyalització…' })
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Connectant al servidor de senyalització…',
+      })
 
       try {
         await peerManager.init()
@@ -407,7 +422,12 @@ export function createSyncSession(
      */
     async startSync(): Promise<void> {
       const roomPeerId = await buildGroupPeerId()
-      update({ state: 'initializing', message: 'Preparant sincronització…' })
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Preparant sincronització…',
+      })
 
       try {
         const peerId = await peerManager.init(roomPeerId)

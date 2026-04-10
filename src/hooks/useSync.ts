@@ -24,6 +24,10 @@ export interface UseSyncReturn {
   error: string | null
   /** Sync report with details of what changed */
   report: SyncReport | null
+  /** Last sync attempt timestamp */
+  lastAttemptAt: string | null
+  /** Last successful sync timestamp */
+  lastSuccessAt: string | null
   /** Sync v2 primary entry point: create room or join existing one */
   startSync: () => Promise<void>
   /** Start as host — create a room and wait for peer */
@@ -44,6 +48,8 @@ export function useSync({ groupId, passphrase, configOverrides }: UseSyncOptions
     passphrase,
     error: null,
     report: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
     message: '',
   })
 
@@ -93,6 +99,8 @@ export function useSync({ groupId, passphrase, configOverrides }: UseSyncOptions
       passphrase,
       error: null,
       report: null,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
       message: '',
     })
   }, [groupId, passphrase])
@@ -105,6 +113,8 @@ export function useSync({ groupId, passphrase, configOverrides }: UseSyncOptions
     message: status.message,
     error: status.error,
     report: status.report,
+    lastAttemptAt: status.lastAttemptAt,
+    lastSuccessAt: status.lastSuccessAt,
     startSync,
     startAsHost,
     joinSession,

@@ -124,6 +124,19 @@ function StateIcon({ state }: { state: string }) {
   }
 }
 
+function formatSyncTimestamp(value: string | null): string | null {
+  if (!value) return null
+
+  try {
+    return new Date(value).toLocaleString('ca-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    })
+  } catch {
+    return value
+  }
+}
+
 function StateBadge({ state }: { state: string }) {
   const labels: Record<string, string> = {
     'idle': 'Preparat',
@@ -333,10 +346,18 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
             {/* Status message */}
             <div className="space-y-1">
               <p className="text-sm">{sync.message}</p>
-              {sync.remotePeerIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Peers detectats: {sync.remotePeerIds.join(', ')}
-                </p>
+              {(sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {sync.remotePeerIds.length > 0 && (
+                    <p>Peers detectats: {sync.remotePeerIds.join(', ')}</p>
+                  )}
+                  {sync.lastAttemptAt && (
+                    <p>Últim intent: {formatSyncTimestamp(sync.lastAttemptAt)}</p>
+                  )}
+                  {sync.lastSuccessAt && (
+                    <p>Última sync correcta: {formatSyncTimestamp(sync.lastSuccessAt)}</p>
+                  )}
+                </div>
               )}
             </div>
 
