@@ -24,22 +24,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/hooks/useSync'
 import { useStore } from '@/store'
+import { encodeBase64Url } from '@/lib/base64url'
 import type { SyncReport } from '@/domain/services/sync'
 
 interface SyncPanelProps {
   groupId: string
-}
-
-/**
- * Encode a string to base64url (URL-safe base64 without padding).
- */
-function encodeBase64Url(str: string): string {
-  const utf8 = new TextEncoder().encode(str)
-  let binary = ''
-  for (const byte of utf8) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 /**

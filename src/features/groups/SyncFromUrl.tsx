@@ -17,21 +17,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useSync } from '@/hooks/useSync'
 import { useStore } from '@/store'
+import { decodeBase64Url } from '@/lib/base64url'
 import type { SyncReport } from '@/domain/services/sync'
 
-/**
- * Decode base64url to string.
- * Handles the URL-safe variant (- instead of +, _ instead of /).
- */
-function decodeBase64Url(encoded: string): string {
-  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
-  return decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join(''),
-  )
-}
+/** Sync states where the session is still loading/in-progress */
+const LOADING_STATES = new Set(['idle', 'initializing', 'connecting', 'syncing', 'waiting-for-peer'])
 
 function SyncReportSummary({ report }: { report: SyncReport }) {
   const totalCreated =
@@ -65,8 +55,8 @@ export function SyncFromUrl() {
   const encodedPassphrase = searchParams.get('k') ?? ''
 
   // Decode passphrase synchronously from URL params
-  type DecodeResult = { passphrase: string; error?: never } | { error: string; passphrase?: never }
-  const decoded: DecodeResult = (() => {
+  type UrlParamResult = { passphrase: string; error?: never } | { error: string; passphrase?: never }
+  const decoded: UrlParamResult = (() => {
     if (!groupId || !encodedPassphrase) {
       return { error: 'Enllaç de sincronització invàlid. Falten paràmetres.' }
     }
@@ -183,7 +173,7 @@ export function SyncFromUrl() {
             {/* Status display */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {(sync.state === 'idle' || sync.state === 'initializing' || sync.state === 'connecting' || sync.state === 'syncing') && (
+                {LOADING_STATES.has(sync.state) && sync.state !== 'waiting-for-peer' && (
                   <Loader2 className="h-5 w-5 text-primary animate-spin" />
                 )}
                 {sync.state === 'completed' && (
@@ -257,7 +247,7 @@ export function SyncFromUrl() {
             </div>
 
             {/* Waiting info */}
-            {(sync.state === 'idle' || sync.state === 'initializing' || sync.state === 'connecting' || sync.state === 'waiting-for-peer') && (
+            {LOADING_STATES.has(sync.state) && (
               <p className="text-xs text-muted-foreground">
                 La connexió és directa entre dispositius. Les dades es xifren extrem a extrem.
               </p>
