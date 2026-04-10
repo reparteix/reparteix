@@ -8,11 +8,13 @@ beforeEach(async () => {
   await db.groups.clear()
   await db.expenses.clear()
   await db.payments.clear()
+  await db.liquidations.clear()
   useStore.setState({
     groups: [],
     groupTotals: {},
     expenses: [],
     payments: [],
+    liquidations: [],
     currentGroupId: null,
   })
 })
@@ -298,6 +300,75 @@ describe('payments', () => {
     await deletePayment(paymentId)
 
     expect(useStore.getState().payments).toHaveLength(0)
+  })
+})
+
+describe('liquidations', () => {
+  it('loadGroupData carrega també les liquidacions', async () => {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+    const { addExpense, createLiquidation, loadGroupData } = useStore.getState()
+
+    await addExpense({
+      groupId: group.id,
+      description: 'Sopar',
+      amount: 60,
+      payerId: members[0].id,
+      splitAmong: members.map((m) => m.id),
+      date: '2024-01-15',
+    })
+
+    await createLiquidation({ groupId: group.id, name: 'Gener 2024' })
+    await loadGroupData(group.id)
+
+    expect(useStore.getState().liquidations).toHaveLength(1)
+    expect(useStore.getState().liquidations[0].name).toBe('Gener 2024')
+  })
+
+  it('createLiquidation crea el tancament i refresca l\'estat', async () => {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+    const { addExpense, createLiquidation } = useStore.getState()
+
+    await addExpense({
+      groupId: group.id,
+      description: 'Apartament',
+      amount: 80,
+      payerId: members[0].id,
+      splitAmong: members.map((m) => m.id),
+      date: '2024-02-01',
+    })
+
+    const liquidation = await createLiquidation({
+      groupId: group.id,
+      name: 'Febrer 2024',
+      periodStart: '2024-02-01',
+      periodEnd: '2024-02-29',
+    })
+
+    expect(liquidation.name).toBe('Febrer 2024')
+    expect(useStore.getState().liquidations).toHaveLength(1)
+    expect(useStore.getState().liquidations[0].totalSpent).toBe(80)
+  })
+
+  it('deleteLiquidation elimina el tancament i refresca l\'estat', async () => {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+    const { addExpense, createLiquidation, deleteLiquidation } = useStore.getState()
+
+    await addExpense({
+      groupId: group.id,
+      description: 'Taxi',
+      amount: 30,
+      payerId: members[0].id,
+      splitAmong: members.map((m) => m.id),
+      date: '2024-03-02',
+    })
+
+    const liquidation = await createLiquidation({ groupId: group.id, name: 'Març 2024' })
+    await deleteLiquidation(liquidation.id)
+
+    expect(useStore.getState().liquidations).toHaveLength(0)
   })
 })
 

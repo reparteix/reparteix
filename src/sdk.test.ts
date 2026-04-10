@@ -7,6 +7,7 @@ beforeEach(async () => {
   await db.groups.clear()
   await db.expenses.clear()
   await db.payments.clear()
+  await db.liquidations.clear()
 })
 
 describe('reparteix SDK', () => {
@@ -564,6 +565,124 @@ describe('reparteix SDK', () => {
     it('returns empty balances for non-existent group', async () => {
       const balances = await reparteix.getBalances('nope')
       expect(balances).toEqual([])
+    })
+
+    it('filters balances by period when dates are provided', async () => {
+      const group = await reparteix.createGroup('Períodes')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Gener',
+        amount: 40,
+        payerId: anna.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-01-10',
+      })
+
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Febrer',
+        amount: 20,
+        payerId: bernat.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-02-10',
+      })
+
+      const januaryBalances = await reparteix.getBalances(
+        group.id,
+        '2024-01-01',
+        '2024-01-31',
+      )
+
+      expect(januaryBalances.find((b) => b.memberId === anna.id)?.total).toBe(20)
+      expect(januaryBalances.find((b) => b.memberId === bernat.id)?.total).toBe(-20)
+    })
+  })
+
+  describe('liquidations', () => {
+    it('creates and lists liquidation snapshots', async () => {
+      const group = await reparteix.createGroup('Liquidacions')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      const bernat = await reparteix.addMember(group.id, 'Bernat')
+
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Sopar',
+        amount: 50,
+        payerId: anna.id,
+        splitAmong: [anna.id, bernat.id],
+        date: '2024-03-01',
+      })
+
+      const liquidation = await reparteix.createLiquidation({
+        groupId: group.id,
+        name: 'Març 2024',
+        periodStart: '2024-03-01',
+        periodEnd: '2024-03-31',
+      })
+
+      expect(liquidation.totalSpent).toBe(50)
+      expect(liquidation.transfers).toHaveLength(1)
+
+      const list = await reparteix.listLiquidations(group.id)
+      expect(list).toHaveLength(1)
+      expect(list[0].name).toBe('Març 2024')
+    })
+
+    it('deletes a liquidation snapshot', async () => {
+      const group = await reparteix.createGroup('Liquidacions')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Taxi',
+        amount: 12,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-03-02',
+      })
+
+      const liquidation = await reparteix.createLiquidation({
+        groupId: group.id,
+        name: 'Tancament',
+      })
+
+      await reparteix.deleteLiquidation(liquidation.id)
+      expect(await reparteix.listLiquidations(group.id)).toHaveLength(0)
+    })
+
+    it('blocks createLiquidation on an archived group', async () => {
+      const group = await reparteix.createGroup('Arxivat')
+      await reparteix.archiveGroup(group.id)
+
+      await expect(
+        reparteix.createLiquidation({ groupId: group.id, name: 'No permès' }),
+      ).rejects.toThrow('Cannot modify an archived group')
+    })
+
+    it('blocks deleteLiquidation on an archived group', async () => {
+      const group = await reparteix.createGroup('Arxivat')
+      const anna = await reparteix.addMember(group.id, 'Anna')
+      await reparteix.addExpense({
+        groupId: group.id,
+        description: 'Taxi',
+        amount: 12,
+        payerId: anna.id,
+        splitAmong: [anna.id],
+        date: '2024-03-02',
+      })
+      const liquidation = await reparteix.createLiquidation({
+        groupId: group.id,
+        name: 'Tancament',
+      })
+
+      await reparteix.archiveGroup(group.id)
+
+      await expect(reparteix.deleteLiquidation(liquidation.id)).rejects.toThrow(
+        'Cannot modify an archived group',
+      )
     })
   })
 
