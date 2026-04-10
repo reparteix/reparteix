@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { addExpenseToDoc, createGroupDoc, generateGroupKey } from './poc'
+import { addExpenseToDoc, createGroupDoc, generateGroupKey, readGroupSnapshot } from './poc'
 import { createSyncSession } from './session'
 import { pairInMemoryTransport } from './transport'
+
+async function waitFor(assertion: () => void, attempts = 20) {
+  let lastError: unknown
+
+  for (let index = 0; index < attempts; index += 1) {
+    try {
+      assertion()
+      return
+    } catch (error) {
+      lastError = error
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+  }
+
+  throw lastError
+}
 
 describe('sync session', () => {
   it('pushes encrypted updates between two peers through the transport layer', async () => {
@@ -21,7 +37,13 @@ describe('sync session', () => {
     targetSession.start()
 
     await sourceSession.pushState()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await waitFor(() => {
+      expect(readGroupSnapshot(target)).toEqual({
+        title: 'Costa Brava',
+        expenses: [{ id: 'e1', description: 'Gasolina', amount: 55 }],
+      })
+    })
 
     expect(targetSession.snapshot()).toEqual({
       title: 'Costa Brava',
