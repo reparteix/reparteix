@@ -1,4 +1,4 @@
-export { type SyncConfig, type PeerJsConfig, DEFAULT_SYNC_CONFIG, createSyncConfig } from './config'
+export { type SyncConfig, type PeerJsConfig, type SyncConfigOverrides, DEFAULT_SYNC_CONFIG, createSyncConfig } from './config'
 
 export {
   SYNC_PROTOCOL_VERSION,

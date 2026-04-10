@@ -34,8 +34,12 @@ export const DEFAULT_SYNC_CONFIG: SyncConfig = {
   debug: false,
 }
 
+export type SyncConfigOverrides = Partial<Omit<SyncConfig, 'peerJs'>> & {
+  peerJs?: Partial<PeerJsConfig>
+}
+
 /** Create a sync config by merging overrides with the defaults. */
-export function createSyncConfig(overrides: Partial<Omit<SyncConfig, 'peerJs'>> & { peerJs?: Partial<PeerJsConfig> } = {}): SyncConfig {
+export function createSyncConfig(overrides: SyncConfigOverrides = {}): SyncConfig {
   return {
     ...DEFAULT_SYNC_CONFIG,
     ...overrides,

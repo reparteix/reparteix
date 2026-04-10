@@ -15,6 +15,30 @@ import type { SyncConfig } from './config'
 import type { SyncMessage } from './protocol'
 import { encodeMessage, decodeMessage } from './protocol'
 
+// ─── Minimal PeerJS type interfaces ─────────────────────────────────────────
+
+/** Minimal interface for PeerJS DataConnection. */
+interface PeerDataConnection {
+  readonly peer: string
+  readonly open: boolean
+  send(data: string): void
+  close(): void
+  on(event: 'open', callback: () => void): void
+  on(event: 'data', callback: (data: unknown) => void): void
+  on(event: 'close', callback: () => void): void
+  on(event: 'error', callback: (err: Error) => void): void
+}
+
+/** Minimal interface for PeerJS Peer. */
+interface PeerInstance {
+  connect(id: string, options?: { reliable?: boolean; serialization?: string }): PeerDataConnection
+  on(event: 'open', callback: (id: string) => void): void
+  on(event: 'connection', callback: (conn: PeerDataConnection) => void): void
+  on(event: 'error', callback: (err: Error) => void): void
+  on(event: 'disconnected', callback: () => void): void
+  destroy(): void
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -69,8 +93,7 @@ export function createPeerManager(options: PeerManagerOptions) {
   const connections = new Map<string, PeerConnection>()
 
   // PeerJS Peer instance — lazily initialised in init()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let peer: any = null
+  let peer: PeerInstance | null = null
   let localPeerId: string | null = null
   let state: ConnectionState = 'disconnected'
 
@@ -79,8 +102,7 @@ export function createPeerManager(options: PeerManagerOptions) {
     events.onStateChange?.(newState)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function wrapConnection(dataConn: any, remotePeerId: string): PeerConnection {
+  function wrapConnection(dataConn: PeerDataConnection, remotePeerId: string): PeerConnection {
     const connection: PeerConnection = {
       peerId: remotePeerId,
       state: 'connecting',
@@ -162,7 +184,7 @@ export function createPeerManager(options: PeerManagerOptions) {
           config: {
             iceServers: config.iceServers,
           },
-        })
+        }) as unknown as PeerInstance
 
         peer.on('open', (id: string) => {
           clearTimeout(timeout)
@@ -171,10 +193,8 @@ export function createPeerManager(options: PeerManagerOptions) {
           resolve(id)
         })
 
-        peer.on('connection', (dataConn: unknown) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const dc = dataConn as any
-          wrapConnection(dc, dc.peer)
+        peer.on('connection', (dataConn: PeerDataConnection) => {
+          wrapConnection(dataConn, dataConn.peer)
         })
 
         peer.on('error', (err: Error) => {
