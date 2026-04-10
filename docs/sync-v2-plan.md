@@ -100,16 +100,18 @@ Goal: make the system operationally useful in real life.
 ### Runtime / coordinator
 
 - [x] `SyncSessionStatus` supports many peers
+- [x] primary entry point auto-creates or auto-joins a sync session
 - [ ] sync coordinator distinguishes discovery, sync round, retry backoff and idle states
 - [ ] periodic retry loop with visibility-aware throttling
 - [ ] sync journal persisted per group
 
 ### UI / product
 
-- [ ] replace send/receive with unified sync CTA
-- [ ] add "last synced" and "last error" indicators
-- [ ] add peer list / presence summary
+- [x] replace send/receive with unified sync CTA
+- [ ] add explicit "last synced" and "last error" indicators
+- [x] add peer list / presence summary
 - [ ] add conflict banner or resolution entry point
+- [x] expose basic runtime diagnostics (`lastAttemptAt`, `lastSuccessAt`)
 
 ### Data model
 
