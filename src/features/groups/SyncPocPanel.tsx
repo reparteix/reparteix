@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Copy, Link2, Shield, Smartphone, Wifi, WifiOff } from 'lucide-react'
 import { useStore } from '../../store'
 import { createGroupDoc, createInvitePayload, generateGroupKey, readInvitePayload } from '../../sync/poc'
@@ -40,13 +40,22 @@ function detectDeviceName() {
   return 'Aquest dispositiu'
 }
 
+function readSyncPayloadFromHash() {
+  if (typeof window === 'undefined') return ''
+  const hash = window.location.hash
+  const queryIndex = hash.indexOf('?')
+  if (queryIndex === -1) return ''
+  const search = new URLSearchParams(hash.slice(queryIndex + 1))
+  return search.get('sync') ?? ''
+}
+
 export function SyncPocPanel({ group }: SyncPocPanelProps) {
   const { expenses } = useStore()
   const [deviceName] = useState(detectDeviceName)
   const [peerId] = useState(() => randomId('device'))
   const [invitePayload, setInvitePayload] = useState('')
   const [inviteUrl, setInviteUrl] = useState('')
-  const [joinPayload, setJoinPayload] = useState('')
+  const [joinPayload, setJoinPayload] = useState(readSyncPayloadFromHash)
   const [mode, setMode] = useState<SyncMode>('idle')
   const [status, setStatus] = useState('Encara no hi ha sincronització activa.')
   const [details, setDetails] = useState<string[]>([])
@@ -75,7 +84,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
     setDetails((current) => [message, ...current].slice(0, 6))
   }
 
-  const rtcConfig = (): SyncRtcConfig => ({
+  const rtcConfig = useCallback((): SyncRtcConfig => ({
     host: hostInput || undefined,
     port: hostInput ? 443 : undefined,
     path: pathInput || '/',
@@ -85,7 +94,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
       .map((value) => value.trim())
       .filter(Boolean)
       .map((urls) => ({ urls })),
-  })
+  }), [hostInput, pathInput, stunInput])
 
   const buildDocFromCurrentGroup = () => {
     const doc = createGroupDoc(group.name)
@@ -137,7 +146,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
     pushDetail('S’ha creat una clau de grup per a aquesta sessió de sync.')
   }
 
-  const joinSync = async (rawPayload?: string) => {
+  const joinSync = useCallback(async (rawPayload?: string) => {
     teardown()
 
     const parsed = JSON.parse(rawPayload ?? joinPayload) as { payload: string; peerId: string; deviceName?: string }
@@ -164,18 +173,15 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
     setMode('joining')
     setStatus('Intentant enllaçar aquest dispositiu amb la sessió existent...')
     pushDetail(`S’està fent join al grup ${invite.groupId}.`)
-  }
+  }, [group.name, joinPayload, peerId, rtcConfig])
 
   useEffect(() => {
-    const hash = window.location.hash
-    const queryIndex = hash.indexOf('?')
-    if (queryIndex === -1) return
-    const search = new URLSearchParams(hash.slice(queryIndex + 1))
-    const sync = search.get('sync')
-    if (!sync) return
-    setJoinPayload(sync)
-    void joinSync(sync)
-  }, [])
+    if (!joinPayload) return
+    const timer = window.setTimeout(() => {
+      void joinSync(joinPayload)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [joinPayload, joinSync])
 
   const syncNow = async () => {
     if (!sessionRef.current) return
