@@ -37,6 +37,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
   const [mode, setMode] = useState<SyncMode>('idle')
   const [status, setStatus] = useState('Encara no hi ha sincronització activa.')
   const [details, setDetails] = useState<string[]>([])
+  const [hasSession, setHasSession] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [hostInput, setHostInput] = useState(DEFAULT_CONFIG.host ?? '')
   const [pathInput, setPathInput] = useState(DEFAULT_CONFIG.path ?? '/')
@@ -88,6 +89,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
     transportRef.current?.destroy()
     sessionRef.current = null
     transportRef.current = null
+    setHasSession(false)
   }
 
   const startSync = async () => {
@@ -110,6 +112,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
 
     transportRef.current = transport
     sessionRef.current = session
+    setHasSession(true)
 
     const payload = await createInvitePayload(groupKey, group.id)
     setInvitePayload(JSON.stringify({ payload, peerId, deviceName }, null, 2))
@@ -141,6 +144,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
 
     transportRef.current = transport
     sessionRef.current = session
+    setHasSession(true)
     setMode('joining')
     setStatus('Intentant enllaçar aquest dispositiu amb la sessió existent...')
     pushDetail(`S’està fent join al grup ${invite.groupId}.`)
@@ -212,7 +216,7 @@ export function SyncPocPanel({ group }: SyncPocPanelProps) {
             <Button variant="secondary" onClick={joinSync} disabled={!joinPayload.trim()}>
               Enllaçar dispositiu
             </Button>
-            <Button variant="outline" onClick={syncNow} disabled={!sessionRef.current}>
+            <Button variant="outline" onClick={syncNow} disabled={!hasSession}>
               Forçar sync ara
             </Button>
           </div>
