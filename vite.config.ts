@@ -106,6 +106,10 @@ export default defineConfig({
         // barrel re-exports only
         'src/domain/index.ts',
         'src/domain/services/index.ts',
+        'src/infra/sync/index.ts',
+        // browser-only modules (PeerJS / WebRTC) — not testable in Node
+        'src/infra/sync/peer-manager.ts',
+        'src/infra/sync/sync-session.ts',
       ],
       thresholds: {
         lines: 80,
