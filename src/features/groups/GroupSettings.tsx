@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Trash2, Download, Share2, Archive, ArchiveRestore } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useStore } from '../../store'
 import { reparteix } from '../../sdk'
-import { SyncPanel } from './SyncPanel'
+const SyncPanel = lazy(() => import('./SyncPanel').then((m) => ({ default: m.SyncPanel })))
 import type { Group } from '../../domain/entities'
 
 const EMOJI_SHORTCUTS = [
@@ -256,7 +256,9 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
 
       <Separator className="my-8" />
 
-      <SyncPanel groupId={groupId} />
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Carregant sincronització…</p>}>
+        <SyncPanel groupId={groupId} />
+      </Suspense>
 
       <Separator className="my-8" />
 
