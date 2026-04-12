@@ -1,15 +1,16 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
-import { GroupList } from './features/groups/GroupList'
-import { GroupDetail } from './features/groups/GroupDetail'
-import { GroupSettings } from './features/groups/GroupSettings'
-import { ImportFromUrl } from './features/groups/ImportFromUrl'
-import { OnboardingWizard } from './features/groups/OnboardingWizard'
-import { SyncFromUrl } from './features/groups/SyncFromUrl'
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 import { PWAInstallPrompt } from './components/PWAInstallPrompt'
 import { Footer } from './components/Footer'
 import { useFileHandler } from './hooks/useFileHandler'
+
+const GroupList = lazy(() => import('./features/groups/GroupList').then((m) => ({ default: m.GroupList })))
+const GroupDetail = lazy(() => import('./features/groups/GroupDetail').then((m) => ({ default: m.GroupDetail })))
+const GroupSettings = lazy(() => import('./features/groups/GroupSettings').then((m) => ({ default: m.GroupSettings })))
+const ImportFromUrl = lazy(() => import('./features/groups/ImportFromUrl').then((m) => ({ default: m.ImportFromUrl })))
+const OnboardingWizard = lazy(() => import('./features/groups/OnboardingWizard').then((m) => ({ default: m.OnboardingWizard })))
+const SyncFromUrl = lazy(() => import('./features/groups/SyncFromUrl').then((m) => ({ default: m.SyncFromUrl })))
 
 function FileHandlerBridge() {
   const navigate = useNavigate()
@@ -44,20 +45,30 @@ function App() {
   return (
     <HashRouter>
       <div className="flex min-h-screen flex-col">
-        <Routes>
-          <Route path="/" element={<GroupList />} />
-          <Route path="/onboarding" element={<OnboardingWizard />} />
-          <Route path="/group/:groupId" element={<GroupDetail />} />
-          <Route path="/group/:groupId/settings" element={<GroupSettings />} />
-          <Route path="/import" element={<ImportFromUrl />} />
-          <Route path="/sync" element={<SyncFromUrl />} />
-        </Routes>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<GroupList />} />
+            <Route path="/onboarding" element={<OnboardingWizard />} />
+            <Route path="/group/:groupId" element={<GroupDetail />} />
+            <Route path="/group/:groupId/settings" element={<GroupSettings />} />
+            <Route path="/import" element={<ImportFromUrl />} />
+            <Route path="/sync" element={<SyncFromUrl />} />
+          </Routes>
+        </Suspense>
         <Footer />
       </div>
       <FileHandlerBridge />
       <PWAInstallPrompt />
       <PWAUpdatePrompt />
     </HashRouter>
+  )
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+      Carregant…
+    </div>
   )
 }
 
