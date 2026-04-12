@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/reparteix/reparteix/compare/v1.28.2...v1.29.0) (2026-04-12)
+
+
+### Features
+
+* production-ready P2P sync — WebRTC + PeerJS + app-level encryption + shareable sync URLs ([#100](https://github.com/reparteix/reparteix/issues/100)) ([e72bcfd](https://github.com/reparteix/reparteix/commit/e72bcfd4bcf6402e0545d52328f87ff059127ca4))
+
 ## [1.28.2](https://github.com/reparteix/reparteix/compare/v1.28.1...v1.28.2) (2026-04-10)
 
 
