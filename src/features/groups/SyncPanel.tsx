@@ -124,6 +124,19 @@ function StateIcon({ state }: { state: string }) {
   }
 }
 
+function formatSyncTimestamp(value: string | null): string | null {
+  if (!value) return null
+
+  try {
+    return new Date(value).toLocaleString('ca-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    })
+  } catch {
+    return value
+  }
+}
+
 function StateBadge({ state }: { state: string }) {
   const labels: Record<string, string> = {
     'idle': 'Preparat',
@@ -158,7 +171,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
   const [passphrase, setPassphrase] = useState(rememberedPassphrase)
   const [showPassphrase, setShowPassphrase] = useState(false)
-  const [mode, setMode] = useState<'choose' | 'host' | 'join'>('choose')
+  const [mode, setMode] = useState<'idle' | 'host' | 'join'>('idle')
   const [copied, setCopied] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const { loadGroups, loadGroupData } = useStore()
@@ -166,6 +179,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
   const sync = useSync({
     groupId,
     passphrase,
+    autoRetryEnabled: mode !== 'idle',
   })
 
   const isActive = sync.state !== 'idle' && sync.state !== 'error' && sync.state !== 'completed'
@@ -188,28 +202,14 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
     }
   }
 
-  const handleStart = async (selectedMode: 'host' | 'join') => {
-    setMode(selectedMode)
-    try {
-      await persistPassphrase(passphrase)
-      if (selectedMode === 'host') {
-        await sync.startAsHost()
-      } else {
-        await sync.joinSession()
-      }
-    } catch {
-      // Error is handled by the sync hook
-    }
-  }
-
   const handleReset = () => {
     sync.reset()
-    setMode('choose')
+    setMode('idle')
   }
 
   const handleDone = async () => {
     sync.reset()
-    setMode('choose')
+    setMode('idle')
     setPassphrase('')
     // Reload data to reflect sync changes
     await loadGroups()
@@ -277,28 +277,23 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
           </p>
         </div>
 
-        {/* Mode selection / active state */}
-        {mode === 'choose' && sync.state === 'idle' && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleStart('host')}
-              disabled={!canStart}
-              className="flex-col h-auto py-3"
-            >
-              <Wifi className="h-5 w-5 mb-1" />
-              <span className="text-xs">Compartir</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleStart('join')}
-              disabled={!canStart}
-              className="flex-col h-auto py-3"
-            >
-              <RefreshCw className="h-5 w-5 mb-1" />
-              <span className="text-xs">Rebre</span>
-            </Button>
-          </div>
+        {sync.state === 'idle' && (
+          <Button
+            onClick={async () => {
+              setMode('host')
+              try {
+                await persistPassphrase(passphrase)
+                await sync.startSync()
+              } catch {
+                // Error is handled by the sync hook
+              }
+            }}
+            disabled={!canStart}
+            className="w-full"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Sincronitzar
+          </Button>
         )}
 
         {/* Active sync status */}
@@ -324,7 +319,36 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
             </div>
 
             {/* Status message */}
-            <p className="text-sm">{sync.message}</p>
+            <div className="space-y-2">
+              <p className="text-sm">{sync.message}</p>
+              {sync.error && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Error de sincronització</p>
+                      <p>{sync.error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {(sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {sync.remotePeerIds.length > 0 && (
+                    <p>Peers detectats: {sync.remotePeerIds.join(', ')}</p>
+                  )}
+                  {sync.lastAttemptAt && (
+                    <p>Últim intent: {formatSyncTimestamp(sync.lastAttemptAt)}</p>
+                  )}
+                  {sync.lastSuccessAt && (
+                    <p>Última sync correcta: {formatSyncTimestamp(sync.lastSuccessAt)}</p>
+                  )}
+                  {sync.autoRetryEnabled && (
+                    <p>Reintent automàtic actiu mentre aquest panell estigui obert</p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
@@ -344,7 +368,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                   {copiedLink ? 'Enllaç copiat!' : 'Copiar enllaç de sync'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  O bé, manualment: obre Reparteix a l'altre dispositiu, ves al Sync del mateix grup, escriu la mateixa contrasenya i prem «Rebre».
+                  A l'altre dispositiu només cal obrir Reparteix al mateix grup, escriure la mateixa contrasenya i prémer «Sincronitzar».
                 </p>
               </div>
             )}

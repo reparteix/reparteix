@@ -43,10 +43,13 @@ export interface SyncSessionStatus {
   state: SyncSessionState
   peerId: string | null
   remotePeerId: string | null
+  remotePeerIds: string[]
   groupId: string
   passphrase: string
   error: string | null
   report: SyncReport | null
+  lastAttemptAt: string | null
+  lastSuccessAt: string | null
   /** Human-readable progress message */
   message: string
 }
@@ -66,10 +69,13 @@ export function createSyncSession(
     state: 'idle',
     peerId: null,
     remotePeerId: null,
+    remotePeerIds: [],
     groupId,
     passphrase,
     error: null,
     report: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
     message: 'Inicialitzant…',
   }
 
@@ -78,6 +84,21 @@ export function createSyncSession(
     for (const listener of listeners) {
       listener(status)
     }
+  }
+
+  function addRemotePeer(remotePeerId: string) {
+    const remotePeerIds = status.remotePeerIds.includes(remotePeerId)
+      ? status.remotePeerIds
+      : [...status.remotePeerIds, remotePeerId]
+    update({ remotePeerId, remotePeerIds })
+  }
+
+  function removeRemotePeer(remotePeerId: string) {
+    const remotePeerIds = status.remotePeerIds.filter((id) => id !== remotePeerId)
+    update({
+      remotePeerIds,
+      remotePeerId: remotePeerIds.at(-1) ?? null,
+    })
   }
 
   // Build a group-specific peer ID prefix for discovery using SHA-256
@@ -162,8 +183,8 @@ export function createSyncSession(
       return
     }
 
+    addRemotePeer(remotePeerId)
     update({
-      remotePeerId,
       state: 'syncing',
       message: 'Connectat. Sincronitzant dades…',
     })
@@ -231,6 +252,7 @@ export function createSyncSession(
       update({
         state: 'completed',
         report,
+        lastSuccessAt: new Date().toISOString(),
         message: buildReportSummary(report),
       })
     } catch (err) {
@@ -267,8 +289,8 @@ export function createSyncSession(
   }
 
   function handlePeerConnected(conn: PeerConnection) {
+    addRemotePeer(conn.peerId)
     update({
-      remotePeerId: conn.peerId,
       state: 'syncing',
       message: 'Peer connectat. Intercanviant dades…',
     })
@@ -277,10 +299,10 @@ export function createSyncSession(
     conn.send(createHelloMessage(peerManager.peerId!, [groupId]))
   }
 
-  function handlePeerDisconnected() {
+  function handlePeerDisconnected(remotePeerId: string) {
+    removeRemotePeer(remotePeerId)
     if (status.state !== 'completed' && status.state !== 'error') {
       update({
-        remotePeerId: null,
         state: 'error',
         error: 'Peer desconnectat',
         message: 'El peer s\'ha desconnectat abans de completar la sincronització.',
@@ -345,7 +367,12 @@ export function createSyncSession(
 
     /** Start as host: initialise peer and wait for a remote peer to connect. */
     async startAsHost(): Promise<string> {
-      update({ state: 'initializing', message: 'Connectant al servidor de senyalització…' })
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Connectant al servidor de senyalització…',
+      })
 
       try {
         const roomPeerId = await buildGroupPeerId()
@@ -365,7 +392,12 @@ export function createSyncSession(
 
     /** Start as guest: connect to the host peer and begin sync. */
     async joinSession(): Promise<void> {
-      update({ state: 'initializing', message: 'Connectant al servidor de senyalització…' })
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Connectant al servidor de senyalització…',
+      })
 
       try {
         await peerManager.init()
@@ -378,6 +410,50 @@ export function createSyncSession(
         const roomPeerId = await buildGroupPeerId()
         await peerManager.connectTo(roomPeerId)
         // The rest is handled by onPeerConnected → handlePeerConnected
+      } catch (err) {
+        const msg = err instanceof Error ? friendlyError(err) : 'Error connectant'
+        update({ state: 'error', error: msg, message: `Error: ${msg}` })
+        throw err
+      }
+    },
+
+    /**
+     * Sync v2 entry point: try to create the room first, otherwise join the existing one.
+     */
+    async startSync(): Promise<void> {
+      const roomPeerId = await buildGroupPeerId()
+      update({
+        state: 'initializing',
+        lastAttemptAt: new Date().toISOString(),
+        error: null,
+        message: 'Preparant sincronització…',
+      })
+
+      try {
+        const peerId = await peerManager.init(roomPeerId)
+        update({
+          state: 'waiting-for-peer',
+          peerId,
+          message: 'Sessió creada. Esperant que es connecti un altre dispositiu…',
+        })
+        return
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error inicialitzant'
+        if (!msg.includes('is taken') && !msg.includes('unavailable-id')) {
+          const friendly = err instanceof Error ? friendlyError(err) : 'Error inicialitzant'
+          update({ state: 'error', error: friendly, message: `Error: ${friendly}` })
+          throw err
+        }
+      }
+
+      try {
+        await peerManager.init()
+        update({
+          state: 'connecting',
+          peerId: peerManager.peerId,
+          message: 'Sessió existent detectada. Connectant per sincronitzar…',
+        })
+        await peerManager.connectTo(roomPeerId)
       } catch (err) {
         const msg = err instanceof Error ? friendlyError(err) : 'Error connectant'
         update({ state: 'error', error: msg, message: `Error: ${msg}` })
