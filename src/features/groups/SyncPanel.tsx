@@ -236,13 +236,13 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <RefreshCw className="h-4 w-4" />
-          Sincronització P2P
+          Sincronitzar grup
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Sincronitza les dades del grup amb un altre dispositiu directament, sense servidor.
-          Tots dos dispositius han d'usar la mateixa contrasenya.
+          Posa aquest grup al dia entre dispositius amb una sola acció.
+          Si l'altre dispositiu és a punt, la sincronització començarà automàticament.
         </p>
 
         {/* Passphrase input */}
@@ -273,7 +273,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            La contrasenya queda guardada en aquest grup i també al navegador d'aquest dispositiu.
+            Aquesta contrasenya es guarda al grup i en aquest dispositiu perquè no l'hagis d'escriure cada vegada.
           </p>
         </div>
 
@@ -320,7 +320,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
             {/* Status message */}
             <div className="space-y-2">
-              <p className="text-sm">{sync.message}</p>
+              <p className="text-sm font-medium">{sync.message}</p>
               {sync.error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   <div className="flex items-start gap-2">
@@ -333,30 +333,41 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                 </div>
               )}
               {(sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {sync.remotePeerIds.length > 0 && (
-                    <p>Peers detectats: {sync.remotePeerIds.join(', ')}</p>
-                  )}
-                  {sync.lastAttemptAt && (
-                    <p>Últim intent: {formatSyncTimestamp(sync.lastAttemptAt)}</p>
-                  )}
-                  {sync.lastSuccessAt && (
-                    <p>Última sync correcta: {formatSyncTimestamp(sync.lastSuccessAt)}</p>
-                  )}
-                  {sync.autoRetryEnabled && (
-                    <p>Reintent automàtic actiu mentre aquest panell estigui obert</p>
-                  )}
-                </div>
+                <details className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer select-none font-medium text-foreground/80">
+                    Detalls de sincronització
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {sync.remotePeerIds.length > 0 && (
+                      <p>Dispositius detectats: {sync.remotePeerIds.join(', ')}</p>
+                    )}
+                    {sync.lastAttemptAt && (
+                      <p>Últim intent: {formatSyncTimestamp(sync.lastAttemptAt)}</p>
+                    )}
+                    {sync.lastSuccessAt && (
+                      <p>Última sincronització correcta: {formatSyncTimestamp(sync.lastSuccessAt)}</p>
+                    )}
+                    {sync.autoRetryEnabled && (
+                      <p>Reintent automàtic actiu mentre aquest panell estigui obert</p>
+                    )}
+                  </div>
+                </details>
               )}
             </div>
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
-              <div className="rounded-md bg-muted p-3 text-sm space-y-3">
-                <p className="font-medium">Per sincronitzar:</p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>Comparteix l'enllaç amb l'altre dispositiu</li>
-                  <li>L'altre dispositiu obrirà l'enllaç i es connectarà automàticament</li>
+              <div className="rounded-lg border bg-muted/50 p-4 text-sm space-y-3">
+                <div className="space-y-1">
+                  <p className="font-medium">Falta l'altre dispositiu</p>
+                  <p className="text-muted-foreground">
+                    Comparteix aquest enllaç i la sincronització començarà quan l'obrin.
+                  </p>
+                </div>
+                <ol className="space-y-1 text-muted-foreground">
+                  <li>1. Copia l'enllaç</li>
+                  <li>2. Obre'l a l'altre dispositiu</li>
+                  <li>3. Reparteix es connectarà i posarà el grup al dia</li>
                 </ol>
                 <Button
                   variant="outline"
@@ -365,17 +376,21 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                   className="w-full"
                 >
                   {copiedLink ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
-                  {copiedLink ? 'Enllaç copiat!' : 'Copiar enllaç de sync'}
+                  {copiedLink ? 'Enllaç copiat!' : 'Copiar enllaç'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  A l'altre dispositiu només cal obrir Reparteix al mateix grup, escriure la mateixa contrasenya i prémer «Sincronitzar».
+                  Si prefereixes, també pots obrir Reparteix a l'altre dispositiu, entrar al mateix grup i prémer «Sincronitzar» amb la mateixa contrasenya.
                 </p>
               </div>
             )}
 
             {/* Sync report */}
             {sync.report && (
-              <div className="rounded-md bg-muted p-3">
+              <div className="rounded-lg border bg-success/5 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-success">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Grup sincronitzat
+                </div>
                 <SyncReportDetails report={sync.report} />
               </div>
             )}
