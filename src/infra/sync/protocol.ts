@@ -33,6 +33,15 @@ const SyncDataMessageSchema = z.object({
   payload: EncryptedPayloadSchema,
 })
 
+const SyncDataChunkMessageSchema = z.object({
+  type: z.literal('sync-data-chunk'),
+  groupId: z.string(),
+  transferId: z.string(),
+  index: z.number().int().min(0),
+  total: z.number().int().positive(),
+  chunk: z.string(),
+})
+
 const SyncAckMessageSchema = z.object({
   type: z.literal('sync-ack'),
   groupId: z.string(),
@@ -50,6 +59,7 @@ export const SyncMessageSchema = z.discriminatedUnion('type', [
   HelloMessageSchema,
   RequestSyncMessageSchema,
   SyncDataMessageSchema,
+  SyncDataChunkMessageSchema,
   SyncAckMessageSchema,
   ErrorMessageSchema,
 ])
@@ -59,6 +69,7 @@ export const SyncMessageSchema = z.discriminatedUnion('type', [
 export type HelloMessage = z.infer<typeof HelloMessageSchema>
 export type RequestSyncMessage = z.infer<typeof RequestSyncMessageSchema>
 export type SyncDataMessage = z.infer<typeof SyncDataMessageSchema>
+export type SyncDataChunkMessage = z.infer<typeof SyncDataChunkMessageSchema>
 export type SyncAckMessage = z.infer<typeof SyncAckMessageSchema>
 export type ErrorMessage = z.infer<typeof ErrorMessageSchema>
 export type SyncMessage = z.infer<typeof SyncMessageSchema>
@@ -83,6 +94,16 @@ export function createSyncDataMessage(
   payload: EncryptedPayload,
 ): SyncDataMessage {
   return { type: 'sync-data', groupId, payload }
+}
+
+export function createSyncDataChunkMessage(
+  groupId: string,
+  transferId: string,
+  index: number,
+  total: number,
+  chunk: string,
+): SyncDataChunkMessage {
+  return { type: 'sync-data-chunk', groupId, transferId, index, total, chunk }
 }
 
 export function createSyncAckMessage(

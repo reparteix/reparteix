@@ -3,6 +3,7 @@ import {
   createHelloMessage,
   createRequestSyncMessage,
   createSyncDataMessage,
+  createSyncDataChunkMessage,
   createSyncAckMessage,
   createErrorMessage,
   encodeMessage,
@@ -31,6 +32,18 @@ describe('sync protocol', () => {
       const payload = { iv: 'aWY=', ciphertext: 'Y2lwaGVy', salt: 'c2FsdA==' }
       const msg = createSyncDataMessage('group-a', payload)
       expect(msg).toEqual({ type: 'sync-data', groupId: 'group-a', payload })
+    })
+
+    it('creates a sync-data-chunk message', () => {
+      const msg = createSyncDataChunkMessage('group-a', 'transfer-1', 0, 3, 'chunk-1')
+      expect(msg).toEqual({
+        type: 'sync-data-chunk',
+        groupId: 'group-a',
+        transferId: 'transfer-1',
+        index: 0,
+        total: 3,
+        chunk: 'chunk-1',
+      })
     })
 
     it('creates a sync-ack message with ok status', () => {
@@ -76,6 +89,13 @@ describe('sync protocol', () => {
     it('round-trips a sync-data message', () => {
       const payload = { iv: 'aWY=', ciphertext: 'Y2lwaGVy', salt: 'c2FsdA==' }
       const original = createSyncDataMessage('group-x', payload)
+      const encoded = encodeMessage(original)
+      const decoded = decodeMessage(encoded)
+      expect(decoded).toEqual(original)
+    })
+
+    it('round-trips a sync-data-chunk message', () => {
+      const original = createSyncDataChunkMessage('group-x', 'transfer-2', 1, 4, 'payload-slice')
       const encoded = encodeMessage(original)
       const decoded = decodeMessage(encoded)
       expect(decoded).toEqual(original)

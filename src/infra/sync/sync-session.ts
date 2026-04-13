@@ -16,6 +16,7 @@ import {
   createHelloMessage,
   createRequestSyncMessage,
   createSyncDataMessage,
+  createSyncDataChunkMessage,
   createSyncAckMessage,
   createErrorMessage,
   SYNC_PROTOCOL_VERSION,
@@ -116,6 +117,75 @@ export function createSyncSession(
   }
 
   const config = createSyncConfig(configOverrides)
+  const MAX_SYNC_CHUNK_SIZE = 24_000
+  const incomingPayloadChunks = new Map<string, { groupId: string; total: number; chunks: string[] }>()
+
+  function buildTransferId(): string {
+    if (typeof globalThis.crypto?.randomUUID === 'function') {
+      return globalThis.crypto.randomUUID()
+    }
+    return `sync-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  }
+
+  async function sendEncryptedPayload(conn: PeerConnection, targetGroupId: string, payload: EncryptedPayload) {
+    const serializedPayload = JSON.stringify(payload)
+
+    if (serializedPayload.length <= MAX_SYNC_CHUNK_SIZE) {
+      conn.send(createSyncDataMessage(targetGroupId, payload))
+      return
+    }
+
+    const transferId = buildTransferId()
+    const total = Math.ceil(serializedPayload.length / MAX_SYNC_CHUNK_SIZE)
+
+    for (let index = 0; index < total; index++) {
+      const chunk = serializedPayload.slice(index * MAX_SYNC_CHUNK_SIZE, (index + 1) * MAX_SYNC_CHUNK_SIZE)
+      conn.send(createSyncDataChunkMessage(targetGroupId, transferId, index, total, chunk))
+    }
+  }
+
+  async function handleSyncDataChunk(
+    remotePeerId: string,
+    receivedGroupId: string,
+    transferId: string,
+    index: number,
+    total: number,
+    chunk: string,
+  ) {
+    if (receivedGroupId !== groupId) {
+      const conn = peerManager.connections.get(remotePeerId)
+      conn?.send(createSyncAckMessage(receivedGroupId, 'error', 'Grup no correspon'))
+      return
+    }
+
+    const existing = incomingPayloadChunks.get(transferId)
+    const transfer = existing ?? { groupId: receivedGroupId, total, chunks: Array.from({ length: total }, () => '') }
+
+    if (transfer.total !== total) {
+      incomingPayloadChunks.delete(transferId)
+      throw new Error('Transferència fragmentada inconsistent')
+    }
+
+    transfer.chunks[index] = chunk
+    incomingPayloadChunks.set(transferId, transfer)
+
+    const isComplete = transfer.chunks.every(Boolean)
+    if (!isComplete) {
+      update({ message: `Rebent dades grans… (${index + 1}/${total})` })
+      return
+    }
+
+    incomingPayloadChunks.delete(transferId)
+
+    let payload: EncryptedPayload
+    try {
+      payload = JSON.parse(transfer.chunks.join('')) as EncryptedPayload
+    } catch {
+      throw new Error('No s\'han pogut reconstruir les dades rebudes')
+    }
+
+    await handleSyncData(remotePeerId, receivedGroupId, payload)
+  }
 
   /** Translate common PeerJS errors to user-friendly Catalan messages. */
   function friendlyError(err: Error): string {
@@ -162,6 +232,16 @@ export function createSyncSession(
           break
         case 'sync-data':
           await handleSyncData(remotePeerId, message.groupId, message.payload)
+          break
+        case 'sync-data-chunk':
+          await handleSyncDataChunk(
+            remotePeerId,
+            message.groupId,
+            message.transferId,
+            message.index,
+            message.total,
+            message.chunk,
+          )
           break
         case 'sync-ack':
           handleSyncAck(message)
@@ -218,7 +298,7 @@ export function createSyncSession(
       // Encrypt and send
       const json = JSON.stringify(envelope)
       const encrypted = await encryptSyncPayload(passphrase, json)
-      conn.send(createSyncDataMessage(groupId, encrypted))
+      await sendEncryptedPayload(conn, groupId, encrypted)
       update({ message: 'Dades enviades. Esperant resposta…' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error preparant dades'
