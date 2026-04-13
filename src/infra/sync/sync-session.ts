@@ -117,7 +117,10 @@ export function createSyncSession(
   }
 
   const config = createSyncConfig(configOverrides)
-  const MAX_SYNC_CHUNK_SIZE = 24_000
+  // Conservative per-message payload size. The practical JSON channel limit is
+  // lower than the raw PeerJS transport limit once protocol/message overhead is
+  // included, so keep chunks comfortably small.
+  const MAX_SYNC_CHUNK_SIZE = 8_000
   const incomingPayloadChunks = new Map<string, { groupId: string; total: number; chunks: string[] }>()
 
   function buildTransferId(): string {
