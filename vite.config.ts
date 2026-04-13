@@ -55,6 +55,19 @@ export default defineConfig({
             },
           },
         ],
+        share_target: {
+          action: `${basePath}share-target`,
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            files: [
+              {
+                name: 'file',
+                accept: ['application/json', 'application/vnd.reparteix+json', '.reparteix.json'],
+              },
+            ],
+          },
+        },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

@@ -11,6 +11,7 @@ const GroupSettings = lazy(() => import('./features/groups/GroupSettings').then(
 const ImportFromUrl = lazy(() => import('./features/groups/ImportFromUrl').then((m) => ({ default: m.ImportFromUrl })))
 const OnboardingWizard = lazy(() => import('./features/groups/OnboardingWizard').then((m) => ({ default: m.OnboardingWizard })))
 const SyncFromUrl = lazy(() => import('./features/groups/SyncFromUrl').then((m) => ({ default: m.SyncFromUrl })))
+const ShareTargetImport = lazy(() => import('./features/groups/ShareTargetImport').then((m) => ({ default: m.ShareTargetImport })))
 
 function FileHandlerBridge() {
   const navigate = useNavigate()
@@ -52,6 +53,7 @@ function App() {
             <Route path="/group/:groupId" element={<GroupDetail />} />
             <Route path="/group/:groupId/settings" element={<GroupSettings />} />
             <Route path="/import" element={<ImportFromUrl />} />
+            <Route path="/import/shared" element={<ShareTargetImport />} />
             <Route path="/sync" element={<SyncFromUrl />} />
           </Routes>
         </Suspense>

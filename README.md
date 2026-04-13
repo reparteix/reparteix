@@ -183,7 +183,7 @@ Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
 2. **Local-first** — l'app funciona 100% offline, dades a IndexedDB.
 3. **Soft delete** — les entitats es marquen com `deleted: true`, mai s'esborren físicament.
 4. **HashRouter** — per compatibilitat amb hosting estàtic (GitHub Pages).
-5. **PWA** — instal·lable i amb service worker per a cache offline.
+5. **PWA** — instal·lable, amb service worker per a cache offline, Web Share per compartir enllaços i suport de recepció de fitxers `.reparteix.json` via share target / file handling segons el navegador.
 
 ## Manteniment de la documentació
 

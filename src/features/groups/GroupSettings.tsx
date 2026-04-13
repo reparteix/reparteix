@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useStore } from '../../store'
 import { reparteix } from '../../sdk'
+import { shareUrl } from '@/lib/web-share'
 const SyncPanel = lazy(() => import('./SyncPanel').then((m) => ({ default: m.SyncPanel })))
 import type { Group } from '../../domain/entities'
 
@@ -46,7 +47,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const [icon, setIcon] = useState(group.icon ?? '')
   const [currency, setCurrency] = useState(group.currency)
   const [exportStatus, setExportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
-  const [shareStatus, setShareStatus] = useState<'idle' | 'ok' | 'error'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'shared' | 'copied' | 'error'>('idle')
 
   const isArchived = group.archived
 
@@ -93,8 +94,13 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
     try {
       const encoded = await reparteix.share.encodeGroup(groupId)
       const url = `${window.location.origin}${window.location.pathname}#/import?g=${encoded}`
-      await navigator.clipboard.writeText(url)
-      setShareStatus('ok')
+      const result = await shareUrl({
+        title: `Grup ${group.name} · Reparteix`,
+        text: `Importa el grup "${group.name}" a Reparteix`,
+        url,
+      })
+      if (result.method === 'cancelled') return
+      setShareStatus(result.method === 'clipboard' ? 'copied' : 'shared')
     } catch {
       setShareStatus('error')
     } finally {
@@ -243,9 +249,12 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
             onClick={handleShare}
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Copiar enllaç
+            Compartir grup
           </Button>
-          {shareStatus === 'ok' && (
+          {shareStatus === 'shared' && (
+            <p className="text-sm text-success">Enllaç compartit correctament.</p>
+          )}
+          {shareStatus === 'copied' && (
             <p className="text-sm text-success">Enllaç copiat al porta-retalls.</p>
           )}
           {shareStatus === 'error' && (

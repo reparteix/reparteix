@@ -26,6 +26,7 @@ import { useSync } from '@/hooks/useSync'
 import { useStore } from '@/store'
 import { encodeBase64Url } from '@/lib/base64url'
 import { loadStoredSyncPassphrase, saveStoredSyncPassphrase } from '@/lib/sync-passphrase'
+import { shareUrl } from '@/lib/web-share'
 import type { SyncReport } from '@/domain/services/sync'
 
 interface SyncPanelProps {
@@ -173,7 +174,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
   const [showPassphrase, setShowPassphrase] = useState(false)
   const [mode, setMode] = useState<'idle' | 'host' | 'join'>('idle')
   const [copied, setCopied] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
+  const [sharedLinkStatus, setSharedLinkStatus] = useState<'idle' | 'shared' | 'copied'>('idle')
   const { loadGroups, loadGroupData } = useStore()
 
   const sync = useSync({
@@ -226,9 +227,14 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
   const handleCopySyncLink = async () => {
     const url = buildSyncUrl(groupId, passphrase)
-    await navigator.clipboard.writeText(url)
-    setCopiedLink(true)
-    setTimeout(() => setCopiedLink(false), 3000)
+    const result = await shareUrl({
+      title: `Sync de grup · Reparteix`,
+      text: 'Obre aquest enllaç a l\'altre dispositiu per sincronitzar el grup a Reparteix',
+      url,
+    })
+    if (result.method === 'cancelled') return
+    setSharedLinkStatus(result.method === 'clipboard' ? 'copied' : 'shared')
+    setTimeout(() => setSharedLinkStatus('idle'), 3000)
   }
 
   return (
@@ -375,8 +381,8 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                   onClick={handleCopySyncLink}
                   className="w-full"
                 >
-                  {copiedLink ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
-                  {copiedLink ? 'Enllaç copiat!' : 'Copiar enllaç'}
+                  {sharedLinkStatus !== 'idle' ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+                  {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
                   Si prefereixes, també pots obrir Reparteix a l'altre dispositiu, entrar al mateix grup i prémer «Sincronitzar» amb la mateixa contrasenya.
