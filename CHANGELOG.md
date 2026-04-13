@@ -1,3 +1,10 @@
+## [1.29.1](https://github.com/reparteix/reparteix/compare/v1.29.0...v1.29.1) (2026-04-13)
+
+
+### Performance Improvements
+
+* lazy-load routes and sync UI ([a9807f9](https://github.com/reparteix/reparteix/commit/a9807f97bdbd4a3d457bab25bf14cb2307658144))
+
 # [1.29.0](https://github.com/reparteix/reparteix/compare/v1.28.2...v1.29.0) (2026-04-12)
 
 
