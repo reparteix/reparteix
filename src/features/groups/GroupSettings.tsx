@@ -47,7 +47,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
   const [icon, setIcon] = useState(group.icon ?? '')
   const [currency, setCurrency] = useState(group.currency)
   const [exportStatus, setExportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
-  const [shareStatus, setShareStatus] = useState<'idle' | 'ok' | 'error'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'shared' | 'copied' | 'error'>('idle')
 
   const isArchived = group.archived
 
@@ -94,12 +94,13 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
     try {
       const encoded = await reparteix.share.encodeGroup(groupId)
       const url = `${window.location.origin}${window.location.pathname}#/import?g=${encoded}`
-      await shareUrl({
+      const result = await shareUrl({
         title: `Grup ${group.name} · Reparteix`,
         text: `Importa el grup "${group.name}" a Reparteix`,
         url,
       })
-      setShareStatus('ok')
+      if (result.method === 'cancelled') return
+      setShareStatus(result.method === 'clipboard' ? 'copied' : 'shared')
     } catch {
       setShareStatus('error')
     } finally {
@@ -250,8 +251,11 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
             <Share2 className="h-4 w-4 mr-2" />
             Compartir grup
           </Button>
-          {shareStatus === 'ok' && (
-            <p className="text-sm text-success">Enllaç preparat i compartit correctament.</p>
+          {shareStatus === 'shared' && (
+            <p className="text-sm text-success">Enllaç compartit correctament.</p>
+          )}
+          {shareStatus === 'copied' && (
+            <p className="text-sm text-success">Enllaç copiat al porta-retalls.</p>
           )}
           {shareStatus === 'error' && (
             <p className="text-sm text-destructive">Error en generar l'enllaç. Torna-ho a intentar.</p>
