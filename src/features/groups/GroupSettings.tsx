@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useStore } from '../../store'
 import { reparteix } from '../../sdk'
+import { shareUrl } from '@/lib/web-share'
 const SyncPanel = lazy(() => import('./SyncPanel').then((m) => ({ default: m.SyncPanel })))
 import type { Group } from '../../domain/entities'
 
@@ -93,7 +94,11 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
     try {
       const encoded = await reparteix.share.encodeGroup(groupId)
       const url = `${window.location.origin}${window.location.pathname}#/import?g=${encoded}`
-      await navigator.clipboard.writeText(url)
+      await shareUrl({
+        title: `Grup ${group.name} · Reparteix`,
+        text: `Importa el grup \"${group.name}\" a Reparteix`,
+        url,
+      })
       setShareStatus('ok')
     } catch {
       setShareStatus('error')
@@ -243,10 +248,10 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
             onClick={handleShare}
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Copiar enllaç
+            Compartir grup
           </Button>
           {shareStatus === 'ok' && (
-            <p className="text-sm text-success">Enllaç copiat al porta-retalls.</p>
+            <p className="text-sm text-success">Enllaç preparat i compartit correctament.</p>
           )}
           {shareStatus === 'error' && (
             <p className="text-sm text-destructive">Error en generar l'enllaç. Torna-ho a intentar.</p>

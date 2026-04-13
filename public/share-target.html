@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reparteix · Important…</title>
+  </head>
+  <body>
+    <script>
+      ;(async function () {
+        try {
+          const formData = await new Response(document.body, {
+            headers: { 'Content-Type': document.contentType || 'multipart/form-data' },
+          }).formData()
+          const file = formData.get('file')
+
+          if (!(file instanceof File)) {
+            throw new Error('No s\'ha rebut cap fitxer per compartir')
+          }
+
+          const text = await file.text()
+          sessionStorage.setItem(
+            'reparteix.share-target.pending',
+            JSON.stringify({ name: file.name, type: file.type, text }),
+          )
+          location.replace('./#/import/shared')
+        } catch (err) {
+          sessionStorage.setItem(
+            'reparteix.share-target.pending',
+            JSON.stringify({
+              error: err instanceof Error ? err.message : 'No s\'ha pogut processar el fitxer compartit',
+            }),
+          )
+          location.replace('./#/import/shared')
+        }
+      })()
+    </script>
+  </body>
+</html>
