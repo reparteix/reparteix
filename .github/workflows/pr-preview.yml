@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -37,7 +37,7 @@ jobs:
 
       - name: Create deployment
         id: deployment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { data: deployment } = await github.rest.repos.createDeployment({
@@ -54,7 +54,7 @@ jobs:
             core.setOutput('id', deployment.id);
 
       - name: Set deployment status to in_progress
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -99,7 +99,7 @@ jobs:
 
       - name: Set deployment status to success
         if: success()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
@@ -115,7 +115,7 @@ jobs:
 
       - name: Set deployment status to failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
@@ -127,7 +127,7 @@ jobs:
             });
 
       - name: Comment on PR with preview URL
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
@@ -202,7 +202,7 @@ jobs:
           fi
 
       - name: Deactivate deployment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
@@ -227,7 +227,7 @@ jobs:
             }
 
       - name: Update PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
