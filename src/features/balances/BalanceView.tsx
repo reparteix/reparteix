@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Share2 } from 'lucide-react'
 import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
 import {
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { shareText } from '@/lib/web-share'
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -25,6 +26,7 @@ interface BalanceViewProps {
 export function BalanceView({ group }: BalanceViewProps) {
   const { expenses, payments, addPayment } = useStore()
   const [recordedIndex, setRecordedIndex] = useState<number | null>(null)
+  const [sharedIndex, setSharedIndex] = useState<number | null>(null)
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const memberIds = activeMembers.map((m) => m.id)
@@ -50,6 +52,22 @@ export function BalanceView({ group }: BalanceViewProps) {
     })
     setRecordedIndex(index)
     setTimeout(() => setRecordedIndex(null), 1500)
+  }
+
+  const buildShareMessage = (fromId: string, toId: string, amount: number) => {
+    const debtor = getMemberName(fromId)
+    const creditor = getMemberName(toId)
+    return `Hola ${debtor}! Et toca pagar ${amount.toFixed(2)} ${symbol} a ${creditor} del grup "${group.name}" a Reparteix.`
+  }
+
+  const handleShareReminder = async (fromId: string, toId: string, amount: number, index: number) => {
+    const result = await shareText({
+      title: `Recordatori de pagament · ${group.name}`,
+      text: buildShareMessage(fromId, toId, amount),
+    })
+    if (result.method === 'cancelled') return
+    setSharedIndex(index)
+    setTimeout(() => setSharedIndex(null), 2000)
   }
 
   return (
@@ -125,6 +143,23 @@ export function BalanceView({ group }: BalanceViewProps) {
                   <Badge variant="outline" className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 font-semibold">
                     {s.amount.toFixed(2)} {symbol}
                   </Badge>
+                  {sharedIndex === i ? (
+                    <span className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                      <Check className="h-3 w-3" />
+                      Compartit!
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleShareReminder(s.fromId, s.toId, s.amount, i)}
+                      title="Compartir recordatori de pagament"
+                      className="text-xs h-7"
+                    >
+                      <Share2 className="h-3 w-3" />
+                      Compartir
+                    </Button>
+                  )}
                   {recordedIndex === i ? (
                     <span className="flex items-center gap-1 px-2 py-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                       <Check className="h-3 w-3" />

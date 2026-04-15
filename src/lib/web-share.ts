@@ -10,8 +10,9 @@ function isShareAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
-export async function shareUrl(
-  data: { title?: string; text?: string; url: string },
+async function shareData(
+  data: { title?: string; text?: string; url?: string },
+  clipboardText: string,
 ): Promise<ShareResult> {
   if (supportsNativeShare()) {
     try {
@@ -25,6 +26,18 @@ export async function shareUrl(
     }
   }
 
-  await navigator.clipboard.writeText(data.url)
+  await navigator.clipboard.writeText(clipboardText)
   return { method: 'clipboard' }
+}
+
+export async function shareUrl(
+  data: { title?: string; text?: string; url: string },
+): Promise<ShareResult> {
+  return shareData(data, data.url)
+}
+
+export async function shareText(
+  data: { title?: string; text: string },
+): Promise<ShareResult> {
+  return shareData(data, data.text)
 }
