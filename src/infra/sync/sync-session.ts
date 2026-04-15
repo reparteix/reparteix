@@ -124,6 +124,8 @@ export function createSyncSession(
   // included, so keep chunks comfortably small.
   const MAX_SYNC_CHUNK_SIZE = MAX_SYNC_DATA_CHUNK_LENGTH
   const MAX_INCOMING_TRANSFER_AGE_MS = 60_000
+  let outgoingTransferInFlight = false
+  let incomingTransferInFlight = false
   const incomingPayloadChunks = new Map<string, {
     remotePeerId: string
     groupId: string
@@ -156,7 +158,9 @@ export function createSyncSession(
     const syncDataMessage = createSyncDataMessage(targetGroupId, payload)
 
     if (getEncodedMessageLength(syncDataMessage) <= MAX_SYNC_CHUNK_SIZE) {
+      update({ message: 'Enviant dades…' })
       conn.send(syncDataMessage)
+      update({ message: 'Dades enviades. Esperant aplicació…' })
       return
     }
 
@@ -198,9 +202,13 @@ export function createSyncSession(
     }
 
     const total = chunks.length
+    outgoingTransferInFlight = true
     for (const [index, chunk] of chunks.entries()) {
+      update({ message: `Enviant dades grans… (${index + 1}/${total})` })
       conn.send(createSyncDataChunkMessage(targetGroupId, transferId, index, total, chunk))
     }
+    outgoingTransferInFlight = false
+    update({ message: 'Dades enviades. Esperant aplicació…' })
   }
 
   async function handleSyncDataChunk(
@@ -243,14 +251,17 @@ export function createSyncSession(
 
     transfer.chunks[index] = chunk
     incomingPayloadChunks.set(transferKey, transfer)
+    incomingTransferInFlight = true
 
-    const isComplete = transfer.chunks.every((value) => value.length > 0)
+    const receivedCount = transfer.chunks.filter((value) => value.length > 0).length
+    const isComplete = receivedCount === total
     if (!isComplete) {
-      update({ message: `Rebent dades grans… (${index + 1}/${total})` })
+      update({ message: `Rebent dades grans… (${receivedCount}/${total})` })
       return
     }
 
     incomingPayloadChunks.delete(transferKey)
+    incomingTransferInFlight = false
 
     let payload: EncryptedPayload
     try {
@@ -374,7 +385,6 @@ export function createSyncSession(
       const json = JSON.stringify(envelope)
       const encrypted = await encryptSyncPayload(passphrase, json)
       await sendEncryptedPayload(conn, groupId, encrypted)
-      update({ message: 'Dades enviades. Esperant resposta…' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error preparant dades'
       conn.send(createSyncAckMessage(groupId, 'error', msg))
@@ -462,10 +472,17 @@ export function createSyncSession(
       }
     }
     if (status.state !== 'completed' && status.state !== 'error') {
+      const wasTransferring = outgoingTransferInFlight || incomingTransferInFlight
+      outgoingTransferInFlight = false
+      incomingTransferInFlight = false
       update({
         state: 'error',
-        error: 'Peer desconnectat',
-        message: 'El peer s\'ha desconnectat abans de completar la sincronització.',
+        error: wasTransferring
+          ? 'La connexió de sync s\'ha interromput durant la transferència'
+          : 'La connexió amb l\'altre dispositiu s\'ha tancat',
+        message: wasTransferring
+          ? 'La connexió de sync s\'ha interromput mentre s\'enviaven o rebien dades. Caldrà tornar-ho a provar.'
+          : 'La connexió amb l\'altre dispositiu s\'ha tancat abans de completar la sincronització.',
       })
     }
   }
