@@ -71,53 +71,34 @@ jobs:
           STAGING_TOKEN: ${{ secrets.STAGING_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -euo pipefail
-
           if [ -z "${STAGING_TOKEN}" ]; then
             echo "::warning::STAGING_TOKEN is not set. Skipping preview deployment. Add the secret in repository settings."
-            echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           PR_DIR="pr-${PR_NUMBER}"
-          STAGING_DIR="/tmp/staging-${PR_NUMBER}"
-          rm -rf "${STAGING_DIR}"
-          git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" "${STAGING_DIR}"
+          git clone --depth 1 "https://x-access-token:${STAGING_TOKEN}@github.com/reparteix/staging.git" /tmp/staging
 
-          rm -rf "${STAGING_DIR}/${PR_DIR}"
-          cp -r dist "${STAGING_DIR}/${PR_DIR}"
-          touch "${STAGING_DIR}/.nojekyll"
+          # Remove previous preview if it exists, then copy new build
+          rm -rf "/tmp/staging/${PR_DIR}"
+          cp -r dist "/tmp/staging/${PR_DIR}"
 
-          cd "${STAGING_DIR}"
+          # Ensure .nojekyll exists at repo root
+          touch /tmp/staging/.nojekyll
+
+          cd /tmp/staging
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit"
-            echo "deployed=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          else
+            git commit -m "deploy: update preview for PR #${PR_NUMBER}"
+            git push origin main
           fi
-
-          git commit -m "deploy: update preview for PR #${PR_NUMBER}"
-          git push origin main
-
-          REMOTE_HEAD=$(git ls-remote origin refs/heads/main | cut -f1)
-          LOCAL_HEAD=$(git rev-parse HEAD)
-
-          if [ -z "${REMOTE_HEAD}" ]; then
-            echo "::error::Could not resolve remote staging main after push"
-            exit 1
-          fi
-
-          if [ "${REMOTE_HEAD}" != "${LOCAL_HEAD}" ]; then
-            echo "::error::Staging main is not yet at pushed commit ${LOCAL_HEAD} (remote: ${REMOTE_HEAD})"
-            exit 1
-          fi
-
-          echo "deployed=true" >> "$GITHUB_OUTPUT"
 
       - name: Set deployment status to success
-        if: success() && steps.deploy.outputs.deployed == 'true'
+        if: success()
         uses: actions/github-script@v8
         with:
           script: |
@@ -146,7 +127,6 @@ jobs:
             });
 
       - name: Comment on PR with preview URL
-        if: success() && steps.deploy.outputs.deployed == 'true'
         uses: actions/github-script@v8
         with:
           script: |

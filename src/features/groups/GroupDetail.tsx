@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive } from 'lucide-react'
+import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { Badge } from '@/components/ui/badge'
 import { useStore } from '../../store'
 import { ExpenseList } from '../expenses/ExpenseList'
@@ -21,6 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+
+const SyncPanel = lazy(() => import('./SyncPanel').then((m) => ({ default: m.SyncPanel })))
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -39,6 +40,9 @@ export function GroupDetail() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [showSyncModal, setShowSyncModal] = useState(false)
+  const [isSyncClosingLocked, setIsSyncClosingLocked] = useState(false)
+  const syncModalRef = useRef<HTMLDivElement>(null)
 
   const group = groups.find((g) => g.id === groupId)
   const isArchived = group?.archived ?? false
@@ -95,6 +99,12 @@ export function GroupDetail() {
     setEditingName('')
   }
 
+  useEffect(() => {
+    if (showSyncModal) {
+      syncModalRef.current?.focus()
+    }
+  }, [showSyncModal])
+
   if (!group) {
     return (
       <div className="max-w-2xl mx-auto p-4">
@@ -132,6 +142,17 @@ export function GroupDetail() {
             <p className="text-sm text-muted-foreground truncate">{group.description}</p>
           )}
         </div>
+        {!isArchived && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSyncModal(true)}
+            aria-label="Sincronitzar grup"
+            title="Sincronitzar grup"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -140,7 +161,6 @@ export function GroupDetail() {
         >
           <Settings className="h-5 w-5" />
         </Button>
-        <ThemeToggle />
       </div>
 
       {/* Archived banner */}
@@ -150,6 +170,7 @@ export function GroupDetail() {
           <span>Aquest grup és de només lectura. Desarxiva'l per poder fer canvis.</span>
         </div>
       )}
+
 
       {/* Members section */}
       <div className="mb-6 shrink-0">
@@ -304,6 +325,58 @@ export function GroupDetail() {
         </TabsContent>
       </Tabs>
       </div>
+
+      {showSyncModal && !isArchived && (
+        <div
+          ref={syncModalRef}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sincronitzar grup"
+          tabIndex={-1}
+          onClick={() => {
+            if (!isSyncClosingLocked) {
+              setShowSyncModal(false)
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !isSyncClosingLocked) {
+              setShowSyncModal(false)
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-t-3xl border bg-background p-4 shadow-xl sm:mb-4 sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex justify-center sm:hidden">
+              <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+            </div>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Sincronitzar grup</h2>
+                <p className="text-sm text-muted-foreground">
+                  Comparteix el grup amb un altre dispositiu sense sortir d&apos;aquesta vista.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSyncModal(false)}
+                aria-label="Tancar sincronització"
+                disabled={isSyncClosingLocked}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Suspense fallback={<p className="text-sm text-muted-foreground">Carregant sincronització…</p>}>
+              <SyncPanel groupId={group.id} embedded onActiveStateChange={setIsSyncClosingLocked} />
+            </Suspense>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
