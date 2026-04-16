@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive, RefreshCw, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
+const SyncPanel = lazy(() => import('./SyncPanel').then((m) => ({ default: m.SyncPanel })))
+
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
@@ -39,6 +41,8 @@ export function GroupDetail() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [showSyncModal, setShowSyncModal] = useState(false)
+  const syncModalRef = useRef<HTMLDivElement>(null)
 
   const group = groups.find((g) => g.id === groupId)
   const isArchived = group?.archived ?? false
@@ -105,6 +109,12 @@ export function GroupDetail() {
 
   const activeMembers = group.members.filter((m) => !m.deleted)
 
+  useEffect(() => {
+    if (showSyncModal) {
+      syncModalRef.current?.focus()
+    }
+  }, [showSyncModal])
+
   return (
     <div className="fixed inset-0 bg-background overflow-hidden flex flex-col">
       <div className="flex-1 max-w-2xl mx-auto w-full flex flex-col min-h-0 px-4">
@@ -160,17 +170,17 @@ export function GroupDetail() {
                 Continuïtat entre dispositius
               </div>
               <p className="mt-1 text-sm text-indigo-950/80 dark:text-indigo-100/80">
-                Si vols posar aquest grup al dia en un altre mòbil o ordinador, ves a <strong>Configuració → Sincronitzar grup</strong> i comparteix l&apos;enllaç de sync.
+                Posa aquest grup al dia en un altre mòbil o ordinador directament des d&apos;aquí. Si encara no tens contrasenya de grup, la pots definir abans de començar.
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/group/${groupId}/settings`)}
+              onClick={() => setShowSyncModal(true)}
               className="shrink-0 border-indigo-300 bg-white/80 text-indigo-700 hover:bg-white dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-200"
             >
               <RefreshCw className="h-4 w-4 mr-1" />
-              Sincronitzar
+              Obrir sync
             </Button>
           </div>
         </div>
@@ -329,6 +339,50 @@ export function GroupDetail() {
         </TabsContent>
       </Tabs>
       </div>
+
+      {showSyncModal && !isArchived && (
+        <div
+          ref={syncModalRef}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sincronitzar grup"
+          tabIndex={-1}
+          onClick={() => setShowSyncModal(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowSyncModal(false)
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-background p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Sincronitzar grup</h2>
+                <p className="text-sm text-muted-foreground">
+                  Comparteix el grup amb un altre dispositiu sense sortir d&apos;aquesta vista.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSyncModal(false)}
+                aria-label="Tancar sincronització"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Suspense fallback={<p className="text-sm text-muted-foreground">Carregant sincronització…</p>}>
+              <SyncPanel groupId={group.id} />
+            </Suspense>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
