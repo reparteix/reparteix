@@ -1,3 +1,18 @@
+# [1.32.0](https://github.com/reparteix/reparteix/compare/v1.31.3...v1.32.0) (2026-04-16)
+
+
+### Bug Fixes
+
+* address Copilot review on sync CTA copy and hover state ([6ef5e26](https://github.com/reparteix/reparteix/commit/6ef5e26ac4751d297d2b098864ba36bbafe8b2d3))
+* address review feedback on sync sheet behavior ([aa1fb7f](https://github.com/reparteix/reparteix/commit/aa1fb7f3d2844e3265841a449f17b2090b262ec3))
+* keep sync modal hook order stable ([5832002](https://github.com/reparteix/reparteix/commit/58320025aefe23ac539a1be9142b28f820e1858f))
+
+
+### Features
+
+* open sync flow directly from group detail ([07977cd](https://github.com/reparteix/reparteix/commit/07977cd7cd924fce88abad7f7d4d4d2050e1fb83))
+* surface sync entry point from group detail ([257a471](https://github.com/reparteix/reparteix/commit/257a4715468c1a21980b7f74fb3bd7633837dffe))
+
 ## [1.31.3](https://github.com/reparteix/reparteix/compare/v1.31.2...v1.31.3) (2026-04-16)
 
 
