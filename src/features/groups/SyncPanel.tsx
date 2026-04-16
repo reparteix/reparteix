@@ -153,14 +153,21 @@ function StateBadge({ state }: { state: string }) {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     'idle': 'secondary',
     'initializing': 'outline',
-    'waiting-for-peer': 'outline',
+    'waiting-for-peer': 'secondary',
     'connecting': 'outline',
     'syncing': 'default',
     'completed': 'secondary',
     'error': 'destructive',
   }
 
-  return <Badge variant={variants[state] ?? 'secondary'}>{labels[state] ?? state}</Badge>
+  return (
+    <Badge
+      variant={variants[state] ?? 'secondary'}
+      className={state === 'waiting-for-peer' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900' : undefined}
+    >
+      {labels[state] ?? state}
+    </Badge>
+  )
 }
 
 export function SyncPanel({ groupId, embedded = false }: SyncPanelProps) {
