@@ -185,6 +185,8 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
   const isActive = sync.state !== 'idle' && sync.state !== 'error' && sync.state !== 'completed'
   const canStart = passphrase.length >= 4
+  const showSetupCopy = sync.state === 'idle'
+  const showCompactStatusDetails = sync.state !== 'idle' && !sync.error
 
   useEffect(() => {
     setPassphrase(rememberedPassphrase)
@@ -246,10 +248,12 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Posa aquest grup al dia entre dispositius amb una sola acció.
-          Si l'altre dispositiu és a punt, la sincronització començarà automàticament.
-        </p>
+        {showSetupCopy && (
+          <p className="text-sm text-muted-foreground">
+            Posa aquest grup al dia entre dispositius amb una sola acció.
+            Si l'altre dispositiu és a punt, la sincronització començarà automàticament.
+          </p>
+        )}
 
         {/* Passphrase input */}
         <div className="space-y-1.5">
@@ -326,7 +330,7 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
             {/* Status message */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">{sync.message}</p>
+              <p className="text-sm font-medium leading-snug">{sync.message}</p>
               {sync.error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   <div className="flex items-start gap-2">
@@ -338,10 +342,10 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                   </div>
                 </div>
               )}
-              {(sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
-                <details className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              {showCompactStatusDetails && (sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
+                <details className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                   <summary className="cursor-pointer select-none font-medium text-foreground/80">
-                    Detalls de sincronització
+                    Detalls
                   </summary>
                   <div className="mt-2 space-y-1">
                     {sync.remotePeerIds.length > 0 && (
@@ -353,9 +357,6 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                     {sync.lastSuccessAt && (
                       <p>Última sincronització correcta: {formatSyncTimestamp(sync.lastSuccessAt)}</p>
                     )}
-                    {sync.autoRetryEnabled && (
-                      <p>Reintent automàtic actiu mentre aquest panell estigui obert</p>
-                    )}
                   </div>
                 </details>
               )}
@@ -363,18 +364,10 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
-              <div className="rounded-lg border bg-muted/50 p-4 text-sm space-y-3">
-                <div className="space-y-1">
-                  <p className="font-medium">Falta l'altre dispositiu</p>
-                  <p className="text-muted-foreground">
-                    Comparteix aquest enllaç i la sincronització començarà quan l'obrin.
-                  </p>
-                </div>
-                <ol className="space-y-1 text-muted-foreground">
-                  <li>1. Copia l'enllaç</li>
-                  <li>2. Obre'l a l'altre dispositiu</li>
-                  <li>3. Reparteix es connectarà i posarà el grup al dia</li>
-                </ol>
+              <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-2">
+                <p className="text-muted-foreground">
+                  Comparteix l'enllaç amb l'altre dispositiu i la sincronització començarà quan l'obrin.
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -384,9 +377,6 @@ export function SyncPanel({ groupId }: SyncPanelProps) {
                   {sharedLinkStatus !== 'idle' ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
                   {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  Si prefereixes, també pots obrir Reparteix a l'altre dispositiu, entrar al mateix grup i prémer «Sincronitzar» amb la mateixa contrasenya.
-                </p>
               </div>
             )}
 
