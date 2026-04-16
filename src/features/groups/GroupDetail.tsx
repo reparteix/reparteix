@@ -99,6 +99,12 @@ export function GroupDetail() {
     setEditingName('')
   }
 
+  useEffect(() => {
+    if (showSyncModal) {
+      syncModalRef.current?.focus()
+    }
+  }, [showSyncModal])
+
   if (!group) {
     return (
       <div className="max-w-2xl mx-auto p-4">
@@ -108,12 +114,6 @@ export function GroupDetail() {
   }
 
   const activeMembers = group.members.filter((m) => !m.deleted)
-
-  useEffect(() => {
-    if (showSyncModal) {
-      syncModalRef.current?.focus()
-    }
-  }, [showSyncModal])
 
   return (
     <div className="fixed inset-0 bg-background overflow-hidden flex flex-col">
