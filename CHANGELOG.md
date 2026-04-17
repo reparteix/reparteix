@@ -1,3 +1,15 @@
+# [1.33.0](https://github.com/reparteix/reparteix/compare/v1.32.0...v1.33.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* clear preferences status timers safely ([f8687f0](https://github.com/reparteix/reparteix/commit/f8687f0de998debeb0d7729a7581743a50c5911e))
+
+
+### Features
+
+* add preferences page for theme and sync settings ([5bc8c05](https://github.com/reparteix/reparteix/commit/5bc8c05021b8f9ab470f20d6127d198cdbccc52c))
+
 # [1.32.0](https://github.com/reparteix/reparteix/compare/v1.31.3...v1.32.0) (2026-04-16)
 
 
