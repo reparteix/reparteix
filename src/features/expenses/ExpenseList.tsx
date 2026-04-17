@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -309,12 +309,17 @@ export function ExpenseList({ group }: ExpenseListProps) {
   return (
     <div>
       {activeMembers.length < 2 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-6 text-center space-y-3">
-            <p className="font-medium">Falta com a mínim una altra persona</p>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Per començar a repartir despeses necessites almenys 2 membres al grup. Afegeix algú més i després ja podràs registrar la primera despesa.
-            </p>
+        <Card className="border-dashed bg-muted/20 shadow-none">
+          <CardContent className="py-7 px-5 text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-lg font-semibold">Falta com a mínim una altra persona</p>
+              <p className="text-sm leading-6 text-muted-foreground max-w-md mx-auto">
+                Per començar a repartir despeses necessites almenys 2 membres al grup. Afegeix algú més i després ja podràs registrar la primera despesa.
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -647,30 +652,50 @@ export function ExpenseList({ group }: ExpenseListProps) {
             No hi ha despeses arxivades.
           </p>
         ) : (
-          <Card className="border-dashed bg-muted/20">
-            <CardContent className="py-6 space-y-4">
-              <div className="space-y-2 text-center">
-                <p className="font-medium">Aquest grup encara està buit</p>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  El primer valor arriba quan afegiu les primeres despeses reals. Comença amb alguna cosa simple, com un sopar, una compra compartida o un pagament del pis.
-                </p>
+          <Card className="overflow-hidden border-0 bg-gradient-to-b from-primary/5 via-background to-background shadow-sm">
+            <CardContent className="space-y-6 px-5 py-7 sm:px-6">
+              <div className="space-y-4 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xl font-semibold">Aquest grup encara està buit</p>
+                  <p className="text-sm leading-6 text-muted-foreground max-w-md mx-auto">
+                    El primer valor arriba quan afegiu les primeres despeses reals. Comença amb alguna cosa simple i en un moment ja veureu qui deu què.
+                  </p>
+                </div>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Button type="button" variant="outline" onClick={startCreate} disabled={group.archived}>
-                  Sopar
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
+                  <span className="text-lg">🍽️</span>
+                  <span className="font-semibold">Sopar</span>
+                  <span className="text-xs text-muted-foreground">Restaurant, esmorzar, tapes</span>
                 </Button>
-                <Button type="button" variant="outline" onClick={startCreate} disabled={group.archived}>
-                  Compra
+                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
+                  <span className="text-lg">🛒</span>
+                  <span className="font-semibold">Compra</span>
+                  <span className="text-xs text-muted-foreground">Supermercat, supplies, casa</span>
                 </Button>
-                <Button type="button" variant="outline" onClick={startCreate} disabled={group.archived}>
-                  Transport
+                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
+                  <span className="text-lg">🚌</span>
+                  <span className="font-semibold">Transport</span>
+                  <span className="text-xs text-muted-foreground">Taxi, benzina, bitllets</span>
                 </Button>
               </div>
 
-              <div className="rounded-lg border bg-background p-3 text-sm text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground">Què passarà després?</p>
-                <p>Quan hi hagi moviment, Reparteix et calcularà automàticament qui deu què i com liquidar-ho amb menys fricció.</p>
+              <div className="rounded-2xl border bg-background/80 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-primary/10 p-2 text-primary">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="font-medium text-foreground">Què passarà després?</p>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Quan hi hagi moviment, Reparteix et calcularà automàticament qui deu què i com liquidar-ho amb menys fricció.
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
