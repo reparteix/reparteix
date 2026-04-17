@@ -33,6 +33,24 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   GBP: '£',
 }
 
+const emptyStateCtas = [
+  {
+    emoji: '🍽️',
+    title: 'Sopar',
+    subtitle: 'Restaurant, esmorzar, tapes',
+  },
+  {
+    emoji: '🛒',
+    title: 'Compra',
+    subtitle: 'Supermercat, subministraments, casa',
+  },
+  {
+    emoji: '🚌',
+    title: 'Transport',
+    subtitle: 'Taxi, benzina, bitllets',
+  },
+] as const
+
 interface ExpenseListProps {
   group: Group
 }
@@ -315,9 +333,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
               <Users className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="space-y-2">
-              <p className="text-lg font-semibold">Falta com a mínim una altra persona</p>
+              <p className="text-lg font-semibold">Calen almenys 2 membres</p>
               <p className="text-sm leading-6 text-muted-foreground max-w-md mx-auto">
-                Per començar a repartir despeses necessites almenys 2 membres al grup. Afegeix algú més i després ja podràs registrar la primera despesa.
+                Per començar a repartir despeses necessites almenys 2 membres al grup. Afegeix-los i després ja podràs registrar la primera despesa.
               </p>
             </div>
           </CardContent>
@@ -667,21 +685,20 @@ export function ExpenseList({ group }: ExpenseListProps) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
-                  <span className="text-lg">🍽️</span>
-                  <span className="font-semibold">Sopar</span>
-                  <span className="text-xs text-muted-foreground">Restaurant, esmorzar, tapes</span>
-                </Button>
-                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
-                  <span className="text-lg">🛒</span>
-                  <span className="font-semibold">Compra</span>
-                  <span className="text-xs text-muted-foreground">Supermercat, supplies, casa</span>
-                </Button>
-                <Button type="button" variant="outline" className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent" onClick={startCreate} disabled={group.archived}>
-                  <span className="text-lg">🚌</span>
-                  <span className="font-semibold">Transport</span>
-                  <span className="text-xs text-muted-foreground">Taxi, benzina, bitllets</span>
-                </Button>
+                {emptyStateCtas.map((cta) => (
+                  <Button
+                    key={cta.title}
+                    type="button"
+                    variant="outline"
+                    className="h-auto min-h-20 flex-col gap-1.5 rounded-xl border bg-background px-4 py-4 text-center shadow-sm hover:bg-accent"
+                    onClick={startCreate}
+                    disabled={group.archived}
+                  >
+                    <span className="text-lg">{cta.emoji}</span>
+                    <span className="font-semibold">{cta.title}</span>
+                    <span className="text-xs text-muted-foreground">{cta.subtitle}</span>
+                  </Button>
+                ))}
               </div>
 
               <div className="rounded-2xl border bg-background/80 p-4 shadow-sm">
