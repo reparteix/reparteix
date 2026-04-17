@@ -35,6 +35,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 const MAX_RECEIPT_FILE_SIZE_MB = 12
 const MAX_RECEIPT_DIMENSION = 1600
+const MAX_RECEIPT_SOURCE_PIXELS = 24_000_000
 const RECEIPT_OUTPUT_QUALITY = 0.78
 
 async function compressReceiptImage(file: File): Promise<string> {
@@ -47,6 +48,10 @@ async function compressReceiptImage(file: File): Promise<string> {
       img.onerror = () => reject(new Error('No s\'ha pogut carregar la imatge seleccionada.'))
       img.src = imageUrl
     })
+
+    if (image.width * image.height > MAX_RECEIPT_SOURCE_PIXELS) {
+      throw new Error('La imatge és massa gran per processar-la amb seguretat. Prova amb una foto una mica més petita.')
+    }
 
     const scale = Math.min(1, MAX_RECEIPT_DIMENSION / Math.max(image.width, image.height))
     const width = Math.max(1, Math.round(image.width * scale))
@@ -140,6 +145,13 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  const receiptLoadRequestRef = useRef(0)
+
+  useEffect(() => {
+    return () => {
+      receiptLoadRequestRef.current += 1
+    }
+  }, [])
 
   useEffect(() => {
     if (viewingReceipt) {
@@ -279,12 +291,17 @@ export function ExpenseList({ group }: ExpenseListProps) {
       return
     }
 
+    const requestId = receiptLoadRequestRef.current + 1
+    receiptLoadRequestRef.current = requestId
+
     void compressReceiptImage(file)
       .then((optimizedImage) => {
+        if (receiptLoadRequestRef.current !== requestId) return
         setReceiptImage(optimizedImage)
         resetInput()
       })
       .catch((error: unknown) => {
+        if (receiptLoadRequestRef.current !== requestId) return
         setReceiptError(
           error instanceof Error
             ? error.message
