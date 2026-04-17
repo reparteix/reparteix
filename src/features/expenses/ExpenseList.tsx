@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -847,24 +847,22 @@ export function ExpenseList({ group }: ExpenseListProps) {
                           </div>
                           <div className="flex items-center gap-1">
                             {expense.receiptImage && (
-                              <button
-                                type="button"
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setViewingReceipt({
                                   image: expense.receiptImage ?? '',
                                   description: expense.description,
                                   amount: expense.amount,
                                   payerName: getMemberName(expense.payerId),
                                 })}
-                                aria-label="Veure rebut"
-                                className="overflow-hidden rounded-md border bg-background hover:opacity-90 transition-opacity"
-                                title="Veure rebut"
+                                aria-label="Veure rebut adjunt"
+                                className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                                title="Veure rebut adjunt"
                               >
-                                <img
-                                  src={expense.receiptImage}
-                                  alt={`Rebut de ${expense.description}`}
-                                  className="h-8 w-8 object-cover"
-                                />
-                              </button>
+                                <Paperclip className="mr-1 h-3.5 w-3.5" />
+                                Adjunt
+                              </Button>
                             )}
                             {!showArchived && !group.archived && (
                               <Button
