@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/reparteix/reparteix/compare/v1.33.0...v1.34.0) (2026-04-17)
+
+
+### Features
+
+* improve first-group activation empty state ([#137](https://github.com/reparteix/reparteix/issues/137)) ([c861401](https://github.com/reparteix/reparteix/commit/c8614010094021c3f82c18fe0db7bde19ec38994))
+
 # [1.33.0](https://github.com/reparteix/reparteix/compare/v1.32.0...v1.33.0) (2026-04-17)
 
 
