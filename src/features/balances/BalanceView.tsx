@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowRight, Check, Share2, Sparkles, Wallet, CircleAlert } from 'lucide-react'
 import type { Group } from '../../domain/entities'
 import { useStore } from '../../store'
@@ -25,8 +25,8 @@ interface BalanceViewProps {
 
 export function BalanceView({ group }: BalanceViewProps) {
   const { expenses, payments, addPayment } = useStore()
-  const [recordedIndex, setRecordedIndex] = useState<number | null>(null)
-  const [sharedIndex, setSharedIndex] = useState<number | null>(null)
+  const [recordedSettlementKey, setRecordedSettlementKey] = useState<string | null>(null)
+  const [sharedSettlementKey, setSharedSettlementKey] = useState<string | null>(null)
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const memberIds = activeMembers.map((m) => m.id)
@@ -35,8 +35,12 @@ export function BalanceView({ group }: BalanceViewProps) {
   const balances = calculateBalances(memberIds, expenses, payments)
   const netting = calculateNetting(balances)
 
-  const getMemberName = (id: string) =>
-    group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
+  const memberNameById = useMemo(
+    () => new Map(group.members.map((member) => [member.id, member.name])),
+    [group.members],
+  )
+
+  const getMemberName = (id: string) => memberNameById.get(id) ?? 'Desconegut'
 
   const totalExpenses = expenses
     .filter((e) => !e.deleted)
@@ -48,7 +52,10 @@ export function BalanceView({ group }: BalanceViewProps) {
 
   const peopleToReceive = new Set(netting.minimized.map((settlement) => settlement.toId)).size
 
-  const handleRecordPayment = async (fromId: string, toId: string, amount: number, index: number) => {
+  const getSettlementKey = (fromId: string, toId: string, amount: number) => `${fromId}:${toId}:${amount.toFixed(2)}`
+
+  const handleRecordPayment = async (fromId: string, toId: string, amount: number) => {
+    const settlementKey = getSettlementKey(fromId, toId, amount)
     await addPayment({
       groupId: group.id,
       fromId,
@@ -56,8 +63,8 @@ export function BalanceView({ group }: BalanceViewProps) {
       amount,
       date: new Date().toISOString().split('T')[0],
     })
-    setRecordedIndex(index)
-    setTimeout(() => setRecordedIndex(null), 1500)
+    setRecordedSettlementKey(settlementKey)
+    setTimeout(() => setRecordedSettlementKey(null), 1500)
   }
 
   const buildShareMessage = (fromId: string, toId: string, amount: number) => {
@@ -86,14 +93,14 @@ export function BalanceView({ group }: BalanceViewProps) {
     ].join('\n')
   }
 
-  const handleShareReminder = async (fromId: string, toId: string, amount: number, index: number) => {
+  const handleShareReminder = async (fromId: string, toId: string, amount: number) => {
     const result = await shareText({
       title: `Recordatori de pagament · ${group.name}`,
       text: buildShareMessage(fromId, toId, amount),
     })
     if (result.method === 'cancelled') return
-    setSharedIndex(index)
-    setTimeout(() => setSharedIndex(null), 2000)
+    setSharedSettlementKey(getSettlementKey(fromId, toId, amount))
+    setTimeout(() => setSharedSettlementKey(null), 2000)
   }
 
   const handleShareSettlementSummary = async () => {
@@ -218,8 +225,11 @@ export function BalanceView({ group }: BalanceViewProps) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {netting.minimized.map((s, i) => (
-            <Card key={i} className="border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-950">
+          {netting.minimized.map((s) => {
+            const settlementKey = getSettlementKey(s.fromId, s.toId, s.amount)
+
+            return (
+            <Card key={settlementKey} className="border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-950">
               <CardContent className="space-y-4 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -243,7 +253,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {sharedIndex === i ? (
+                  {sharedSettlementKey === settlementKey ? (
                     <span className="flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-600 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300">
                       <Check className="h-3 w-3" />
                       Recordatori compartit
@@ -252,7 +262,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleShareReminder(s.fromId, s.toId, s.amount, i)}
+                      onClick={() => handleShareReminder(s.fromId, s.toId, s.amount)}
                       title="Compartir recordatori de pagament"
                       className="h-9"
                     >
@@ -260,7 +270,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                       Compartir recordatori
                     </Button>
                   )}
-                  {recordedIndex === i ? (
+                  {recordedSettlementKey === settlementKey ? (
                     <span className="flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
                       <Check className="h-3 w-3" />
                       Pagament registrat
@@ -268,7 +278,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => handleRecordPayment(s.fromId, s.toId, s.amount, i)}
+                      onClick={() => handleRecordPayment(s.fromId, s.toId, s.amount)}
                       title="Registrar aquest pagament"
                       className="h-9 bg-emerald-600 text-xs hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                     >
@@ -279,7 +289,8 @@ export function BalanceView({ group }: BalanceViewProps) {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
