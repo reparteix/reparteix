@@ -33,6 +33,73 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   GBP: '£',
 }
 
+const MAX_RECEIPT_FILE_SIZE_MB = 12
+const MAX_RECEIPT_DIMENSION = 1600
+const RECEIPT_OUTPUT_QUALITY = 0.78
+
+async function compressReceiptImage(file: File): Promise<string> {
+  const imageUrl = URL.createObjectURL(file)
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('No s\'ha pogut carregar la imatge seleccionada.'))
+      img.src = imageUrl
+    })
+
+    const scale = Math.min(1, MAX_RECEIPT_DIMENSION / Math.max(image.width, image.height))
+    const width = Math.max(1, Math.round(image.width * scale))
+    const height = Math.max(1, Math.round(image.height * scale))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+
+    const context = canvas.getContext('2d')
+    if (!context) {
+      throw new Error('El navegador no pot processar la imatge ara mateix.')
+    }
+
+    context.drawImage(image, 0, 0, width, height)
+
+    return await new Promise<string>((resolve, reject) => {
+      const tryFormats: Array<{ type: string; quality?: number }> = [
+        { type: 'image/webp', quality: RECEIPT_OUTPUT_QUALITY },
+        { type: 'image/jpeg', quality: RECEIPT_OUTPUT_QUALITY },
+      ]
+
+      const attempt = (index: number) => {
+        const format = tryFormats[index]
+        if (!format) {
+          reject(new Error('No s\'ha pogut optimitzar la imatge.'))
+          return
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              attempt(index + 1)
+              return
+            }
+
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = () => reject(new Error('No s\'ha pogut llegir la imatge optimitzada.'))
+            reader.readAsDataURL(blob)
+          },
+          format.type,
+          format.quality,
+        )
+      }
+
+      attempt(0)
+    })
+  } finally {
+    URL.revokeObjectURL(imageUrl)
+  }
+}
+
 const emptyStateCtas = [
   {
     emoji: '🍽️',
@@ -206,23 +273,25 @@ export function ExpenseList({ group }: ExpenseListProps) {
       return
     }
 
-    const MAX_SIZE_MB = 5
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      setReceiptError(`La imatge no pot superar ${MAX_SIZE_MB} MB.`)
+    if (file.size > MAX_RECEIPT_FILE_SIZE_MB * 1024 * 1024) {
+      setReceiptError(`La imatge no pot superar ${MAX_RECEIPT_FILE_SIZE_MB} MB.`)
       resetInput()
       return
     }
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setReceiptImage(reader.result as string)
-      resetInput()
-    }
-    reader.onerror = () => {
-      setReceiptError("No s'ha pogut carregar la imatge. Torna-ho a intentar.")
-      resetInput()
-    }
-    reader.readAsDataURL(file)
+    void compressReceiptImage(file)
+      .then((optimizedImage) => {
+        setReceiptImage(optimizedImage)
+        resetInput()
+      })
+      .catch((error: unknown) => {
+        setReceiptError(
+          error instanceof Error
+            ? error.message
+            : "No s'ha pogut carregar la imatge. Torna-ho a intentar.",
+        )
+        resetInput()
+      })
   }
 
   const toggleSplitMember = (memberId: string) => {
