@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip } from 'lucide-react'
 import type { Group, Expense } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -122,6 +122,13 @@ interface ExpenseListProps {
   group: Group
 }
 
+interface ViewingReceiptState {
+  image: string
+  description: string
+  amount: number
+  payerName: string
+}
+
 export function ExpenseList({ group }: ExpenseListProps) {
   const { expenses, payments, addExpense, updateExpense, deleteExpense, archiveAllSettledExpenses, unarchiveExpense } = useStore()
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
@@ -134,7 +141,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, string>>({})
   const [showForm, setShowForm] = useState(false)
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
-  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
+  const [viewingReceipt, setViewingReceipt] = useState<ViewingReceiptState | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -666,7 +673,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <Label>Foto del tiquet</Label>
+                    <Label>Foto del rebut</Label>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -683,15 +690,19 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       onChange={handleFileChange}
                     />
                     {receiptImage ? (
-                      <div className="relative w-fit">
+                      <div className="relative w-fit space-y-2">
                         <img
                           src={receiptImage}
-                          alt="Tiquet"
+                          alt="Rebut"
                           className="max-h-[200px] rounded-md border object-contain"
                         />
+                        <div className="rounded-md border bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+                          El rebut quedarà adjunt a aquesta despesa com a context visual.
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
+                            receiptLoadRequestRef.current += 1
                             setReceiptImage(null)
                             setReceiptError(null)
                           }}
@@ -817,7 +828,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   return (
                     <Card key={expense.id} className={cn(showArchived && 'opacity-75')}>
                       <CardContent className="flex items-center justify-between p-3">
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-1">
                           <div className="font-medium">{expense.description}</div>
                           <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                             <span
@@ -839,11 +850,18 @@ export function ExpenseList({ group }: ExpenseListProps) {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setViewingReceipt(expense.receiptImage ?? null)}
-                                aria-label="Veure tiquet"
+                                onClick={() => setViewingReceipt({
+                                  image: expense.receiptImage ?? '',
+                                  description: expense.description,
+                                  amount: expense.amount,
+                                  payerName: getMemberName(expense.payerId),
+                                })}
+                                aria-label="Veure rebut adjunt"
                                 className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                                title="Veure rebut adjunt"
                               >
-                                <Camera className="h-3 w-3" />
+                                <Paperclip className="mr-1 h-3.5 w-3.5" />
+                                Adjunt
                               </Button>
                             )}
                             {!showArchived && !group.archived && (
@@ -928,7 +946,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
           role="dialog"
           aria-modal="true"
-          aria-label="Visor del tiquet"
+          aria-label="Visor del rebut"
           tabIndex={-1}
           onClick={() => setViewingReceipt(null)}
           onKeyDown={(e) => {
@@ -942,10 +960,16 @@ export function ExpenseList({ group }: ExpenseListProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={viewingReceipt}
-              alt="Tiquet"
+              src={viewingReceipt.image}
+              alt="Rebut"
               className="max-w-full max-h-[85vh] rounded-lg object-contain shadow-lg"
             />
+            <div className="absolute left-2 top-2 max-w-[70vw] rounded-lg bg-card/95 px-3 py-2 shadow">
+              <p className="text-sm font-medium">{viewingReceipt.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {viewingReceipt.payerName} ha pagat · {viewingReceipt.amount.toFixed(2)} {symbol}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setViewingReceipt(null)}
