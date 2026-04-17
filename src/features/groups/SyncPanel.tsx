@@ -174,7 +174,7 @@ function StateBadge({ state }: { state: string }) {
   )
 }
 
-function SyncStepList({ state }: { state: string }) {
+function SyncStepList({ state, compact = false }: { state: string, compact?: boolean }) {
   const steps = [
     {
       key: 'prepare',
@@ -200,9 +200,9 @@ function SyncStepList({ state }: { state: string }) {
   ]
 
   return (
-    <div className="space-y-2">
+    <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
       {steps.map((step, index) => (
-        <div key={step.key} className="flex items-start gap-3 rounded-xl bg-muted/40 px-3 py-3">
+        <div key={step.key} className={`flex items-start gap-3 rounded-xl bg-muted/40 ${compact ? 'px-3 py-2.5' : 'px-3 py-3'}`}>
           <div className="mt-0.5 flex items-center gap-2">
             <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${step.done ? 'bg-success/15 text-success' : step.active ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
               {step.done ? <Check className="h-3.5 w-3.5" /> : index + 1}
@@ -210,7 +210,7 @@ function SyncStepList({ state }: { state: string }) {
           </div>
           <div className="space-y-0.5">
             <p className="text-sm font-medium">{step.title}</p>
-            <p className="text-xs leading-5 text-muted-foreground">{step.description}</p>
+            {!compact && <p className="text-xs leading-5 text-muted-foreground">{step.description}</p>}
           </div>
         </div>
       ))}
@@ -244,6 +244,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const showSetupCopy = sync.state === 'idle'
   const showCompactStatusDetails = sync.state !== 'idle' && !sync.error
   const isWaitingForPeer = mode === 'host' && sync.state === 'waiting-for-peer'
+  const isEmbeddedWaiting = embedded && isWaitingForPeer
 
   useEffect(() => {
     setPassphrase(rememberedPassphrase)
@@ -382,7 +383,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
           </Button>
         )}
 
-        {showSetupCopy && <SyncStepList state={sync.state} />}
+        {showSetupCopy && <SyncStepList state={sync.state} compact={embedded} />}
 
         {/* Active sync status */}
         {sync.state !== 'idle' && (
@@ -409,7 +410,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
             {/* Status message */}
             <div className="space-y-3">
               <p className="text-sm font-medium leading-snug">{sync.message}</p>
-              <SyncStepList state={sync.state} />
+              <SyncStepList state={sync.state} compact={embedded} />
               {sync.error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   <div className="flex items-start gap-2">
@@ -421,7 +422,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   </div>
                 </div>
               )}
-              {isWaitingForPeer && (
+              {isWaitingForPeer && !isEmbeddedWaiting && (
                 <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground">
                   <div className="mb-1 flex items-center gap-2 font-medium text-foreground">
                     <ArrowRight className="h-4 w-4 text-primary" />
@@ -454,7 +455,9 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
               <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-2">
                 <p className="text-muted-foreground">
-                  Comparteix l'enllaç amb l'altre dispositiu i la sincronització començarà quan l'obrin.
+                  {embedded
+                    ? 'Comparteix l’enllaç i l’altre dispositiu entrarà directament al sync.'
+                    : 'Comparteix l\'enllaç amb l\'altre dispositiu i la sincronització començarà quan l\'obrin.'}
                 </p>
                 <Button
                   size="sm"
