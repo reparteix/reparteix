@@ -180,14 +180,14 @@ function SyncStepList({ state }: { state: string }) {
       key: 'prepare',
       title: 'Prepara l\'altre dispositiu',
       description: 'Obrirà un enllaç i entrarà directament al flux de sync d\'aquest grup.',
-      active: state === 'idle' || state === 'waiting-for-peer',
-      done: state !== 'idle',
+      active: state === 'idle' || state === 'initializing' || state === 'waiting-for-peer',
+      done: state === 'connecting' || state === 'syncing' || state === 'completed',
     },
     {
       key: 'connect',
       title: 'Connexió privada entre dispositius',
       description: 'Els dos dispositius es troben i estableixen la connexió de sync.',
-      active: state === 'connecting' || state === 'waiting-for-peer',
+      active: state === 'connecting',
       done: state === 'syncing' || state === 'completed',
     },
     {
