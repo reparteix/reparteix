@@ -1,3 +1,16 @@
+# [1.36.0](https://github.com/reparteix/reparteix/compare/v1.35.0...v1.36.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* always allow closing sync modal via close button ([3a59823](https://github.com/reparteix/reparteix/commit/3a598235b3272c19141fcd1b713029f0575eef7d))
+* correct sync step progress states ([2143298](https://github.com/reparteix/reparteix/commit/21432981b75c0699777c996ba41a73e8b11b40ad))
+
+
+### Features
+
+* clarify sync onboarding and progress guidance ([9311c8d](https://github.com/reparteix/reparteix/commit/9311c8d47c969f61974b41855522ffa5588bf3ce))
+
 # [1.35.0](https://github.com/reparteix/reparteix/compare/v1.34.0...v1.35.0) (2026-04-17)
 
 
