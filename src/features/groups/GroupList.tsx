@@ -171,7 +171,7 @@ export function GroupList() {
             <div>
               <h1 className="text-4xl font-bold tracking-tight mb-2">🧾 Reparteix</h1>
               <p className="text-indigo-200 text-base">
-                Gestiona despeses compartides de forma senzilla, local i privada.
+                Despeses compartides sense complicacions, sense comptes i amb les dades sota control.
               </p>
             </div>
             <Button
@@ -242,7 +242,7 @@ export function GroupList() {
                         onClick={() => navigate('/onboarding')}
                         className="gap-1.5"
                       >
-                        Crear en 1 minut
+                        Començar en 1 minut
                       </Button>
                     )}
                     <Button
@@ -313,7 +313,7 @@ export function GroupList() {
               </div>
               <h2 className="text-xl font-bold mb-2">Crea el teu primer grup</h2>
               <p className="text-muted-foreground text-sm mb-8 max-w-xs">
-                Afegeix persones i comença a registrar despeses compartides de manera senzilla.
+                Afegeix la gent, apunta la primera despesa i comença a veure el balanç sense embolics.
               </p>
 
               {showForm ? (
@@ -355,7 +355,7 @@ export function GroupList() {
                     className="w-full text-muted-foreground gap-2"
                   >
                     <Upload className="h-4 w-4" />
-                    Importar des de fitxer
+                    Recuperar des d’un fitxer
                   </Button>
                 </div>
               )}

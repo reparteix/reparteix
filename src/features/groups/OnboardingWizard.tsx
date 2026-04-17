@@ -206,14 +206,14 @@ export function OnboardingWizard() {
                 <Sparkles className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Crea un grup i veu el primer balanç en menys d’un minut</h1>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Comença ràpid i veu el primer balanç en menys d’un minut</h1>
                 <p className="max-w-xl text-sm text-indigo-100 sm:text-base">
-                  Reparteix et guia pas a pas perquè entenguis el model ràpid: grup, membres, primera despesa i balanç.
+                  Crea un grup, afegeix la gent i apunta la primera despesa. La idea és que vegis valor de seguida, sense configuracions ni comptes.
                 </p>
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm text-white/90 backdrop-blur">
                 <Shield className="h-4 w-4" />
-                Tot queda al teu dispositiu. No fem tracking ni enviem dades a tercers.
+                Sense comptes. Les dades queden sota el teu control des del primer moment.
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium sm:w-72">
@@ -247,7 +247,7 @@ export function OnboardingWizard() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Pas 1</p>
                 <h2 className="text-2xl font-semibold tracking-tight">Com es diu el grup?</h2>
-                <p className="text-sm text-muted-foreground">Posa-li un nom clar. Després ja podràs afinar la resta des del grup.</p>
+                <p className="text-sm text-muted-foreground">Posa-li un nom clar i tira. La resta la podràs ajustar després, des del mateix grup.</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="group-name">Nom del grup</Label>
@@ -279,7 +279,7 @@ export function OnboardingWizard() {
                   <p className="text-sm font-medium">Pas 2</p>
                 </div>
                 <h2 className="text-2xl font-semibold tracking-tight">Qui forma part del grup?</h2>
-                <p className="text-sm text-muted-foreground">Afegeix almenys dues persones perquè el balanç tingui sentit des del primer moment.</p>
+                <p className="text-sm text-muted-foreground">Afegeix qui participa al grup perquè el repartiment tingui sentit des del primer moment.</p>
               </div>
               <div className="space-y-3">
                 {draft.memberNames.map((memberName, index) => (
@@ -329,7 +329,7 @@ export function OnboardingWizard() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Pas 3</p>
                 <h2 className="text-2xl font-semibold tracking-tight">Registra la primera despesa</h2>
-                <p className="text-sm text-muted-foreground">Amb això ja veuràs el valor real del producte, qui ha pagat i com queda repartit.</p>
+                <p className="text-sm text-muted-foreground">Amb això ja veuràs qui ha pagat, com queda repartit i si algú ha d’abonar diners.</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="expense-description">Quina ha estat la primera despesa?</Label>
@@ -411,7 +411,7 @@ export function OnboardingWizard() {
                 </div>
               </div>
               <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-100">
-                Aquest flux està pensat per ensenyar el model ràpid, no per fer-te configurar-ho tot d’entrada.
+                Aquest flux està pensat perquè comencis ràpid. Ja tindràs temps després per compartir, sincronitzar o guardar còpies del grup.
               </div>
             </div>
           </Card>
