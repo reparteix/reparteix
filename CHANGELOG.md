@@ -1,3 +1,16 @@
+# [1.37.0](https://github.com/reparteix/reparteix/compare/v1.36.0...v1.37.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* harden receipt compression review follow-ups ([63c6f55](https://github.com/reparteix/reparteix/commit/63c6f55a9c7ca82b214a90ed1497f7291a155472))
+* harden receipt image compression flow ([7d6444c](https://github.com/reparteix/reparteix/commit/7d6444c8a41f92bc61d4fa91e84098f7a4fe5def))
+
+
+### Features
+
+* compress receipt images before storing ([b085b78](https://github.com/reparteix/reparteix/commit/b085b781949b34f856f7199889dcebc6bcbff6fe))
+
 # [1.36.0](https://github.com/reparteix/reparteix/compare/v1.35.0...v1.36.0) (2026-04-17)
 
 
