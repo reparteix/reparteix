@@ -208,11 +208,11 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Còpia de seguretat</CardTitle>
+          <CardTitle className="text-base">Guardar una còpia del grup</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Exporta totes les dades del grup (membres, despeses i pagaments) a un fitxer JSON per fer-ne una còpia de seguretat o migrar-les.
+            Desa aquest grup en un fitxer per recuperar-lo més endavant, portar-lo a un altre dispositiu o quedar-te una còpia de seguretat sota control teu.
           </p>
           <Button
             variant="outline"
@@ -221,7 +221,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
             onClick={handleExport}
           >
             <Download className="h-4 w-4 mr-2" />
-            Exportar JSON
+            Desar còpia en un fitxer
           </Button>
           {exportStatus === 'ok' && (
             <p className="text-sm text-success">Fitxer exportat correctament.</p>
@@ -240,7 +240,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Genera un enllaç per compartir el grup amb una altra persona. L'altra persona podrà previsualitzar i importar-lo al seu dispositiu.
+            Genera un enllaç perquè una altra persona, o tu mateix en un altre dispositiu, pugui obrir el grup i continuar des d'allà sense passar fitxers manualment.
           </p>
           <Button
             variant="outline"
@@ -249,7 +249,7 @@ function GroupSettingsForm({ group, groupId }: GroupSettingsFormProps) {
             onClick={handleShare}
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Compartir grup
+            Continuar amb un enllaç
           </Button>
           {shareStatus === 'shared' && (
             <p className="text-sm text-success">Enllaç compartit correctament.</p>

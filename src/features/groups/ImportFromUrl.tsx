@@ -22,7 +22,7 @@ export function ImportFromUrl() {
   const navigate = useNavigate()
   const encoded = searchParams.get('g') ?? ''
   const [state, setState] = useState<ImportState>(() =>
-    encoded ? { status: 'loading' } : { status: 'error', message: 'No hi ha cap contingut per importar.' },
+    encoded ? { status: 'loading' } : { status: 'error', message: 'No hi ha cap contingut per recuperar.' },
   )
   const [report, setReport] = useState<SyncReport | null>(null)
 
@@ -123,8 +123,8 @@ export function ImportFromUrl() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Importar grup</h1>
-            <p className="text-indigo-200 text-sm">Via enllaç de compartir</p>
+            <h1 className="text-2xl font-bold">Continuar un grup des d’un enllaç</h1>
+            <p className="text-indigo-200 text-sm">Obre un grup compartit i porta’l a aquest dispositiu</p>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ export function ImportFromUrl() {
             <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
               <AlertCircle className="h-10 w-10 text-destructive" />
               <div>
-                <p className="font-semibold text-destructive">No s'ha pogut importar</p>
+                <p className="font-semibold text-destructive">No s'ha pogut recuperar el grup</p>
                 <p className="text-sm text-muted-foreground mt-1">{state.message}</p>
               </div>
               <Button variant="outline" onClick={() => navigate('/')}>
@@ -166,7 +166,7 @@ export function ImportFromUrl() {
         {state.status === 'importing' && (
           <Card className="shadow-md">
             <CardContent className="py-12 flex justify-center">
-              <p className="text-muted-foreground">Important…</p>
+              <p className="text-muted-foreground">Portant el grup a aquest dispositiu…</p>
             </CardContent>
           </Card>
         )}
@@ -176,7 +176,7 @@ export function ImportFromUrl() {
             <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
               <CheckCircle className="h-10 w-10 text-success" />
               <div>
-                <p className="font-semibold text-success">Grup importat correctament</p>
+                <p className="font-semibold text-success">Grup recuperat correctament</p>
                 {report && <SyncReportSummary report={report} />}
               </div>
               <Button
@@ -211,7 +211,7 @@ function PreviewCard({ envelope, exists, onImport, onImportAsCopy, onCancel }: P
     <Card className="shadow-md">
       <CardHeader>
         <CardTitle className="text-base">
-          {exists ? 'Actualitzar grup existent' : 'Importar grup nou'}
+          {exists ? 'Continuar grup existent' : 'Portar grup nou a aquest dispositiu'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -240,12 +240,12 @@ function PreviewCard({ envelope, exists, onImport, onImportAsCopy, onCancel }: P
         {exists ? (
           <p className="text-sm text-muted-foreground">
             Aquest grup ja existeix al teu dispositiu. Pots{' '}
-            <strong>actualitzar-lo</strong> (les dades més noves guanyen) o{' '}
-            <strong>importar-lo com a còpia nova</strong>.
+            <strong>posar-lo al dia</strong> amb les dades de l'enllaç o{' '}
+            <strong>portar-lo com una còpia nova</strong> si vols separar-lo de l'original.
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Aquest grup no existeix al teu dispositiu. Es crearà nou amb totes les dades de l'enllaç.
+            Aquest grup encara no existeix en aquest dispositiu. El podràs portar aquí amb totes les dades de l'enllaç.
           </p>
         )}
 
@@ -255,11 +255,11 @@ function PreviewCard({ envelope, exists, onImport, onImportAsCopy, onCancel }: P
             className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white"
             onClick={onImport}
           >
-            {exists ? 'Actualitzar / Fusionar' : 'Importar grup'}
+            {exists ? 'Posar al dia aquest grup' : 'Portar grup a aquest dispositiu'}
           </Button>
           {exists && (
             <Button variant="outline" className="w-full" onClick={onImportAsCopy}>
-              Importar com a còpia nova
+              Portar com a còpia nova
             </Button>
           )}
           <Button variant="ghost" className="w-full text-muted-foreground" onClick={onCancel}>

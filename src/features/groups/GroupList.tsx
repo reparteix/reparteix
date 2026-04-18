@@ -252,16 +252,16 @@ export function GroupList() {
                       className="text-muted-foreground gap-1.5"
                     >
                       <Upload className="h-3.5 w-3.5" />
-                      Importar
+                      Recuperar des d’un fitxer
                     </Button>
                   </div>
                 )}
                 {/* Import status messages */}
                 {importStatus === 'ok' && (
-                  <p className="text-sm text-success mt-2">Grup importat correctament. Redirigint…</p>
+                  <p className="text-sm text-success mt-2">Grup recuperat correctament. Redirigint…</p>
                 )}
                 {importStatus === 'error' && (
-                  <p className="text-sm text-destructive mt-2">Error en importar: {importError}</p>
+                  <p className="text-sm text-destructive mt-2">Error en recuperar el grup: {importError}</p>
                 )}
               </div>
             </Card>
@@ -313,7 +313,7 @@ export function GroupList() {
               </div>
               <h2 className="text-xl font-bold mb-2">Crea el teu primer grup</h2>
               <p className="text-muted-foreground text-sm mb-8 max-w-xs">
-                Afegeix la gent, apunta la primera despesa i comença a veure el balanç sense embolics.
+                Afegeix la gent, apunta la primera despesa i comença a veure el balanç sense embolics. Si ja el tens guardat, també el pots recuperar des d’un fitxer.
               </p>
 
               {showForm ? (
@@ -362,10 +362,10 @@ export function GroupList() {
 
               {/* Import status messages */}
               {importStatus === 'ok' && (
-                <p className="text-sm text-success mt-4">Grup importat correctament. Redirigint…</p>
+                <p className="text-sm text-success mt-4">Grup recuperat correctament. Redirigint…</p>
               )}
               {importStatus === 'error' && (
-                <p className="text-sm text-destructive mt-4">Error en importar: {importError}</p>
+                <p className="text-sm text-destructive mt-4">Error en recuperar el grup: {importError}</p>
               )}
             </div>
           </Card>
