@@ -1,6 +1,6 @@
 # Reparteix
 
-Alternativa a Splitwise pensada per ús personal i grups petits, amb arquitectura **local-first** i funcionament **100% offline**. Les dades es guarden al navegador.
+Despeses compartides sense comptes i sense complicacions. Reparteix funciona al moment, guarda les dades al teu dispositiu i et deixa sincronitzar-les en privat quan ho necessitis.
 
 ## Funcionalitats
 
@@ -72,8 +72,9 @@ L'arxiu `src/sdk.ts` exporta un objecte `reparteix` amb totes les operacions de 
 
 ### Sincronització P2P
 
-Sincronització directa entre navegadors sense servidor propi:
+Sincronització privada entre dispositius, sense backend propi:
 
+- **Experiència**: una acció principal de sincronització des del grup
 - **Transport**: WebRTC data channels via PeerJS (signaling públic per defecte)
 - **Xifrat**: AES-256-GCM amb clau derivada de contrasenya de grup (PBKDF2, 100.000 iteracions)
 - **Protocol**: missatges tipats (hello, request-sync, sync-data, sync-ack, error) validats amb Zod
@@ -81,10 +82,10 @@ Sincronització directa entre navegadors sense servidor propi:
 - **Configuració**: servidors PeerJS/STUN/TURN configurables per a instal·lacions self-hosted
 
 Flux de sincronització:
-1. Dispositiu A prem «Compartir» → s'obre sessió i espera peer
-2. Dispositiu B prem «Rebre» amb la mateixa contrasenya → es connecta automàticament
+1. Obres «Sincronitzar» des del grup
+2. Comparteixes l'enllaç o obres el grup a l'altre dispositiu
 3. Les dades es xifren, s'intercanvien i es fusionen amb LWW
-4. Ambdós dispositius queden sincronitzats
+4. Ambdós dispositius queden al dia
 
 Documentació detallada: `docs/adr/001-sync-architecture.md`
 
@@ -179,7 +180,7 @@ Configuració a `.releaserc.json`, workflow a `.github/workflows/release.yml`.
 
 ## Decisions de disseny
 
-1. **Sense backend propi** — tota la lògica és client-side.
+1. **Sense comptes ni backend propi** com a experiència principal.
 2. **Local-first** — l'app funciona 100% offline, dades a IndexedDB.
 3. **Soft delete** — les entitats es marquen com `deleted: true`, mai s'esborren físicament.
 4. **HashRouter** — per compatibilitat amb hosting estàtic (GitHub Pages).
