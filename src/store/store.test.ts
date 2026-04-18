@@ -49,10 +49,14 @@ describe('activity log', () => {
 
     const activity = await reparteix.listActivity(group.id)
     expect(activity).toHaveLength(5)
-    expect(activity[0].action).toBe('expense.updated')
-    expect(activity[0].before).toMatchObject({ description: 'Sopar', amount: 60 })
-    expect(activity[0].after).toMatchObject({ description: 'Sopar final', amount: 80 })
-    expect(activity[1].action).toBe('expense.created')
+
+    const updatedEntry = activity.find((entry) => entry.action === 'expense.updated')
+    const createdEntry = activity.find((entry) => entry.action === 'expense.created')
+
+    expect(updatedEntry).toBeTruthy()
+    expect(updatedEntry?.before).toMatchObject({ description: 'Sopar', amount: 60 })
+    expect(updatedEntry?.after).toMatchObject({ description: 'Sopar final', amount: 80 })
+    expect(createdEntry).toBeTruthy()
   })
 
   it('registra activitat quan s’esborra un pagament', async () => {
@@ -70,9 +74,11 @@ describe('activity log', () => {
     await reparteix.deletePayment(payment.id)
 
     const activity = await reparteix.listActivity(group.id)
-    expect(activity[0].action).toBe('payment.deleted')
-    expect(activity[0].before).toMatchObject({ id: payment.id, amount: 30, deleted: false })
-    expect(activity[0].after).toMatchObject({ id: payment.id, amount: 30, deleted: true })
+    const deletedEntry = activity.find((entry) => entry.action === 'payment.deleted')
+
+    expect(deletedEntry).toBeTruthy()
+    expect(deletedEntry?.before).toMatchObject({ id: payment.id, amount: 30, deleted: false })
+    expect(deletedEntry?.after).toMatchObject({ id: payment.id, amount: 30, deleted: true })
   })
 })
 

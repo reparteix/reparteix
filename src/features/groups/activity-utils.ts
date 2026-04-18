@@ -2,14 +2,21 @@ import type { ActivityEntry, Group } from '@/domain'
 
 type Snapshot = Record<string, unknown>
 
-function formatMoney(value: unknown): string | null {
-  if (typeof value !== 'number') return null
-  return `${value.toFixed(2)} €`
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
 }
 
-function formatValue(value: unknown): string | null {
+function formatMoney(value: unknown, currency = 'EUR'): string | null {
+  if (typeof value !== 'number') return null
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+  return `${value.toFixed(2)} ${symbol}`
+}
+
+function formatValue(value: unknown, currency = 'EUR'): string | null {
   if (value === undefined || value === null || value === '') return null
-  if (typeof value === 'number') return formatMoney(value)
+  if (typeof value === 'number') return formatMoney(value, currency)
   if (typeof value === 'string') return value
   if (typeof value === 'boolean') return value ? 'sí' : 'no'
   if (Array.isArray(value)) return `${value.length} element${value.length === 1 ? '' : 's'}`
@@ -63,7 +70,7 @@ function getFieldLabel(field: string): string {
   }
 }
 
-export function getActivityDiffLines(entry: ActivityEntry, memberMap: Map<string, string>): string[] {
+export function getActivityDiffLines(entry: ActivityEntry, memberMap: Map<string, string>, currency = 'EUR'): string[] {
   if (!entry.before || !entry.after) return []
 
   const before = entry.before as Snapshot
@@ -100,15 +107,15 @@ export function getActivityDiffLines(entry: ActivityEntry, memberMap: Map<string
       const rawBefore = before[field]
       const rawAfter = after[field]
       const beforeValue = field === 'payerId' || field === 'fromId' || field === 'toId'
-        ? (typeof rawBefore === 'string' ? getMemberName(rawBefore, memberMap) : formatValue(rawBefore))
+        ? (typeof rawBefore === 'string' ? getMemberName(rawBefore, memberMap) : formatValue(rawBefore, currency))
         : field === 'splitAmong'
           ? formatMemberList(rawBefore, memberMap)
-          : formatValue(rawBefore)
+          : formatValue(rawBefore, currency)
       const afterValue = field === 'payerId' || field === 'fromId' || field === 'toId'
-        ? (typeof rawAfter === 'string' ? getMemberName(rawAfter, memberMap) : formatValue(rawAfter))
+        ? (typeof rawAfter === 'string' ? getMemberName(rawAfter, memberMap) : formatValue(rawAfter, currency))
         : field === 'splitAmong'
           ? formatMemberList(rawAfter, memberMap)
-          : formatValue(rawAfter)
+          : formatValue(rawAfter, currency)
       return [`${getFieldLabel(field)}: ${beforeValue ?? 'buit'} → ${afterValue ?? 'buit'}`]
     })
 }

@@ -26,16 +26,22 @@ function now(): string {
   return new Date().toISOString()
 }
 
-function cloneForActivity<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
+function sanitizeActivitySnapshot<T>(value: T): T {
+  if (!value || typeof value !== 'object') {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+
+  const clone = JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+  delete clone.receiptImage
+  return clone as T
 }
 
 async function appendActivity(entry: Omit<ActivityEntry, 'id' | 'at' | 'actor'> & Partial<Pick<ActivityEntry, 'id' | 'at' | 'actor'>>): Promise<ActivityEntry> {
   const activity: ActivityEntry = {
+    ...entry,
     id: entry.id ?? generateId(),
     actor: entry.actor ?? 'local',
     at: entry.at ?? now(),
-    ...entry,
   }
   await db.activity.add(activity)
   return activity
@@ -124,7 +130,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.groups.add(group)
-    await appendActivity({ groupId: group.id, entityType: 'group', entityId: group.id, action: 'group.created', after: cloneForActivity(group) })
+    await appendActivity({ groupId: group.id, entityType: 'group', entityId: group.id, action: 'group.created', after: sanitizeActivitySnapshot(group) })
     return group
   },
 
@@ -145,7 +151,7 @@ export const reparteix = {
     const patch: Partial<Group> = { ...updates, updatedAt: now() }
     await db.groups.update(id, patch)
     const updatedGroup = { ...group, ...patch }
-    await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.updated', before: cloneForActivity(group), after: cloneForActivity(updatedGroup) })
+    await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.updated', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     return updatedGroup
   },
 
@@ -155,7 +161,7 @@ export const reparteix = {
     if (group && !group.deleted) {
       const updatedGroup = { ...group, archived: true, updatedAt: now() }
       await db.groups.update(id, { archived: true, updatedAt: updatedGroup.updatedAt })
-      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.archived', before: cloneForActivity(group), after: cloneForActivity(updatedGroup) })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.archived', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -165,7 +171,7 @@ export const reparteix = {
     if (group && !group.deleted) {
       const updatedGroup = { ...group, archived: false, updatedAt: now() }
       await db.groups.update(id, { archived: false, updatedAt: updatedGroup.updatedAt })
-      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.unarchived', before: cloneForActivity(group), after: cloneForActivity(updatedGroup) })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.unarchived', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -175,7 +181,7 @@ export const reparteix = {
     if (group) {
       const updatedGroup = { ...group, deleted: true, updatedAt: now() }
       await db.groups.update(id, { deleted: true, updatedAt: updatedGroup.updatedAt })
-      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.deleted', before: cloneForActivity(group), after: cloneForActivity(updatedGroup) })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.deleted', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -201,7 +207,7 @@ export const reparteix = {
       members: updatedMembers,
       updatedAt: timestamp,
     })
-    await appendActivity({ groupId, entityType: 'member', entityId: member.id, action: 'member.added', after: cloneForActivity(member), meta: { memberName: member.name } })
+    await appendActivity({ groupId, entityType: 'member', entityId: member.id, action: 'member.added', after: sanitizeActivitySnapshot(member), meta: { memberName: member.name } })
     return member
   },
 
@@ -248,7 +254,7 @@ export const reparteix = {
       updatedAt: timestamp,
     })
     if (member && updatedMember) {
-      await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.removed', before: cloneForActivity(member), after: cloneForActivity(updatedMember), meta: { memberName: member.name } })
+      await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.removed', before: sanitizeActivitySnapshot(member), after: sanitizeActivitySnapshot(updatedMember), meta: { memberName: member.name } })
     }
   },
 
@@ -274,7 +280,7 @@ export const reparteix = {
       members: updatedMembers,
       updatedAt: timestamp,
     })
-    await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.renamed', before: cloneForActivity(member), after: cloneForActivity(updatedMember), meta: { fromName: member.name, toName: newName } })
+    await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.renamed', before: sanitizeActivitySnapshot(member), after: sanitizeActivitySnapshot(updatedMember), meta: { fromName: member.name, toName: newName } })
   },
 
   // ─── Expenses ──────────────────────────────────────────────────────
@@ -316,7 +322,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.expenses.add(newExpense)
-    await appendActivity({ groupId: newExpense.groupId, entityType: 'expense', entityId: newExpense.id, action: 'expense.created', after: cloneForActivity(newExpense) })
+    await appendActivity({ groupId: newExpense.groupId, entityType: 'expense', entityId: newExpense.id, action: 'expense.created', after: sanitizeActivitySnapshot(newExpense) })
     return newExpense
   },
 
@@ -327,7 +333,7 @@ export const reparteix = {
     const updated = { ...expense, updatedAt: now() }
     const existing = await db.expenses.get(expense.id)
     await db.expenses.update(expense.id, updated)
-    await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: expense.id, action: 'expense.updated', before: cloneForActivity(existing ?? expense), after: cloneForActivity(updated) })
+    await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: expense.id, action: 'expense.updated', before: sanitizeActivitySnapshot(existing ?? expense), after: sanitizeActivitySnapshot(updated) })
     return updated
   },
 
@@ -339,7 +345,7 @@ export const reparteix = {
       if (group?.archived) throw new Error('Cannot modify an archived group')
       const updatedExpense = { ...expense, deleted: true, updatedAt: now() }
       await db.expenses.update(id, { deleted: true, updatedAt: updatedExpense.updatedAt })
-      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.deleted', before: cloneForActivity(expense), after: cloneForActivity(updatedExpense) })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.deleted', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -351,7 +357,7 @@ export const reparteix = {
       if (group?.archived) throw new Error('Cannot modify an archived group')
       const updatedExpense = { ...expense, archived: true, updatedAt: now() }
       await db.expenses.update(id, { archived: true, updatedAt: updatedExpense.updatedAt })
-      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.archived', before: cloneForActivity(expense), after: cloneForActivity(updatedExpense) })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.archived', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -363,7 +369,7 @@ export const reparteix = {
       if (group?.archived) throw new Error('Cannot modify an archived group')
       const updatedExpense = { ...expense, archived: false, updatedAt: now() }
       await db.expenses.update(id, { archived: false, updatedAt: updatedExpense.updatedAt })
-      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.unarchived', before: cloneForActivity(expense), after: cloneForActivity(updatedExpense) })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.unarchived', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -417,7 +423,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.payments.add(newPayment)
-    await appendActivity({ groupId: newPayment.groupId, entityType: 'payment', entityId: newPayment.id, action: 'payment.created', after: cloneForActivity(newPayment) })
+    await appendActivity({ groupId: newPayment.groupId, entityType: 'payment', entityId: newPayment.id, action: 'payment.created', after: sanitizeActivitySnapshot(newPayment) })
     return newPayment
   },
 
@@ -428,7 +434,7 @@ export const reparteix = {
     const updated = { ...payment, updatedAt: now() }
     const existing = await db.payments.get(payment.id)
     await db.payments.update(payment.id, updated)
-    await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: payment.id, action: 'payment.updated', before: cloneForActivity(existing ?? payment), after: cloneForActivity(updated) })
+    await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: payment.id, action: 'payment.updated', before: sanitizeActivitySnapshot(existing ?? payment), after: sanitizeActivitySnapshot(updated) })
     return updated
   },
 
@@ -440,7 +446,7 @@ export const reparteix = {
       if (group?.archived) throw new Error('Cannot modify an archived group')
       const updatedPayment = { ...payment, deleted: true, updatedAt: now() }
       await db.payments.update(id, { deleted: true, updatedAt: updatedPayment.updatedAt })
-      await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: id, action: 'payment.deleted', before: cloneForActivity(payment), after: cloneForActivity(updatedPayment) })
+      await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: id, action: 'payment.deleted', before: sanitizeActivitySnapshot(payment), after: sanitizeActivitySnapshot(updatedPayment) })
     }
   },
 
@@ -451,7 +457,12 @@ export const reparteix = {
       .where('groupId')
       .equals(groupId)
       .toArray()
-    return entries.sort((a, b) => b.at.localeCompare(a.at))
+
+    return entries.sort((a, b) => {
+      const byAt = b.at.localeCompare(a.at)
+      if (byAt !== 0) return byAt
+      return b.id.localeCompare(a.id)
+    })
   },
 
   // ─── Balances & Settlements ────────────────────────────────────────

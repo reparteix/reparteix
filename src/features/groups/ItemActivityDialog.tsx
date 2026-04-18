@@ -35,7 +35,7 @@ export function ItemActivityDialog({ group, title, entries, children }: ItemActi
 
         <div className="max-h-[50vh] space-y-3 overflow-y-auto">
           {entries.map((entry) => {
-            const diffLines = getActivityDiffLines(entry, memberMap)
+            const diffLines = getActivityDiffLines(entry, memberMap, group.currency)
             return (
               <div key={entry.id} className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between gap-3">

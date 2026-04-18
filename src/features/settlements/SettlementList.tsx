@@ -63,7 +63,7 @@ export function SettlementList({ group }: SettlementListProps) {
     return () => {
       cancelled = true
     }
-  }, [group.id, payments.length])
+  }, [group.id, payments])
 
   const resetForm = () => {
     setEditingPaymentId(null)

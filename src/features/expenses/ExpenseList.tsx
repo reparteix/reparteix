@@ -175,7 +175,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
     return () => {
       cancelled = true
     }
-  }, [group.id, expenses.length])
+  }, [group.id, expenses])
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
