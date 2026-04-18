@@ -46,18 +46,18 @@ function buildSyncUrl(groupId: string, passphrase: string): string {
   return `${window.location.origin}${window.location.pathname}#/sync?g=${encodeURIComponent(groupId)}&k=${k}`
 }
 
-function describeConflictEntity(entity: string): string {
+function describeConflictEntity(entity: string, count: number): string {
   switch (entity) {
     case 'group':
-      return 'grup'
+      return count > 1 ? 'grups' : 'grup'
     case 'member':
-      return 'membre'
+      return count > 1 ? 'membres' : 'membre'
     case 'expense':
-      return 'despesa'
+      return count > 1 ? 'despeses' : 'despesa'
     case 'payment':
-      return 'pagament'
+      return count > 1 ? 'pagaments' : 'pagament'
     default:
-      return entity
+      return count > 1 ? `${entity}s` : entity
   }
 }
 
@@ -154,7 +154,7 @@ function SyncReportDetails({ report }: { report: SyncReport }) {
           </p>
           <ul className="mt-2 space-y-1 text-sm">
             {Object.entries(conflictSummary).map(([entity, count]) => (
-              <li key={entity}>• {count} {describeConflictEntity(entity)}{count > 1 ? 's' : ''} amb canvis simultanis</li>
+              <li key={entity}>• {count} {describeConflictEntity(entity, count)} amb canvis simultanis</li>
             ))}
           </ul>
         </div>
