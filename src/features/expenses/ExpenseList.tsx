@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip } from 'lucide-react'
-import type { Group, Expense } from '../../domain/entities'
+import type { Group, Expense, ActivityEntry } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
 import { cn } from '@/lib/utils'
@@ -26,6 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { reparteix } from '@/sdk'
+import { ItemActivityDialog } from '@/features/groups/ItemActivityDialog'
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -144,6 +147,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [viewingReceipt, setViewingReceipt] = useState<ViewingReceiptState | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -160,6 +164,18 @@ export function ExpenseList({ group }: ExpenseListProps) {
       modalRef.current?.focus()
     }
   }, [viewingReceipt])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadActivity = async () => {
+      const entries = await reparteix.listActivity(group.id)
+      if (!cancelled) setActivityEntries(entries)
+    }
+    void loadActivity()
+    return () => {
+      cancelled = true
+    }
+  }, [group.id, expenses.length])
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
@@ -398,6 +414,17 @@ export function ExpenseList({ group }: ExpenseListProps) {
       year: 'numeric',
     })
   }
+
+  const expenseActivity = useMemo(() => {
+    const map = new Map<string, ActivityEntry[]>()
+    for (const entry of activityEntries) {
+      if (entry.entityType !== 'expense' || !entry.action.endsWith('.updated')) continue
+      const current = map.get(entry.entityId) ?? []
+      current.push(entry)
+      map.set(entry.entityId, current)
+    }
+    return map
+  }, [activityEntries])
 
   const expensesByDay = (() => {
     const sorted = [...visibleExpenses].sort((a, b) => b.date.localeCompare(a.date))
@@ -825,11 +852,26 @@ export function ExpenseList({ group }: ExpenseListProps) {
               <div className="space-y-2">
                 {items.map((expense) => {
                   const splitLabel = getSplitLabel(expense)
+                  const updates = expenseActivity.get(expense.id) ?? []
+                  const isEdited = updates.length > 0
                   return (
                     <Card key={expense.id} className={cn(showArchived && 'opacity-75')}>
                       <CardContent className="flex items-center justify-between p-3">
                         <div className="flex-1 space-y-1">
-                          <div className="font-medium">{expense.description}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{expense.description}</div>
+                            {isEdited && (
+                              <ItemActivityDialog
+                                group={group}
+                                title={`Canvis a ${expense.description}`}
+                                entries={updates}
+                              >
+                                <button type="button" className="inline-flex">
+                                  <Badge variant="secondary" className="cursor-pointer">editat</Badge>
+                                </button>
+                              </ItemActivityDialog>
+                            )}
+                          </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                             <span
                               className="inline-block h-2 w-2 rounded-full shrink-0"
