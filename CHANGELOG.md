@@ -1,3 +1,18 @@
+# [1.40.0](https://github.com/reparteix/reparteix/compare/v1.39.0...v1.40.0) (2026-04-18)
+
+
+### Bug Fixes
+
+* complete sync when peer has no return payload ([f45242c](https://github.com/reparteix/reparteix/commit/f45242c7d386d6eeb9f0c2a5cb996fa668bd3193))
+* isolate sync ack state per peer ([a510fb9](https://github.com/reparteix/reparteix/commit/a510fb996a66ecb958a70b9dc3be190804a19c82))
+* pluralize sync conflict entities correctly ([bdc51b2](https://github.com/reparteix/reparteix/commit/bdc51b2f7cc0d888923b6d93690d4544400311e1))
+* tighten sync ack completion semantics ([1230b0c](https://github.com/reparteix/reparteix/commit/1230b0cfb0e1eb79f963b1d1543ac6e821326f9c))
+
+
+### Features
+
+* make sync conflicts more explicit ([2a98d64](https://github.com/reparteix/reparteix/commit/2a98d6430b3773f03c15adb7b57a240037b04623))
+
 # [1.39.0](https://github.com/reparteix/reparteix/compare/v1.38.0...v1.39.0) (2026-04-18)
 
 
