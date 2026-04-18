@@ -46,6 +46,29 @@ function buildSyncUrl(groupId: string, passphrase: string): string {
   return `${window.location.origin}${window.location.pathname}#/sync?g=${encodeURIComponent(groupId)}&k=${k}`
 }
 
+function describeConflictEntity(entity: string): string {
+  switch (entity) {
+    case 'group':
+      return 'grup'
+    case 'member':
+      return 'membre'
+    case 'expense':
+      return 'despesa'
+    case 'payment':
+      return 'pagament'
+    default:
+      return entity
+  }
+}
+
+function describeRejectReason(reason: string): string {
+  if (reason.includes('payerId')) return 'hi havia una despesa amb un pagador que no existeix en aquest grup'
+  if (reason.includes('splitAmong member')) return 'hi havia una despesa repartida amb un membre que no existeix en aquest grup'
+  if (reason.includes('fromId') || reason.includes('toId')) return 'hi havia un pagament amb membres que no existeixen en aquest grup'
+  if (reason.includes('groupId')) return 'hi havia dades que pertanyien a un altre grup'
+  return 'algunes dades no complien les comprovacions de consistència'
+}
+
 function SyncReportDetails({ report }: { report: SyncReport }) {
   const totalCreated = report.created.groups + report.created.expenses + report.created.payments + report.created.members
   const totalUpdated = report.updated.groups + report.updated.expenses + report.updated.payments + report.updated.members
@@ -53,8 +76,19 @@ function SyncReportDetails({ report }: { report: SyncReport }) {
   const totalRejected = report.rejected.length
   const totalConflicts = report.conflicts.length
 
+  const conflictSummary = report.conflicts.reduce<Record<string, number>>((acc, conflict) => {
+    acc[conflict.entity] = (acc[conflict.entity] ?? 0) + 1
+    return acc
+  }, {})
+
+  const rejectedSummary = report.rejected.reduce<Record<string, number>>((acc, item) => {
+    const key = describeRejectReason(item.reason)
+    acc[key] = (acc[key] ?? 0) + 1
+    return acc
+  }, {})
+
   return (
-    <div className="space-y-2 text-sm">
+    <div className="space-y-3 text-sm">
       <div className="grid grid-cols-2 gap-2">
         {totalCreated > 0 && (
           <div className="flex items-center gap-1.5">
@@ -92,20 +126,52 @@ function SyncReportDetails({ report }: { report: SyncReport }) {
         <p className="text-muted-foreground">Les dades ja estaven al dia.</p>
       )}
 
-      {report.created.members > 0 && (
-        <p className="text-muted-foreground">
-          {report.created.members} membre{report.created.members > 1 ? 's' : ''} nou{report.created.members > 1 ? 's' : ''}
-        </p>
+      {(report.created.members > 0 || report.created.expenses > 0 || report.created.payments > 0) && (
+        <div className="space-y-1 text-muted-foreground">
+          {report.created.members > 0 && (
+            <p>
+              {report.created.members} membre{report.created.members > 1 ? 's' : ''} nou{report.created.members > 1 ? 's' : ''}
+            </p>
+          )}
+          {report.created.expenses > 0 && (
+            <p>
+              {report.created.expenses} despesa{report.created.expenses > 1 ? 'es' : ''} nova{report.created.expenses > 1 ? 'es' : ''}
+            </p>
+          )}
+          {report.created.payments > 0 && (
+            <p>
+              {report.created.payments} pagament{report.created.payments > 1 ? 's' : ''} nou{report.created.payments > 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
       )}
-      {report.created.expenses > 0 && (
-        <p className="text-muted-foreground">
-          {report.created.expenses} despesa{report.created.expenses > 1 ? 'es' : ''} nova{report.created.expenses > 1 ? 'es' : ''}
-        </p>
+
+      {totalConflicts > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-medium">S'han detectat canvis simultanis</p>
+          <p className="mt-1 text-sm text-amber-900/80 dark:text-amber-100/80">
+            Reparteix ha mantingut la versió local en els casos dubtosos per evitar sobrescriptures silencioses.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {Object.entries(conflictSummary).map(([entity, count]) => (
+              <li key={entity}>• {count} {describeConflictEntity(entity)}{count > 1 ? 's' : ''} amb canvis simultanis</li>
+            ))}
+          </ul>
+        </div>
       )}
-      {report.created.payments > 0 && (
-        <p className="text-muted-foreground">
-          {report.created.payments} pagament{report.created.payments > 1 ? 's' : ''} nou{report.created.payments > 1 ? 's' : ''}
-        </p>
+
+      {totalRejected > 0 && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-destructive">
+          <p className="font-medium">Algunes dades no s'han importat</p>
+          <p className="mt-1 text-sm text-destructive/80">
+            No s'han aplicat elements que podien deixar el grup en un estat inconsistent.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {Object.entries(rejectedSummary).map(([reason, count]) => (
+              <li key={reason}>• {count} cas{count > 1 ? 'os' : ''}: {reason}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
@@ -479,10 +545,14 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
 
             {/* Sync report */}
             {sync.report && (
-              <div className="rounded-lg border bg-success/5 p-3">
-                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-success">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Grup sincronitzat
+              <div className={`rounded-lg border p-3 ${sync.report.conflicts.length > 0 || sync.report.rejected.length > 0 ? 'bg-amber-50/70 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40' : 'bg-success/5'}`}>
+                <div className={`mb-2 flex items-center gap-2 text-sm font-medium ${sync.report.conflicts.length > 0 || sync.report.rejected.length > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-success'}`}>
+                  {sync.report.conflicts.length > 0 || sync.report.rejected.length > 0 ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {sync.report.conflicts.length > 0
+                    ? 'Sincronització completada amb revisió recomanada'
+                    : sync.report.rejected.length > 0
+                      ? 'Sincronització completada amb algunes dades descartades'
+                      : 'Grup sincronitzat'}
                 </div>
                 <SyncReportDetails report={sync.report} />
               </div>
