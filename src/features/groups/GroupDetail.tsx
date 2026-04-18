@@ -329,7 +329,7 @@ export function GroupDetail() {
           <SettlementList group={group} />
         </TabsContent>
         <TabsContent value="activity" className="flex-1 overflow-y-auto min-h-0 pb-4">
-          <ActivityFeed groupId={group.id} />
+          <ActivityFeed groupId={group.id} group={group} />
         </TabsContent>
       </Tabs>
       </div>

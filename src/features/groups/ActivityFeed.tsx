@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Receipt, ArrowRightLeft, Users, FolderKanban } from 'lucide-react'
-import type { ActivityEntry } from '@/domain'
+import type { ActivityEntry, Group } from '@/domain'
 import { reparteix } from '@/sdk'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -40,6 +40,18 @@ function formatValue(value: unknown): string | null {
   if (typeof value === 'boolean') return value ? 'sí' : 'no'
   if (Array.isArray(value)) return `${value.length} element${value.length === 1 ? '' : 's'}`
   return null
+}
+
+function getMemberName(memberId: string, memberMap: Map<string, string>): string {
+  return memberMap.get(memberId) ?? memberId
+}
+
+function formatMemberList(value: unknown, memberMap: Map<string, string>): string | null {
+  if (!Array.isArray(value)) return null
+  const names = value
+    .filter((item): item is string => typeof item === 'string')
+    .map((memberId) => getMemberName(memberId, memberMap))
+  return names.length > 0 ? names.join(', ') : null
 }
 
 function getIcon(entry: ActivityEntry) {
@@ -156,7 +168,7 @@ function getFieldLabel(field: string): string {
   }
 }
 
-function getDiffLines(entry: ActivityEntry): string[] {
+function getDiffLines(entry: ActivityEntry, memberMap: Map<string, string>): string[] {
   if (!entry.before || !entry.after) return []
 
   const before = entry.before as Snapshot
@@ -178,14 +190,35 @@ function getDiffLines(entry: ActivityEntry): string[] {
 
   return interestingFields
     .filter((field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]))
-    .map((field) => {
-      const beforeValue = formatValue(before[field]) ?? 'buit'
-      const afterValue = formatValue(after[field]) ?? 'buit'
-      return `${getFieldLabel(field)}: ${beforeValue} → ${afterValue}`
+    .flatMap((field) => {
+      if (field === 'splitAmong') {
+        const beforeIds = Array.isArray(before[field]) ? before[field].filter((item): item is string => typeof item === 'string') : []
+        const afterIds = Array.isArray(after[field]) ? after[field].filter((item): item is string => typeof item === 'string') : []
+        const added = afterIds.filter((id) => !beforeIds.includes(id)).map((id) => getMemberName(id, memberMap))
+        const removed = beforeIds.filter((id) => !afterIds.includes(id)).map((id) => getMemberName(id, memberMap))
+        const lines: string[] = []
+        if (added.length > 0) lines.push(`Entren: ${added.join(', ')}`)
+        if (removed.length > 0) lines.push(`Surten: ${removed.join(', ')}`)
+        if (lines.length > 0) return lines
+      }
+
+      const rawBefore = before[field]
+      const rawAfter = after[field]
+      const beforeValue = field === 'payerId' || field === 'fromId' || field === 'toId'
+        ? (typeof rawBefore === 'string' ? getMemberName(rawBefore, memberMap) : formatValue(rawBefore))
+        : field === 'splitAmong'
+          ? formatMemberList(rawBefore, memberMap)
+          : formatValue(rawBefore)
+      const afterValue = field === 'payerId' || field === 'fromId' || field === 'toId'
+        ? (typeof rawAfter === 'string' ? getMemberName(rawAfter, memberMap) : formatValue(rawAfter))
+        : field === 'splitAmong'
+          ? formatMemberList(rawAfter, memberMap)
+          : formatValue(rawAfter)
+      return [`${getFieldLabel(field)}: ${beforeValue ?? 'buit'} → ${afterValue ?? 'buit'}`]
     })
 }
 
-export function ActivityFeed({ groupId }: { groupId: string }) {
+export function ActivityFeed({ groupId, group }: { groupId: string, group: Group }) {
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -207,6 +240,11 @@ export function ActivityFeed({ groupId }: { groupId: string }) {
     }
   }, [groupId])
 
+  const memberMap = useMemo(
+    () => new Map(group.members.map((member) => [member.id, member.name])),
+    [group.members],
+  )
+
   if (isLoading) {
     return <p className="p-4 text-sm text-muted-foreground">Carregant historial...</p>
   }
@@ -227,7 +265,7 @@ export function ActivityFeed({ groupId }: { groupId: string }) {
     <div className="space-y-3 p-4">
       {activity.map((entry) => {
         const headline = getHeadline(entry)
-        const diffLines = entry.action.endsWith('.updated') ? getDiffLines(entry) : []
+        const diffLines = entry.action.endsWith('.updated') ? getDiffLines(entry, memberMap) : []
 
         return (
           <Card key={entry.id}>
