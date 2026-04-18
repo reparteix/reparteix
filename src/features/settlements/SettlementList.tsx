@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react'
-import type { Group, Payment } from '../../domain/entities'
+import type { Group, Payment, ActivityEntry } from '../../domain/entities'
 import { useStore } from '../../store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { reparteix } from '@/sdk'
+import { ItemActivityDialog } from '@/features/groups/ItemActivityDialog'
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -42,12 +45,25 @@ export function SettlementList({ group }: SettlementListProps) {
   const [fromId, setFromId] = useState('')
   const [toId, setToId] = useState('')
   const [amount, setAmount] = useState('')
+  const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
+
+  useEffect(() => {
+    let cancelled = false
+    const loadActivity = async () => {
+      const entries = await reparteix.listActivity(group.id)
+      if (!cancelled) setActivityEntries(entries)
+    }
+    void loadActivity()
+    return () => {
+      cancelled = true
+    }
+  }, [group.id, payments])
 
   const resetForm = () => {
     setEditingPaymentId(null)
@@ -84,6 +100,17 @@ export function SettlementList({ group }: SettlementListProps) {
 
     resetForm()
   }
+
+  const paymentActivity = useMemo(() => {
+    const map = new Map<string, ActivityEntry[]>()
+    for (const entry of activityEntries) {
+      if (entry.entityType !== 'payment' || !entry.action.endsWith('.updated')) continue
+      const current = map.get(entry.entityId) ?? []
+      current.push(entry)
+      map.set(entry.entityId, current)
+    }
+    return map
+  }, [activityEntries])
 
   const startEditing = (payment: Payment) => {
     setEditingPaymentId(payment.id)
@@ -195,14 +222,30 @@ export function SettlementList({ group }: SettlementListProps) {
         <div className="space-y-2">
           {[...payments]
             .sort((a, b) => b.date.localeCompare(a.date))
-            .map((payment) => (
+            .map((payment) => {
+              const updates = paymentActivity.get(payment.id) ?? []
+              const isEdited = updates.length > 0
+              return (
               <Card key={payment.id}>
                 <CardContent className="flex items-center justify-between p-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-1 font-medium">
-                      {getMemberName(payment.fromId)}
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      {getMemberName(payment.toId)}
+                    <div className="flex items-center gap-2 font-medium">
+                      <span className="flex items-center gap-1">
+                        {getMemberName(payment.fromId)}
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        {getMemberName(payment.toId)}
+                      </span>
+                      {isEdited && (
+                        <ItemActivityDialog
+                          group={group}
+                          title={`Canvis al pagament de ${getMemberName(payment.fromId)} a ${getMemberName(payment.toId)}`}
+                          entries={updates}
+                        >
+                          <button type="button" className="inline-flex">
+                            <Badge variant="secondary" className="cursor-pointer">editat</Badge>
+                          </button>
+                        </ItemActivityDialog>
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {payment.date}
@@ -257,7 +300,7 @@ export function SettlementList({ group }: SettlementListProps) {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
         </div>
       )}
     </div>

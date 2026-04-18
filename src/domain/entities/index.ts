@@ -62,6 +62,42 @@ export const GroupSchema = z.object({
 
 export type Group = z.infer<typeof GroupSchema>
 
+export const ActivityActionSchema = z.enum([
+  'group.created',
+  'group.updated',
+  'group.archived',
+  'group.unarchived',
+  'group.deleted',
+  'member.added',
+  'member.renamed',
+  'member.removed',
+  'expense.created',
+  'expense.updated',
+  'expense.deleted',
+  'expense.archived',
+  'expense.unarchived',
+  'payment.created',
+  'payment.updated',
+  'payment.deleted',
+])
+
+export type ActivityAction = z.infer<typeof ActivityActionSchema>
+
+export const ActivityEntrySchema = z.object({
+  id: z.string(),
+  groupId: z.string(),
+  entityType: z.enum(['group', 'member', 'expense', 'payment']),
+  entityId: z.string(),
+  action: ActivityActionSchema,
+  actor: z.string().default('local'),
+  at: z.string().datetime(),
+  before: z.unknown().optional(),
+  after: z.unknown().optional(),
+  meta: z.record(z.string(), z.unknown()).optional(),
+})
+
+export type ActivityEntry = z.infer<typeof ActivityEntrySchema>
+
 export const GroupExportSchema = z.object({
   schemaVersion: z.literal(1),
   exportedAt: z.string().datetime(),

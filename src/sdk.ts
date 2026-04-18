@@ -1,4 +1,4 @@
-import type { Group, Expense, Payment, Member, GroupExport, ReparteixExportV1, SyncEnvelopeV1 } from './domain/entities'
+import type { Group, Expense, Payment, Member, GroupExport, ReparteixExportV1, SyncEnvelopeV1, ActivityEntry, ActivityAction } from './domain/entities'
 import { GroupExportSchema, ReparteixExportV1Schema, SyncEnvelopeV1Schema } from './domain/entities'
 import {
   calculateBalances,
@@ -14,7 +14,7 @@ import {
 } from './domain/services'
 import { db } from './infra/db'
 
-export type { Group, Expense, Payment, Member, Balance, Settlement, NettingResult, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
+export type { Group, Expense, Payment, Member, ActivityEntry, ActivityAction, Balance, Settlement, NettingResult, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
 export { calculateBalances, calculateSettlements, calculateNetting }
 
 
@@ -24,6 +24,27 @@ function generateId(): string {
 
 function now(): string {
   return new Date().toISOString()
+}
+
+function sanitizeActivitySnapshot<T>(value: T): T {
+  if (!value || typeof value !== 'object') {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+
+  const clone = JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+  delete clone.receiptImage
+  return clone as T
+}
+
+async function appendActivity(entry: Omit<ActivityEntry, 'id' | 'at' | 'actor'> & Partial<Pick<ActivityEntry, 'id' | 'at' | 'actor'>>): Promise<ActivityEntry> {
+  const activity: ActivityEntry = {
+    ...entry,
+    id: entry.id ?? generateId(),
+    actor: entry.actor ?? 'local',
+    at: entry.at ?? now(),
+  }
+  await db.activity.add(activity)
+  return activity
 }
 
 // ─── Share helpers (compression + base64url) ───────────────────────────────
@@ -109,6 +130,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.groups.add(group)
+    await appendActivity({ groupId: group.id, entityType: 'group', entityId: group.id, action: 'group.created', after: sanitizeActivitySnapshot(group) })
     return group
   },
 
@@ -128,14 +150,18 @@ export const reparteix = {
     if (group.archived) throw new Error('Cannot modify an archived group')
     const patch: Partial<Group> = { ...updates, updatedAt: now() }
     await db.groups.update(id, patch)
-    return { ...group, ...patch }
+    const updatedGroup = { ...group, ...patch }
+    await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.updated', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
+    return updatedGroup
   },
 
   /** Archive a group (makes it read-only). */
   async archiveGroup(id: string): Promise<void> {
     const group = await db.groups.get(id)
     if (group && !group.deleted) {
-      await db.groups.update(id, { archived: true, updatedAt: now() })
+      const updatedGroup = { ...group, archived: true, updatedAt: now() }
+      await db.groups.update(id, { archived: true, updatedAt: updatedGroup.updatedAt })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.archived', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -143,7 +169,9 @@ export const reparteix = {
   async unarchiveGroup(id: string): Promise<void> {
     const group = await db.groups.get(id)
     if (group && !group.deleted) {
-      await db.groups.update(id, { archived: false, updatedAt: now() })
+      const updatedGroup = { ...group, archived: false, updatedAt: now() }
+      await db.groups.update(id, { archived: false, updatedAt: updatedGroup.updatedAt })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.unarchived', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -151,7 +179,9 @@ export const reparteix = {
   async deleteGroup(id: string): Promise<void> {
     const group = await db.groups.get(id)
     if (group) {
-      await db.groups.update(id, { deleted: true, updatedAt: now() })
+      const updatedGroup = { ...group, deleted: true, updatedAt: now() }
+      await db.groups.update(id, { deleted: true, updatedAt: updatedGroup.updatedAt })
+      await appendActivity({ groupId: id, entityType: 'group', entityId: id, action: 'group.deleted', before: sanitizeActivitySnapshot(group), after: sanitizeActivitySnapshot(updatedGroup) })
     }
   },
 
@@ -177,6 +207,7 @@ export const reparteix = {
       members: updatedMembers,
       updatedAt: timestamp,
     })
+    await appendActivity({ groupId, entityType: 'member', entityId: member.id, action: 'member.added', after: sanitizeActivitySnapshot(member), meta: { memberName: member.name } })
     return member
   },
 
@@ -212,13 +243,19 @@ export const reparteix = {
       throw new Error('Cannot remove a member who has payments')
     }
 
+    const timestamp = now()
+    const member = group.members.find((m) => m.id === memberId)
+    const updatedMember = member ? { ...member, deleted: true, updatedAt: timestamp } : undefined
     const updatedMembers = group.members.map((m) =>
-      m.id === memberId ? { ...m, deleted: true, updatedAt: now() } : m,
+      m.id === memberId ? { ...m, deleted: true, updatedAt: timestamp } : m,
     )
     await db.groups.update(groupId, {
       members: updatedMembers,
-      updatedAt: now(),
+      updatedAt: timestamp,
     })
+    if (member && updatedMember) {
+      await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.removed', before: sanitizeActivitySnapshot(member), after: sanitizeActivitySnapshot(updatedMember), meta: { memberName: member.name } })
+    }
   },
 
   /** Rename a member in a group. Throws if the group is archived. */
@@ -234,13 +271,16 @@ export const reparteix = {
     const member = group.members.find((m) => m.id === memberId)
     if (!member || member.deleted) throw new Error('Member not found')
 
+    const timestamp = now()
+    const updatedMember = { ...member, name: newName, updatedAt: timestamp }
     const updatedMembers = group.members.map((m) =>
-      m.id === memberId ? { ...m, name: newName, updatedAt: now() } : m,
+      m.id === memberId ? updatedMember : m,
     )
     await db.groups.update(groupId, {
       members: updatedMembers,
-      updatedAt: now(),
+      updatedAt: timestamp,
     })
+    await appendActivity({ groupId, entityType: 'member', entityId: memberId, action: 'member.renamed', before: sanitizeActivitySnapshot(member), after: sanitizeActivitySnapshot(updatedMember), meta: { fromName: member.name, toName: newName } })
   },
 
   // ─── Expenses ──────────────────────────────────────────────────────
@@ -282,6 +322,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.expenses.add(newExpense)
+    await appendActivity({ groupId: newExpense.groupId, entityType: 'expense', entityId: newExpense.id, action: 'expense.created', after: sanitizeActivitySnapshot(newExpense) })
     return newExpense
   },
 
@@ -290,7 +331,9 @@ export const reparteix = {
     const group = await db.groups.get(expense.groupId)
     if (group?.archived) throw new Error('Cannot modify an archived group')
     const updated = { ...expense, updatedAt: now() }
+    const existing = await db.expenses.get(expense.id)
     await db.expenses.update(expense.id, updated)
+    await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: expense.id, action: 'expense.updated', before: sanitizeActivitySnapshot(existing ?? expense), after: sanitizeActivitySnapshot(updated) })
     return updated
   },
 
@@ -300,7 +343,9 @@ export const reparteix = {
     if (expense) {
       const group = await db.groups.get(expense.groupId)
       if (group?.archived) throw new Error('Cannot modify an archived group')
-      await db.expenses.update(id, { deleted: true, updatedAt: now() })
+      const updatedExpense = { ...expense, deleted: true, updatedAt: now() }
+      await db.expenses.update(id, { deleted: true, updatedAt: updatedExpense.updatedAt })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.deleted', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -310,7 +355,9 @@ export const reparteix = {
     if (expense) {
       const group = await db.groups.get(expense.groupId)
       if (group?.archived) throw new Error('Cannot modify an archived group')
-      await db.expenses.update(id, { archived: true, updatedAt: now() })
+      const updatedExpense = { ...expense, archived: true, updatedAt: now() }
+      await db.expenses.update(id, { archived: true, updatedAt: updatedExpense.updatedAt })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.archived', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -320,7 +367,9 @@ export const reparteix = {
     if (expense) {
       const group = await db.groups.get(expense.groupId)
       if (group?.archived) throw new Error('Cannot modify an archived group')
-      await db.expenses.update(id, { archived: false, updatedAt: now() })
+      const updatedExpense = { ...expense, archived: false, updatedAt: now() }
+      await db.expenses.update(id, { archived: false, updatedAt: updatedExpense.updatedAt })
+      await appendActivity({ groupId: expense.groupId, entityType: 'expense', entityId: id, action: 'expense.unarchived', before: sanitizeActivitySnapshot(expense), after: sanitizeActivitySnapshot(updatedExpense) })
     }
   },
 
@@ -374,6 +423,7 @@ export const reparteix = {
       deleted: false,
     }
     await db.payments.add(newPayment)
+    await appendActivity({ groupId: newPayment.groupId, entityType: 'payment', entityId: newPayment.id, action: 'payment.created', after: sanitizeActivitySnapshot(newPayment) })
     return newPayment
   },
 
@@ -382,7 +432,9 @@ export const reparteix = {
     const group = await db.groups.get(payment.groupId)
     if (group?.archived) throw new Error('Cannot modify an archived group')
     const updated = { ...payment, updatedAt: now() }
+    const existing = await db.payments.get(payment.id)
     await db.payments.update(payment.id, updated)
+    await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: payment.id, action: 'payment.updated', before: sanitizeActivitySnapshot(existing ?? payment), after: sanitizeActivitySnapshot(updated) })
     return updated
   },
 
@@ -392,8 +444,25 @@ export const reparteix = {
     if (payment) {
       const group = await db.groups.get(payment.groupId)
       if (group?.archived) throw new Error('Cannot modify an archived group')
-      await db.payments.update(id, { deleted: true, updatedAt: now() })
+      const updatedPayment = { ...payment, deleted: true, updatedAt: now() }
+      await db.payments.update(id, { deleted: true, updatedAt: updatedPayment.updatedAt })
+      await appendActivity({ groupId: payment.groupId, entityType: 'payment', entityId: id, action: 'payment.deleted', before: sanitizeActivitySnapshot(payment), after: sanitizeActivitySnapshot(updatedPayment) })
     }
+  },
+
+  // ─── Activity ──────────────────────────────────────────────────────
+
+  async listActivity(groupId: string): Promise<ActivityEntry[]> {
+    const entries = await db.activity
+      .where('groupId')
+      .equals(groupId)
+      .toArray()
+
+    return entries.sort((a, b) => {
+      const byAt = b.at.localeCompare(a.at)
+      if (byAt !== 0) return byAt
+      return b.id.localeCompare(a.id)
+    })
   },
 
   // ─── Balances & Settlements ────────────────────────────────────────
