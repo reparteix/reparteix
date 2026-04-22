@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive, Link2 } from 'lucide-react'
+import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -147,12 +147,10 @@ export function GroupDetail() {
             variant="ghost"
             size="sm"
             onClick={() => setShowSyncModal(true)}
-            aria-label="Continua en un altre dispositiu"
-            title="Continua en un altre dispositiu"
-            className="gap-2"
+            aria-label="Passa al mòbil"
+            title="Passa al mòbil"
           >
-            <Link2 className="h-4 w-4" />
-            <span>Continua</span>
+            Passa al mòbil
           </Button>
         )}
         <Button
