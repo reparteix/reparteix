@@ -306,17 +306,7 @@ function HandoffCard({
   return (
     <div className={`rounded-2xl border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'} p-3 sm:p-4`}>
       <div className="space-y-4">
-        <div className="space-y-1 text-center">
-          <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-            <QrCode className="h-4 w-4" />
-            Obre això a l’altre dispositiu
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Millor opció: escanejar el QR. Si no, comparteix o copia l’enllaç.
-          </p>
-        </div>
-
-        <div className="mx-auto w-full max-w-[280px] rounded-3xl border bg-white p-3 shadow-sm">
+        <div className="mx-auto w-full max-w-[300px] rounded-3xl border bg-white p-3 shadow-sm">
           {qrMarkup ? (
             <div className="aspect-square w-full overflow-hidden rounded-2xl" dangerouslySetInnerHTML={{ __html: qrMarkup }} />
           ) : (
@@ -324,6 +314,16 @@ function HandoffCard({
               Afegeix una contrasenya per preparar el codi
             </div>
           )}
+        </div>
+
+        <div className="space-y-1 text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+            <QrCode className="h-4 w-4" />
+            Escaneja això a l’altre dispositiu
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Si no pots escanejar-lo, comparteix o copia l’enllaç.
+          </p>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
@@ -554,27 +554,29 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
         {sync.state !== 'idle' && (
           <div className="space-y-3">
             {/* Status header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <StateIcon state={sync.state} />
-                <StateBadge state={sync.state} />
+            {!isWaitingForPeer && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <StateIcon state={sync.state} />
+                  <StateBadge state={sync.state} />
+                </div>
+                {mode === 'host' && sync.peerId && sync.state === 'waiting-for-peer' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyPeerId}
+                    className="h-7 px-2 text-xs text-muted-foreground"
+                  >
+                    {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                    {copied ? 'Copiat' : 'ID'}
+                  </Button>
+                )}
               </div>
-              {mode === 'host' && sync.peerId && sync.state === 'waiting-for-peer' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyPeerId}
-                  className="h-7 px-2 text-xs text-muted-foreground"
-                >
-                  {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                  {copied ? 'Copiat' : 'ID'}
-                </Button>
-              )}
-            </div>
+            )}
 
             {/* Status message */}
             <div className="space-y-3">
-              <p className="text-sm font-medium leading-snug">{sync.message}</p>
+              {!isWaitingForPeer && <p className="text-sm font-medium leading-snug">{sync.message}</p>}
               {!isWaitingForPeer && <SyncStepList state={sync.state} compact={embedded} />}
               {sync.error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -588,12 +590,12 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                 </div>
               )}
               {isWaitingForPeer && !isEmbeddedWaiting && (
-                <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground">
-                  <div className="mb-1 flex items-center gap-2 font-medium text-foreground">
+                <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground text-center">
+                  <div className="mb-1 flex items-center justify-center gap-2 font-medium text-foreground">
                     <ArrowRight className="h-4 w-4 text-primary" />
-                    Què ha de fer l'altre dispositiu ara?
+                    Esperant que l’altre dispositiu entri
                   </div>
-                  <p>Obrir l'enllaç compartit, comprovar la mateixa contrasenya del grup i esperar que la connexió es completi.</p>
+                  <p>Escaneja el QR o obre l’enllaç.</p>
                 </div>
               )}
               {showCompactStatusDetails && !isWaitingForPeer && (sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
