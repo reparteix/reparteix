@@ -145,12 +145,14 @@ export function GroupDetail() {
         {!isArchived && (
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => setShowSyncModal(true)}
-            aria-label="Continuar en un altre dispositiu"
-            title="Continuar en un altre dispositiu"
+            aria-label="Continua en un altre dispositiu"
+            title="Continua en un altre dispositiu"
+            className="gap-2"
           >
-            <Link2 className="h-5 w-5" />
+            <Link2 className="h-4 w-4" />
+            <span>Continua</span>
           </Button>
         )}
         <Button
