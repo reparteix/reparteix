@@ -286,6 +286,67 @@ function SyncStepList({ state, compact = false }: { state: string, compact?: boo
   )
 }
 
+function HandoffCard({
+  syncUrl,
+  qrMarkup,
+  embedded,
+  sharedLinkStatus,
+  linkCopied,
+  onShare,
+  onCopy,
+}: {
+  syncUrl: string
+  qrMarkup: string
+  embedded: boolean
+  sharedLinkStatus: 'idle' | 'shared' | 'copied'
+  linkCopied: boolean
+  onShare: () => void
+  onCopy: () => void
+}) {
+  return (
+    <div className={`rounded-2xl border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'} p-3`}>
+      <div className="flex items-start gap-3">
+        <div className="rounded-2xl border bg-white p-2 shrink-0">
+          {qrMarkup ? (
+            <div className="h-[132px] w-[132px] overflow-hidden rounded-xl" dangerouslySetInnerHTML={{ __html: qrMarkup }} />
+          ) : (
+            <div className="flex h-[132px] w-[132px] items-center justify-center rounded-xl bg-muted text-xs text-muted-foreground text-center px-3">
+              Afegeix una contrasenya per preparar el codi
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <QrCode className="h-4 w-4" />
+              Obre això a l’altre dispositiu
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Millor opció: escanejar el QR. Si no, comparteix o copia l’enllaç.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={onShare} className="sm:flex-1">
+              {sharedLinkStatus !== 'idle' ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+              {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCopy} className="sm:flex-1">
+              {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+              {linkCopied ? 'Copiat' : 'Copiar enllaç'}
+            </Button>
+          </div>
+
+          <div className="rounded-xl border bg-background px-3 py-2">
+            <p className="truncate text-[11px] text-muted-foreground">{syncUrl}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: SyncPanelProps) {
   const group = useStore((state) => state.groups.find((item) => item.id === groupId))
   const updateGroup = useStore((state) => state.updateGroup)
@@ -385,15 +446,15 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const content = (
     <div className="space-y-4">
       {showSetupCopy && (
-        <div className="space-y-4 rounded-2xl border bg-muted/20 p-4">
+        <div className="space-y-3 rounded-2xl border bg-muted/20 p-4">
           <div className="flex items-start gap-3">
             <div className="rounded-full bg-primary/10 p-2 text-primary">
               <Smartphone className="h-4 w-4" />
             </div>
             <div className="space-y-1">
-              <p className="font-medium">Sincronitza aquest grup amb un altre dispositiu</p>
+              <p className="font-medium">Passa aquest grup a un altre dispositiu</p>
               <p className="text-sm text-muted-foreground">
-                Ideal si vols continuar el mateix grup al mòbil, tauleta o un altre navegador sense exportar ni importar fitxers manualment.
+                Flux curt: poses la contrasenya, toques sincronitzar i ensenyes el QR o comparteixes l’enllaç.
               </p>
             </div>
           </div>
@@ -404,7 +465,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
               <span className="font-medium">Privat per disseny</span>
             </div>
             <p>
-              L'enllaç només serveix per connectar els dos dispositius. Les dades del grup viatgen protegides amb la contrasenya del grup.
+              L'enllaç només serveix per obrir la connexió entre dispositius. Les dades del grup viatgen protegides amb la contrasenya del grup.
             </p>
           </div>
         </div>
@@ -461,7 +522,11 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
           </Button>
         )}
 
-        {showSetupCopy && <SyncStepList state={sync.state} compact={embedded} />}
+        {showSetupCopy && (
+          <div className="rounded-xl border border-dashed bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+            1. Escriu la contrasenya del grup · 2. Toca sincronitzar · 3. Escaneja el QR o obre l’enllaç a l’altre dispositiu
+          </div>
+        )}
 
         {/* Active sync status */}
         {sync.state !== 'idle' && (
@@ -531,74 +596,28 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
-              <div className={`rounded-xl border p-3 ${embedded ? 'bg-primary/5 border-primary/20 space-y-4' : 'bg-muted/40 space-y-4 text-sm'}`}>
-                <div className="space-y-1">
-                  <p className={`${embedded ? 'text-sm font-medium text-foreground' : 'text-muted-foreground'}`}>
-                    {embedded
-                      ? 'Comparteix l’enllaç o ensenya el QR perquè l’altre dispositiu entri directament a la sincronització.'
-                      : 'Comparteix l\'enllaç o el QR amb l\'altre dispositiu i la sincronització començarà quan l\'obrin.'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Link i QR representen la mateixa acció: continuar aquest grup en un altre dispositiu.
-                  </p>
+              <div className="space-y-3">
+                <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground">
+                  <div className="mb-1 flex items-center gap-2 font-medium text-foreground">
+                    <ArrowRight className="h-4 w-4 text-primary" />
+                    Ara l’acció principal és al segon dispositiu
+                  </div>
+                  <p>Escaneja el QR si els tens a prop. Si no, comparteix l’enllaç. No hauries d’haver de desplaçar gaire més.</p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-start">
-                  <div className="space-y-3">
-                    <div className="rounded-xl border bg-background p-3">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <Link2 className="h-3.5 w-3.5" />
-                        Enllaç de sincronització
-                      </div>
-                      <p className="break-all text-xs text-muted-foreground">{syncUrl}</p>
-                    </div>
-
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <Button
-                        size={embedded ? 'default' : 'sm'}
-                        onClick={handleCopySyncLink}
-                        className="w-full"
-                      >
-                        {sharedLinkStatus !== 'idle' ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
-                        {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size={embedded ? 'default' : 'sm'}
-                        onClick={handleCopyRawLink}
-                        className="w-full"
-                      >
-                        {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                        {linkCopied ? 'Copiat' : 'Copiar enllaç'}
-                      </Button>
-                    </div>
-
-                    <div className="rounded-xl border border-dashed bg-background/70 p-3 text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">UI esperada del receptor</p>
-                      <p className="mt-1">L’altre dispositiu ha d’obrir l’enllaç o escanejar el QR, revisar la pantalla de sync i continuar sense llenguatge d’"invitació".</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border bg-background p-3">
-                    <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      <QrCode className="h-3.5 w-3.5" />
-                      QR per obrir al segon dispositiu
-                    </div>
-                    {qrMarkup ? (
-                      <div className="overflow-hidden rounded-xl border bg-white p-2">
-                        <div dangerouslySetInnerHTML={{ __html: qrMarkup }} />
-                      </div>
-                    ) : (
-                      <div className="flex aspect-square items-center justify-center rounded-xl border bg-muted text-xs text-muted-foreground">
-                        Afegeix una contrasenya per generar el QR
-                      </div>
-                    )}
-                    <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-                      Primera iteració visual. Després el podem substituir per generació QR estàndard mantenint la mateixa UI.
-                    </p>
-                  </div>
-                </div>
+                <HandoffCard
+                  syncUrl={syncUrl}
+                  qrMarkup={qrMarkup}
+                  embedded={embedded}
+                  sharedLinkStatus={sharedLinkStatus}
+                  linkCopied={linkCopied}
+                  onShare={() => {
+                    void handleCopySyncLink()
+                  }}
+                  onCopy={() => {
+                    void handleCopyRawLink()
+                  }}
+                />
               </div>
             )}
 
