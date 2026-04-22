@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, X, Pencil, Check, Settings, Archive, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -147,10 +147,10 @@ export function GroupDetail() {
             variant="ghost"
             size="icon"
             onClick={() => setShowSyncModal(true)}
-            aria-label="Sincronitzar grup"
-            title="Sincronitzar grup"
+            aria-label="Continuar en un altre dispositiu"
+            title="Continuar en un altre dispositiu"
           >
-            <RefreshCw className="h-5 w-5" />
+            <Smartphone className="h-5 w-5" />
           </Button>
         )}
         <Button

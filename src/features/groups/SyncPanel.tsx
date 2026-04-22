@@ -526,8 +526,8 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
             disabled={!canStart}
             className="w-full"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Sincronitzar
+            <Smartphone className="h-4 w-4 mr-2" />
+            Continua en un altre dispositiu
           </Button>
         )}
 
