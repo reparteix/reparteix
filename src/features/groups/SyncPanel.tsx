@@ -13,7 +13,6 @@ import {
   Link2,
   ShieldCheck,
   Smartphone,
-  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -303,9 +302,9 @@ function HandoffCard({
   onCancel: () => void
 }) {
   return (
-    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-3`}>
-      <div className="space-y-3">
-        <div className="mx-auto w-full max-w-[300px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[340px]">
+    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-4`}>
+      <div className="space-y-4">
+        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[360px]">
           {qrMarkup ? (
             <div
               className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
@@ -320,27 +319,22 @@ function HandoffCard({
 
         <div className="space-y-1 text-center">
           <p className="text-base font-semibold text-foreground">Escaneja el QR a l’altre dispositiu</p>
-          <p className="text-sm text-muted-foreground">Si no pots escanejar-lo, comparteix o copia l’enllaç.</p>
+          <p className="text-sm text-muted-foreground">Si no pots escanejar-lo, comparteix l’enllaç o copia’l.</p>
         </div>
 
-        <div className="grid gap-2 sm:hidden">
-          <Button type="button" variant="ghost" onClick={onCopy} className="w-full text-muted-foreground">
-            {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-            {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
-          </Button>
-          <Button type="button" variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
-            Cancel·lar
-          </Button>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-2">
           <Button onClick={onShare} className="w-full">
             {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
             {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
           </Button>
-          <Button type="button" variant="outline" onClick={onCopy} className="hidden w-full sm:flex">
+
+          <Button type="button" variant="outline" onClick={onCopy} className="w-full">
             {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-            {linkCopied ? 'Copiat' : 'Copiar enllaç'}
+            {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
+          </Button>
+
+          <Button type="button" variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
+            Cancel·lar
           </Button>
         </div>
       </div>
@@ -359,7 +353,6 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const [passphrase, setPassphrase] = useState(rememberedPassphrase)
   const [showPassphrase, setShowPassphrase] = useState(false)
   const [mode, setMode] = useState<'idle' | 'host' | 'join'>('idle')
-  const [copied, setCopied] = useState(false)
   const [sharedLinkStatus, setSharedLinkStatus] = useState<'idle' | 'shared' | 'copied'>('idle')
   const [linkCopied, setLinkCopied] = useState(false)
   const { loadGroups, loadGroupData } = useStore()
@@ -437,14 +430,6 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
     // Reload data to reflect sync changes
     await loadGroups()
     await loadGroupData(groupId)
-  }
-
-  const handleCopyPeerId = async () => {
-    if (sync.peerId) {
-      await navigator.clipboard.writeText(sync.peerId)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
   }
 
   const handleCopySyncLink = async () => {
@@ -562,17 +547,6 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   <StateIcon state={sync.state} />
                   <StateBadge state={sync.state} />
                 </div>
-                {mode === 'host' && sync.peerId && sync.state === 'waiting-for-peer' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyPeerId}
-                    className="h-7 px-2 text-xs text-muted-foreground"
-                  >
-                    {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                    {copied ? 'Copiat' : 'ID'}
-                  </Button>
-                )}
               </div>
             )}
 
@@ -618,29 +592,19 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
-              <div className="space-y-3">
-                <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground">
-                  <div className="mb-1 flex items-center gap-2 font-medium text-foreground">
-                    <ArrowRight className="h-4 w-4 text-primary" />
-                    Ara l’acció principal és al segon dispositiu
-                  </div>
-                  <p>Escaneja el QR si els tens a prop. Si no, comparteix l’enllaç. No hauries d’haver de desplaçar gaire més.</p>
-                </div>
-
-                <HandoffCard
-                  qrMarkup={qrMarkup}
-                  embedded={embedded}
-                  sharedLinkStatus={sharedLinkStatus}
-                  linkCopied={linkCopied}
-                  onShare={() => {
-                    void handleCopySyncLink()
-                  }}
-                  onCopy={() => {
-                    void handleCopyRawLink()
-                  }}
-                  onCancel={handleReset}
-                />
-              </div>
+              <HandoffCard
+                qrMarkup={qrMarkup}
+                embedded={embedded}
+                sharedLinkStatus={sharedLinkStatus}
+                linkCopied={linkCopied}
+                onShare={() => {
+                  void handleCopySyncLink()
+                }}
+                onCopy={() => {
+                  void handleCopyRawLink()
+                }}
+                onCancel={handleReset}
+              />
             )}
 
             {/* Sync report */}
@@ -674,7 +638,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   </Button>
                 </>
               )}
-              {isActive && (
+              {isActive && !isWaitingForPeer && (
                 <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
                   Cancel·lar
                 </Button>
