@@ -292,6 +292,7 @@ function HandoffCard({
   linkCopied,
   onShare,
   onCopy,
+  onCancel,
 }: {
   qrMarkup: string
   embedded: boolean
@@ -299,11 +300,12 @@ function HandoffCard({
   linkCopied: boolean
   onShare: () => void
   onCopy: () => void
+  onCancel: () => void
 }) {
   return (
-    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-3 sm:p-4`}>
-      <div className="space-y-4">
-        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-3 shadow-sm sm:max-w-[360px]">
+    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-3`}>
+      <div className="space-y-3">
+        <div className="mx-auto w-full max-w-[300px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[340px]">
           {qrMarkup ? (
             <div
               className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
@@ -321,12 +323,22 @@ function HandoffCard({
           <p className="text-sm text-muted-foreground">Si no pots escanejar-lo, comparteix o copia l’enllaç.</p>
         </div>
 
+        <div className="grid gap-2 sm:hidden">
+          <Button type="button" variant="ghost" onClick={onCopy} className="w-full text-muted-foreground">
+            {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+            {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
+            Cancel·lar
+          </Button>
+        </div>
+
         <div className="grid gap-2 sm:grid-cols-2">
           <Button onClick={onShare} className="w-full">
             {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
             {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
           </Button>
-          <Button type="button" variant="outline" onClick={onCopy} className="w-full">
+          <Button type="button" variant="outline" onClick={onCopy} className="hidden w-full sm:flex">
             {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
             {linkCopied ? 'Copiat' : 'Copiar enllaç'}
           </Button>
@@ -626,6 +638,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   onCopy={() => {
                     void handleCopyRawLink()
                   }}
+                  onCancel={handleReset}
                 />
               </div>
             )}
