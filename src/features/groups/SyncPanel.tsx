@@ -31,7 +31,7 @@ import { useStore } from '@/store'
 import { encodeBase64Url } from '@/lib/base64url'
 import { loadStoredSyncPassphrase, saveStoredSyncPassphrase } from '@/lib/sync-passphrase'
 import { shareUrl } from '@/lib/web-share'
-import { createPseudoQrSvg } from '@/lib/qr'
+import { createQrSvg } from '@/lib/qr'
 import type { SyncReport } from '@/domain/services/sync'
 
 interface SyncPanelProps {
@@ -376,11 +376,32 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const isWaitingForPeer = mode === 'host' && sync.state === 'waiting-for-peer'
   const isEmbeddedWaiting = embedded && isWaitingForPeer
   const syncUrl = canStart ? buildSyncUrl(groupId, passphrase) : ''
-  const qrMarkup = syncUrl ? createPseudoQrSvg(syncUrl) : ''
+  const [qrMarkup, setQrMarkup] = useState('')
 
   useEffect(() => {
     setPassphrase(rememberedPassphrase)
   }, [rememberedPassphrase])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!syncUrl) {
+      setQrMarkup('')
+      return
+    }
+
+    createQrSvg(syncUrl, 220)
+      .then((svg) => {
+        if (!cancelled) setQrMarkup(svg)
+      })
+      .catch(() => {
+        if (!cancelled) setQrMarkup('')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [syncUrl])
 
   useEffect(() => {
     saveStoredSyncPassphrase(groupId, passphrase)
