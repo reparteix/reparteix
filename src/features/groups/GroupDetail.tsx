@@ -145,25 +145,21 @@ export function GroupDetail() {
         {!isArchived && (
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => setShowSyncModal(true)}
-            aria-label="Compartir"
-            title="Compartir"
-            className="gap-2"
+            aria-label="Obrir o compartir en un altre dispositiu"
+            title="Obrir o compartir en un altre dispositiu"
           >
-            <Share2 className="h-4 w-4" />
-            <span>Compartir</span>
+            <Share2 className="h-5 w-5" />
           </Button>
         )}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => navigate(`/group/${groupId}/settings`)}
           aria-label="Configuració del grup"
-          className="gap-2"
         >
-          <Settings className="h-4 w-4" />
-          <span>Config</span>
+          <Settings className="h-5 w-5" />
         </Button>
       </div>
 
