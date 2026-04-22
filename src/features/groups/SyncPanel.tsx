@@ -303,9 +303,12 @@ function HandoffCard({
   return (
     <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-3 sm:p-4`}>
       <div className="space-y-4">
-        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[360px]">
+        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-3 shadow-sm sm:max-w-[360px]">
           {qrMarkup ? (
-            <div className="aspect-square w-full overflow-hidden rounded-[24px]" dangerouslySetInnerHTML={{ __html: qrMarkup }} />
+            <div
+              className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
+              dangerouslySetInnerHTML={{ __html: qrMarkup }}
+            />
           ) : (
             <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-6 text-center text-xs text-muted-foreground">
               Preparant el QR…

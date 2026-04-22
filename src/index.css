@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+.qr-frame svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
