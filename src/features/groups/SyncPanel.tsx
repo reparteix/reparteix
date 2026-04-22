@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Smartphone,
   ArrowRight,
-  QrCode,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -287,7 +286,6 @@ function SyncStepList({ state, compact = false }: { state: string, compact?: boo
 }
 
 function HandoffCard({
-  syncUrl,
   qrMarkup,
   embedded,
   sharedLinkStatus,
@@ -295,7 +293,6 @@ function HandoffCard({
   onShare,
   onCopy,
 }: {
-  syncUrl: string
   qrMarkup: string
   embedded: boolean
   sharedLinkStatus: 'idle' | 'shared' | 'copied'
@@ -304,43 +301,33 @@ function HandoffCard({
   onCopy: () => void
 }) {
   return (
-    <div className={`rounded-2xl border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'} p-3 sm:p-4`}>
+    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-3 sm:p-4`}>
       <div className="space-y-4">
-        <div className="mx-auto w-full max-w-[300px] rounded-3xl border bg-white p-3 shadow-sm">
+        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[360px]">
           {qrMarkup ? (
-            <div className="aspect-square w-full overflow-hidden rounded-2xl" dangerouslySetInnerHTML={{ __html: qrMarkup }} />
+            <div className="aspect-square w-full overflow-hidden rounded-[24px]" dangerouslySetInnerHTML={{ __html: qrMarkup }} />
           ) : (
-            <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-muted text-xs text-muted-foreground text-center px-6">
-              Afegeix una contrasenya per preparar el codi
+            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-6 text-center text-xs text-muted-foreground">
+              Preparant el QR…
             </div>
           )}
         </div>
 
         <div className="space-y-1 text-center">
-          <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-            <QrCode className="h-4 w-4" />
-            Escaneja això a l’altre dispositiu
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Si no pots escanejar-lo, comparteix o copia l’enllaç.
-          </p>
+          <p className="text-base font-semibold text-foreground">Escaneja el QR a l’altre dispositiu</p>
+          <p className="text-sm text-muted-foreground">Si no pots escanejar-lo, comparteix o copia l’enllaç.</p>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
           <Button onClick={onShare} className="w-full">
-            {sharedLinkStatus !== 'idle' ? <Check className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+            {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
             {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
           </Button>
           <Button type="button" variant="outline" onClick={onCopy} className="w-full">
-            {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+            {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
             {linkCopied ? 'Copiat' : 'Copiar enllaç'}
           </Button>
         </div>
-
-        <details className="rounded-xl border bg-background px-3 py-2 text-xs text-muted-foreground">
-          <summary className="cursor-pointer select-none font-medium text-foreground/80">Veure enllaç</summary>
-          <p className="mt-2 break-all">{syncUrl}</p>
-        </details>
       </div>
     </div>
   )
@@ -590,13 +577,9 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                 </div>
               )}
               {isWaitingForPeer && !isEmbeddedWaiting && (
-                <div className="rounded-xl border bg-primary/5 p-3 text-sm text-muted-foreground text-center">
-                  <div className="mb-1 flex items-center justify-center gap-2 font-medium text-foreground">
-                    <ArrowRight className="h-4 w-4 text-primary" />
-                    Esperant que l’altre dispositiu entri
-                  </div>
-                  <p>Escaneja el QR o obre l’enllaç.</p>
-                </div>
+                <p className="text-center text-sm text-muted-foreground">
+                  Esperant que l’altre dispositiu entri…
+                </p>
               )}
               {showCompactStatusDetails && !isWaitingForPeer && (sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
                 <details className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
@@ -630,7 +613,6 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                 </div>
 
                 <HandoffCard
-                  syncUrl={syncUrl}
                   qrMarkup={qrMarkup}
                   embedded={embedded}
                   sharedLinkStatus={sharedLinkStatus}
