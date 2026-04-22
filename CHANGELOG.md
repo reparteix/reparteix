@@ -1,3 +1,16 @@
+# [1.42.0](https://github.com/reparteix/reparteix/compare/v1.41.0...v1.42.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* make qr fill its container ([0399ef7](https://github.com/reparteix/reparteix/commit/0399ef7bd4666b36e89638b653c40b2b5ca40782))
+
+
+### Features
+
+* add link and qr sync handoff ui ([f021f05](https://github.com/reparteix/reparteix/commit/f021f055e1fe0134a60c9f18400d09521b16514c))
+* use real qr for sync handoff ([b6c0bb1](https://github.com/reparteix/reparteix/commit/b6c0bb120fbaf1c6cf8508d04e8d58599eb788ea))
+
 # [1.41.0](https://github.com/reparteix/reparteix/compare/v1.40.0...v1.41.0) (2026-04-18)
 
 
