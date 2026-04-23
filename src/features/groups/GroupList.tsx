@@ -186,7 +186,7 @@ export function GroupList() {
               <Settings className="h-4 w-4" />
               {hasPendingDeviceSetup && (
                 <span
-                  className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-400 ring-2 ring-indigo-700 dark:ring-indigo-950"
+                  className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-400 ring-2 ring-indigo-700 dark:ring-indigo-950"
                   aria-hidden="true"
                 />
               )}
