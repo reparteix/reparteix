@@ -7,6 +7,8 @@ const STORAGE_KEY = 'reparteix:device-identity:v1'
 const DEVICE_LABEL_PREFIX = 'Dispositiu'
 const DEFAULT_ACTOR = 'local'
 
+let memoryDeviceIdentity: DeviceIdentity | null = null
+
 function canUseLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
@@ -37,19 +39,35 @@ function normalizeDeviceIdentity(value: unknown): DeviceIdentity | null {
   return { deviceId, deviceLabel }
 }
 
-function readStoredDeviceIdentity(): DeviceIdentity | null {
-  if (!canUseLocalStorage()) return null
+function readStoredDeviceIdentity(): { identity: DeviceIdentity | null, needsRepair: boolean } {
+  if (!canUseLocalStorage()) {
+    return { identity: null, needsRepair: false }
+  }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return normalizeDeviceIdentity(JSON.parse(raw))
+    if (!raw) {
+      return { identity: null, needsRepair: false }
+    }
+
+    const parsed = JSON.parse(raw) as unknown
+    const identity = normalizeDeviceIdentity(parsed)
+    if (!identity) {
+      return { identity: null, needsRepair: false }
+    }
+
+    const original = parsed as Partial<DeviceIdentity>
+    const needsRepair = original.deviceLabel !== identity.deviceLabel || original.deviceId !== identity.deviceId
+
+    return { identity, needsRepair }
   } catch {
-    return null
+    return { identity: null, needsRepair: false }
   }
 }
 
 function persistDeviceIdentity(identity: DeviceIdentity): DeviceIdentity {
+  memoryDeviceIdentity = identity
+
   if (!canUseLocalStorage()) return identity
 
   try {
@@ -62,9 +80,18 @@ function persistDeviceIdentity(identity: DeviceIdentity): DeviceIdentity {
 }
 
 export function ensureLocalDeviceIdentity(): DeviceIdentity {
-  const existing = readStoredDeviceIdentity()
-  if (existing) {
-    return persistDeviceIdentity(existing)
+  const { identity: storedIdentity, needsRepair } = readStoredDeviceIdentity()
+  if (storedIdentity) {
+    if (needsRepair) {
+      return persistDeviceIdentity(storedIdentity)
+    }
+
+    memoryDeviceIdentity = storedIdentity
+    return storedIdentity
+  }
+
+  if (memoryDeviceIdentity) {
+    return memoryDeviceIdentity
   }
 
   const deviceId = generateDeviceId()
@@ -94,6 +121,14 @@ export function resetLocalDeviceLabel(): DeviceIdentity {
     ...current,
     deviceLabel: getDefaultDeviceLabel(current.deviceId),
   })
+}
+
+export function isDefaultDeviceLabel(deviceLabel: string, deviceId: string): boolean {
+  return deviceLabel.trim() === getDefaultDeviceLabel(deviceId)
+}
+
+export function needsDeviceLabelSetup(identity: DeviceIdentity): boolean {
+  return isDefaultDeviceLabel(identity.deviceLabel, identity.deviceId)
 }
 
 export function getLocalActorLabel(): string {

@@ -13,7 +13,7 @@ import {
   type SyncReport,
 } from './domain/services'
 import { db } from './infra/db'
-import { getLocalDeviceIdentity, getLocalActorLabel } from './lib/device-identity'
+import { getLocalDeviceIdentity } from './lib/device-identity'
 
 export type { Group, Expense, Payment, Member, ActivityEntry, ActivityAction, Balance, Settlement, NettingResult, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
 export { calculateBalances, calculateSettlements, calculateNetting }
@@ -42,7 +42,7 @@ async function appendActivity(entry: Omit<ActivityEntry, 'id' | 'at' | 'actor'> 
   const activity: ActivityEntry = {
     ...entry,
     id: entry.id ?? generateId(),
-    actor: entry.actor ?? getLocalActorLabel(),
+    actor: entry.actor ?? deviceIdentity.deviceLabel,
     at: entry.at ?? now(),
     meta: {
       ...entry.meta,

@@ -19,9 +19,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { getLocalDeviceIdentity, needsDeviceLabelSetup } from '@/lib/device-identity'
 
 export function GroupList() {
   const { groups, groupTotals, loadGroups, addGroup, deleteGroup, importGroup } = useStore()
+  const hasPendingDeviceSetup = needsDeviceLabelSetup(getLocalDeviceIdentity())
   const [name, setName] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
@@ -178,10 +180,16 @@ export function GroupList() {
               variant="secondary"
               size="icon"
               onClick={() => navigate('/preferences')}
-              aria-label="Preferències"
-              className="shrink-0 bg-white/10 text-white hover:bg-white/20 dark:bg-white/10 dark:hover:bg-white/20"
+              aria-label={hasPendingDeviceSetup ? 'Preferències, configuració pendent' : 'Preferències'}
+              className="relative shrink-0 bg-white/10 text-white hover:bg-white/20 dark:bg-white/10 dark:hover:bg-white/20"
             >
               <Settings className="h-4 w-4" />
+              {hasPendingDeviceSetup && (
+                <span
+                  className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-400 ring-2 ring-indigo-700 dark:ring-indigo-950"
+                  aria-hidden="true"
+                />
+              )}
             </Button>
           </div>
         </div>
