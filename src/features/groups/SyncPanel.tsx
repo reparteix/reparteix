@@ -14,6 +14,9 @@ import {
   ShieldCheck,
   Smartphone,
   Share2,
+  QrCode,
+  LockKeyhole,
+  Power,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -290,6 +293,7 @@ function HandoffCard({
   embedded,
   sharedLinkStatus,
   linkCopied,
+  syncUrl,
   onShare,
   onCopy,
   onCancel,
@@ -298,46 +302,66 @@ function HandoffCard({
   embedded: boolean
   sharedLinkStatus: 'idle' | 'shared' | 'copied'
   linkCopied: boolean
+  syncUrl: string
   onShare: () => void
   onCopy: () => void
   onCancel: () => void
 }) {
   return (
-    <div className={`rounded-[28px] border ${embedded ? 'bg-primary/5 border-primary/20' : 'bg-muted/20'} p-4`}>
-      <div className="space-y-4">
-        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[360px]">
+    <div className={`${embedded ? 'rounded-[28px] bg-slate-50 dark:bg-slate-900/40' : 'bg-muted/15'} px-3 py-2 sm:px-4`}>
+      <div className="mx-auto flex max-w-[272px] flex-col items-center text-center">
+        <div className="mb-2.5 flex items-center gap-2 self-start text-sm font-semibold text-foreground">
+          <div className="rounded-full bg-success/10 p-1.5 text-success">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+          <span>Sincronització activa</span>
+        </div>
+
+        <div className="w-full rounded-[32px] bg-white p-2.5 shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
           {qrMarkup ? (
             <div
-              className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
+              className="qr-frame aspect-square w-full overflow-hidden rounded-[28px] bg-white"
               dangerouslySetInnerHTML={{ __html: qrMarkup }}
             />
           ) : (
-            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-6 text-center text-xs text-muted-foreground">
+            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-4 text-center text-xs text-muted-foreground">
               Preparant el QR…
             </div>
           )}
         </div>
 
-        <div className="space-y-1 text-center">
-          <p className="text-base font-semibold text-foreground">Escaneja el QR a l’altre dispositiu</p>
-          <p className="text-sm text-muted-foreground">Si no pots escanejar-lo, comparteix l’enllaç o copia’l.</p>
+        <div className="mt-3 space-y-1">
+          <p className="text-[1.7rem] font-semibold leading-none text-foreground">Escaneja el QR</p>
+          <p className="text-sm leading-5 text-muted-foreground">Obre aquest grup a l’altre dispositiu amb el QR o amb l’enllaç temporal.</p>
         </div>
 
-        <div className="space-y-2">
-          <Button onClick={onShare} className="w-full">
-            {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
-            {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
+        <div className="mt-3 w-full space-y-2">
+          <Button onClick={onShare} className="h-10.5 w-full rounded-full shadow-sm">
+            {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
+            {sharedLinkStatus === 'shared' ? 'Enllaç compartit' : sharedLinkStatus === 'copied' ? 'Enllaç copiat' : 'Compartir enllaç'}
           </Button>
 
-          <Button type="button" variant="outline" onClick={onCopy} className="w-full">
+          <Button type="button" variant="outline" onClick={onCopy} className="h-10.5 w-full rounded-full bg-background/90">
             {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
             {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
           </Button>
-
-          <Button type="button" variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
-            Cancel·lar
-          </Button>
         </div>
+
+        <div className="mt-2.5 w-full text-left">
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{syncUrl.replace(/^https?:\/\//, '')}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex w-full items-start gap-2 text-left text-xs text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+          <p className="leading-5">Privat per disseny. Enllaç temporal i dades xifrades amb la contrasenya del grup.</p>
+        </div>
+
+        <Button type="button" variant="ghost" onClick={onCancel} className="mt-2 h-8 px-0 text-xs text-muted-foreground hover:bg-transparent">
+          Desactivar sincronització
+        </Button>
       </div>
     </div>
   )
@@ -386,7 +410,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
       return
     }
 
-    createQrSvg(syncUrl, 220)
+    createQrSvg(syncUrl, 184)
       .then((svg) => {
         if (!cancelled) setQrMarkup(svg)
       })
@@ -455,34 +479,31 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const content = (
     <div className="space-y-4">
       {showSetupCopy && !hideSetupWhileWaiting && (
-        <div className="space-y-3 rounded-2xl border bg-muted/20 p-4">
+        <div className="space-y-5 px-1">
           <div className="flex items-start gap-3">
             <div className="rounded-full bg-primary/10 p-2 text-primary">
               <Smartphone className="h-4 w-4" />
             </div>
             <div className="space-y-1">
-              <p className="font-medium">Passa aquest grup a un altre dispositiu</p>
-              <p className="text-sm text-muted-foreground">
-                Flux curt: poses la contrasenya, toques sincronitzar i ensenyes el QR o comparteixes l’enllaç.
+              <p className="text-[1.05rem] font-semibold">Sincronitzar grup</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Activa la sincronització per mantenir aquest grup actualitzat en tots els dispositius.
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border bg-background p-3 text-sm text-muted-foreground">
-            <div className="mb-2 flex items-center gap-2 text-foreground">
-              <ShieldCheck className="h-4 w-4 text-success" />
-              <span className="font-medium">Privat per disseny</span>
+          <div className="flex items-start gap-3 px-1 py-1">
+            <div className="rounded-full bg-muted p-2 text-muted-foreground">
+              <Power className="h-4 w-4" />
             </div>
-            <p>
-              L'enllaç només serveix per obrir la connexió entre dispositius. Les dades del grup viatgen protegides amb la contrasenya del grup.
-            </p>
+            <div className="space-y-1">
+              <p className="text-[1.05rem] font-semibold">Sincronització desactivada</p>
+              <p className="text-sm text-muted-foreground">Cap dispositiu connectat.</p>
+            </div>
           </div>
-        </div>
-      )}
 
-        {!hideSetupWhileWaiting && (
-          <div className="space-y-1.5">
-            <Label htmlFor="sync-passphrase">Contrasenya del grup</Label>
+          <div className="space-y-2">
+            <Label htmlFor="sync-passphrase" className="text-base font-semibold">Contrasenya del grup</Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Input
@@ -496,47 +517,66 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   placeholder="Mínim 4 caràcters"
                   disabled={isActive}
                   autoComplete="new-password"
+                  className="h-12 rounded-2xl"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassphrase(!showPassphrase)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                   aria-label={showPassphrase ? 'Amagar contrasenya' : 'Mostrar contrasenya'}
                 >
                   {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Aquesta contrasenya es guarda al grup i en aquest dispositiu perquè no l'hagis d'escriure cada vegada.
+            <p className="text-xs leading-5 text-muted-foreground">
+              Aquesta contrasenya xifra i protegeix les dades del grup mentre es sincronitzen entre dispositius.
             </p>
           </div>
-        )}
 
-        {sync.state === 'idle' && (
-          <Button
-            onClick={async () => {
-              setMode('host')
-              try {
-                await persistPassphrase(passphrase)
-                await sync.startSync()
-              } catch {
-                // Error is handled by the sync hook
-              }
-            }}
-            disabled={!canStart}
-            className="w-full"
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Obrir o compartir en un altre dispositiu
-          </Button>
-        )}
-
-        {showSetupCopy && !hideSetupWhileWaiting && (
-          <div className="rounded-xl border border-dashed bg-background/70 px-3 py-2 text-xs text-muted-foreground">
-            1. Escriu la contrasenya del grup · 2. Toca sincronitzar · 3. Escaneja el QR o obre l’enllaç a l’altre dispositiu
+          <div className="space-y-3">
+            <p className="text-base font-semibold">Com funciona?</p>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">1</span>
+                <span>Actives la sincronització</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">2</span>
+                <span>Comparteixes el QR o l’enllaç generat</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">3</span>
+                <span>L’altre dispositiu entra directament al grup</span>
+              </div>
+            </div>
           </div>
-        )}
+
+          {sync.state === 'idle' && (
+            <Button
+              onClick={async () => {
+                setMode('host')
+                try {
+                  await persistPassphrase(passphrase)
+                  await sync.startSync()
+                } catch {
+                  // Error is handled by the sync hook
+                }
+              }}
+              disabled={!canStart}
+              className="h-12 w-full rounded-2xl"
+            >
+              <QrCode className="mr-2 h-4 w-4" />
+              Activar sincronització
+            </Button>
+          )}
+
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs text-muted-foreground">
+            <LockKeyhole className="h-3.5 w-3.5" />
+            <span>Privat per disseny. Sense núvol, sense comptes.</span>
+          </div>
+        </div>
+      )}
 
         {/* Active sync status */}
         {sync.state !== 'idle' && (
@@ -567,9 +607,10 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                 </div>
               )}
               {isWaitingForPeer && !isEmbeddedWaiting && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Esperant que l’altre dispositiu entri…
-                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <p>Esperant que l’altre dispositiu entri…</p>
+                </div>
               )}
               {showCompactStatusDetails && !isWaitingForPeer && (sync.remotePeerIds.length > 0 || sync.lastAttemptAt || sync.lastSuccessAt) && (
                 <details className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
@@ -593,19 +634,26 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
 
             {/* Instructions for host + share link */}
             {mode === 'host' && sync.state === 'waiting-for-peer' && (
-              <HandoffCard
-                qrMarkup={qrMarkup}
-                embedded={embedded}
-                sharedLinkStatus={sharedLinkStatus}
-                linkCopied={linkCopied}
-                onShare={() => {
-                  void handleCopySyncLink()
-                }}
-                onCopy={() => {
-                  void handleCopyRawLink()
-                }}
-                onCancel={handleReset}
-              />
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 text-sm text-primary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="font-medium">Esperant connexió de l’altre dispositiu…</span>
+                </div>
+                <HandoffCard
+                  qrMarkup={qrMarkup}
+                  embedded={embedded}
+                  sharedLinkStatus={sharedLinkStatus}
+                  linkCopied={linkCopied}
+                  syncUrl={syncUrl}
+                  onShare={() => {
+                    void handleCopySyncLink()
+                  }}
+                  onCopy={() => {
+                    void handleCopyRawLink()
+                  }}
+                  onCancel={handleReset}
+                />
+              </div>
             )}
 
             {/* Sync report */}

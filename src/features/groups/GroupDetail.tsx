@@ -346,7 +346,7 @@ export function GroupDetail() {
           }}
         >
           <div
-            className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-t-3xl border bg-background p-4 shadow-xl sm:mb-4 sm:rounded-2xl"
+            className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-t-3xl border bg-background p-3 shadow-xl sm:mb-4 sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex justify-center sm:hidden">
@@ -354,9 +354,9 @@ export function GroupDetail() {
             </div>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold">Sincronitzar grup</h2>
+                <h2 className="text-lg font-semibold">Compartir i sincronitzar grup</h2>
                 <p className="text-sm text-muted-foreground">
-                  Comparteix el grup amb un altre dispositiu sense sortir d&apos;aquesta vista.
+                  Connecta aquest grup amb un altre dispositiu escanejant un QR o compartint un enllaç temporal.
                 </p>
               </div>
               <Button
