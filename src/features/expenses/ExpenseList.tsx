@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip, MoreHorizontal, Copy } from 'lucide-react'
 import type { Group, Expense, ActivityEntry } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -148,6 +148,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [receiptError, setReceiptError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
+  const [openExpenseMenuId, setOpenExpenseMenuId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -187,6 +188,35 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const archivedExpenses = expenses.filter((e) => e.archived)
   const visibleExpenses = showArchived ? archivedExpenses : activeExpenses
   const archivableCount = activeExpenses.filter((e) => isExpenseArchivable(e, balances)).length
+
+  useEffect(() => {
+    const handleDocumentClick = () => setOpenExpenseMenuId(null)
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [])
+
+  const startDuplicate = (expense: Expense) => {
+    setEditingExpenseId(null)
+    setDescription(expense.description)
+    setAmount(expense.amount.toString())
+    setPayerId(expense.payerId)
+    setSplitAmong(expense.splitAmong)
+    setSplitType(expense.splitType ?? 'equal')
+    setProportions(
+      Object.fromEntries(
+        expense.splitAmong.map((id) => [id, String(expense.splitProportions?.[id] ?? 1)]),
+      ),
+    )
+    setFixedAmounts(
+      Object.fromEntries(
+        expense.splitAmong.map((id) => [id, String(expense.splitFixedAmounts?.[id] ?? '')]),
+      ),
+    )
+    setReceiptImage(expense.receiptImage ?? null)
+    setReceiptError(null)
+    setShowForm(true)
+    setOpenExpenseMenuId(null)
+  }
 
   const resetForm = () => {
     receiptLoadRequestRef.current += 1
@@ -906,17 +936,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                 Adjunt
                               </Button>
                             )}
-                            {!showArchived && !group.archived && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => startEdit(expense)}
-                                className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
-                              >
-                                <Pencil className="mr-1 h-3 w-3" />
-                                Editar
-                              </Button>
-                            )}
                             {showArchived ? (
                               !group.archived && (
                                 <Button
@@ -930,37 +949,73 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                 </Button>
                               )
                             ) : (
-                              <AlertDialog>
-                                {!group.archived && (
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-destructive"
+                              !group.archived && (
+                                <div className="relative">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setOpenExpenseMenuId((current) => current === expense.id ? null : expense.id)
+                                    }}
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                    aria-label="Més accions"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                  {openExpenseMenuId === expense.id && (
+                                    <div
+                                      className="absolute right-0 top-8 z-20 min-w-[10rem] rounded-xl border bg-popover p-1 shadow-lg"
+                                      onClick={(e) => e.stopPropagation()}
                                     >
-                                      <Trash2 className="mr-1 h-3 w-3" />
-                                      Eliminar
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                )}
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Estàs segur que vols eliminar la despesa &quot;{expense.description}&quot;? Aquesta acció no es pot desfer.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deleteExpense(expense.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Eliminar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <button
+                                        type="button"
+                                        onClick={() => startEdit(expense)}
+                                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                        Editar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => startDuplicate(expense)}
+                                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                        Duplicar
+                                      </button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <button
+                                            type="button"
+                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-muted"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                            Eliminar
+                                          </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Eliminar despesa</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Estàs segur que vols eliminar la despesa &quot;{expense.description}&quot;? Aquesta acció no es pot desfer.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => deleteExpense(expense.id)}
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                              Eliminar
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  )}
+                                </div>
+                              )
                             )}
                           </div>
                         </div>
