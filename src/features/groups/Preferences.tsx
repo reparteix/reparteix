@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Monitor, Moon, Settings2, Sun, Wifi } from 'lucide-react'
+import { ArrowLeft, Monitor, Moon, Settings2, Smartphone, Sun, Wifi } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,12 @@ import {
   saveSyncPreferencesDraft,
   type SyncPreferencesDraft,
 } from '@/lib/sync-preferences'
+import {
+  getDefaultDeviceLabel,
+  getLocalDeviceIdentity,
+  resetLocalDeviceLabel,
+  updateLocalDeviceLabel,
+} from '@/lib/device-identity'
 
 const themeOptions = [
   { value: 'light' as const, label: 'Clar', icon: Sun },
@@ -55,6 +61,91 @@ function ThemePreferenceCard() {
           Tema actiu: <strong>{themeOptions.find((option) => option.value === theme)?.label}</strong>
           {theme === 'system' ? `, resolt ara com a ${resolvedTheme === 'dark' ? 'fosc' : 'clar'}` : ''}.
         </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function DeviceIdentityCard() {
+  const [identity, setIdentity] = useState(() => getLocalDeviceIdentity())
+  const [deviceLabel, setDeviceLabel] = useState(identity.deviceLabel)
+  const [status, setStatus] = useState<'idle' | 'saved' | 'reset'>('idle')
+  const statusTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (statusTimeoutRef.current !== null) {
+        window.clearTimeout(statusTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const scheduleStatusReset = () => {
+    if (statusTimeoutRef.current !== null) {
+      window.clearTimeout(statusTimeoutRef.current)
+    }
+
+    statusTimeoutRef.current = window.setTimeout(() => {
+      setStatus('idle')
+      statusTimeoutRef.current = null
+    }, 2000)
+  }
+
+  const handleSave = () => {
+    const next = updateLocalDeviceLabel(deviceLabel)
+    setIdentity(next)
+    setDeviceLabel(next.deviceLabel)
+    setStatus('saved')
+    scheduleStatusReset()
+  }
+
+  const handleReset = () => {
+    const next = resetLocalDeviceLabel()
+    setIdentity(next)
+    setDeviceLabel(next.deviceLabel)
+    setStatus('reset')
+    scheduleStatusReset()
+  }
+
+  const defaultLabel = getDefaultDeviceLabel(identity.deviceId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Smartphone className="h-4 w-4" />
+          Aquest dispositiu
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-sm text-muted-foreground">
+          Aquesta identitat és local al dispositiu actual. L’id és estable i el nom es pot editar per fer-lo més reconeixible quan arribi a activitat o sync.
+        </p>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="device-id">Id del dispositiu</Label>
+          <Input id="device-id" value={identity.deviceId} readOnly className="font-mono text-xs" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="device-label">Nom del dispositiu</Label>
+          <Input
+            id="device-label"
+            value={deviceLabel}
+            onChange={(e) => setDeviceLabel(e.target.value)}
+            placeholder={defaultLabel}
+          />
+          <p className="text-xs text-muted-foreground">
+            Si el deixes buit, es farà servir un fallback distingible com <strong>{defaultLabel}</strong>.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={handleSave}>Desar nom</Button>
+          <Button type="button" variant="outline" onClick={handleReset}>Restaurar fallback</Button>
+          {status === 'saved' && <p className="text-sm text-success self-center">Nom del dispositiu desat.</p>}
+          {status === 'reset' && <p className="text-sm text-success self-center">Fallback restaurat.</p>}
+        </div>
       </CardContent>
     </Card>
   )
@@ -240,6 +331,8 @@ export function Preferences() {
       </Card>
 
       <ThemePreferenceCard />
+
+      <DeviceIdentityCard />
 
       <Card>
         <CardHeader>
