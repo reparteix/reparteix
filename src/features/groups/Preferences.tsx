@@ -136,7 +136,12 @@ function DeviceIdentityCard() {
 
         <div className="space-y-1.5">
           <Label htmlFor="device-id">Id del dispositiu</Label>
-          <Input id="device-id" value={identity.deviceId} readOnly className="font-mono text-xs" />
+          <div
+            id="device-id"
+            className="rounded-md border bg-muted/40 px-3 py-2 font-mono text-xs text-muted-foreground break-all"
+          >
+            {identity.deviceId}
+          </div>
         </div>
 
         <div className="space-y-1.5">
