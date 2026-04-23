@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip } from 'lucide-react'
+import { Plus, Trash2, Camera, ImagePlus, X, Archive, ArchiveRestore, Pencil, Sparkles, Users, ArrowRight, Paperclip, Copy } from 'lucide-react'
 import type { Group, Expense, ActivityEntry } from '../../domain/entities'
 import { computeExpenseShares, calculateBalances, isExpenseArchivable } from '../../domain/services/balances'
 import { useStore } from '../../store'
@@ -143,6 +143,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [proportions, setProportions] = useState<Record<string, string>>({})
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, string>>({})
   const [showForm, setShowForm] = useState(false)
+  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().split('T')[0])
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
   const [viewingReceipt, setViewingReceipt] = useState<ViewingReceiptState | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
@@ -198,6 +199,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
     setSplitType('equal')
     setProportions({})
     setFixedAmounts({})
+    setExpenseDate(new Date().toISOString().split('T')[0])
     setReceiptImage(null)
     setReceiptError(null)
     setShowForm(false)
@@ -225,8 +227,8 @@ export function ExpenseList({ group }: ExpenseListProps) {
     setSplitAmong(activeMembers.map((m) => m.id))
   }
 
-  const startEdit = (expense: Expense) => {
-    setEditingExpenseId(expense.id)
+  const fillExpenseForm = (expense: Expense, options?: { duplicate?: boolean }) => {
+    setEditingExpenseId(options?.duplicate ? null : expense.id)
     setDescription(expense.description)
     setAmount(expense.amount.toString())
     setPayerId(expense.payerId)
@@ -242,9 +244,18 @@ export function ExpenseList({ group }: ExpenseListProps) {
         expense.splitAmong.map((id) => [id, String(expense.splitFixedAmounts?.[id] ?? '')]),
       ),
     )
-    setReceiptImage(expense.receiptImage ?? null)
+    setExpenseDate(options?.duplicate ? new Date().toISOString().split('T')[0] : expense.date)
+    setReceiptImage(options?.duplicate ? null : expense.receiptImage ?? null)
     setReceiptError(null)
     setShowForm(true)
+  }
+
+  const startEdit = (expense: Expense) => {
+    fillExpenseForm(expense)
+  }
+
+  const startDuplicate = (expense: Expense) => {
+    fillExpenseForm(expense, { duplicate: true })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,7 +272,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
       payerId,
       splitAmong,
       ...splitFields,
-      date: new Date().toISOString().split('T')[0],
+      date: expenseDate,
       receiptImage: receiptImage ?? undefined,
     }
 
@@ -280,7 +291,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
       await updateExpense({
         ...existing,
         ...baseExpense,
-        date: existing.date,
         computedShares,
       })
     } else {
@@ -515,20 +525,28 @@ export function ExpenseList({ group }: ExpenseListProps) {
                       required
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px]">
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="Import"
+                        step="0.01"
+                        min="0.01"
+                        className="flex-1"
+                        required
+                      />
+                      <span className="flex items-center text-muted-foreground">
+                        {symbol}
+                      </span>
+                    </div>
                     <Input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Import"
-                      step="0.01"
-                      min="0.01"
-                      className="flex-1"
+                      type="date"
+                      value={expenseDate}
+                      onChange={(e) => setExpenseDate(e.target.value)}
                       required
                     />
-                    <span className="flex items-center text-muted-foreground">
-                      {symbol}
-                    </span>
                   </div>
                   <div className="space-y-1">
                     <Label>Qui ha pagat?</Label>
@@ -907,15 +925,26 @@ export function ExpenseList({ group }: ExpenseListProps) {
                               </Button>
                             )}
                             {!showArchived && !group.archived && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => startEdit(expense)}
-                                className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
-                              >
-                                <Pencil className="mr-1 h-3 w-3" />
-                                Editar
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => startDuplicate(expense)}
+                                  className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                                >
+                                  <Copy className="mr-1 h-3 w-3" />
+                                  Duplicar
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => startEdit(expense)}
+                                  className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Editar
+                                </Button>
+                              </>
                             )}
                             {showArchived ? (
                               !group.archived && (
