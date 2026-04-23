@@ -354,9 +354,9 @@ export function GroupDetail() {
             </div>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold">Sincronitzar grup</h2>
+                <h2 className="text-lg font-semibold">Compartir i sincronitzar grup</h2>
                 <p className="text-sm text-muted-foreground">
-                  Comparteix el grup amb un altre dispositiu sense sortir d&apos;aquesta vista.
+                  Connecta aquest grup amb un altre dispositiu escanejant un QR o compartint un enllaç temporal.
                 </p>
               </div>
               <Button
