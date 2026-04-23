@@ -479,104 +479,100 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const content = (
     <div className="space-y-4">
       {showSetupCopy && !hideSetupWhileWaiting && (
-        <div className="space-y-4">
-          <div className="rounded-3xl border bg-muted/20 p-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-full bg-primary/10 p-2 text-primary">
-                <Smartphone className="h-4 w-4" />
-              </div>
-              <div className="space-y-1">
-                <p className="font-medium">Sincronitzar grup</p>
-                <p className="text-sm text-muted-foreground">
-                  Activa la sincronització per mantenir aquest grup actualitzat en tots els dispositius.
-                </p>
-              </div>
+        <div className="space-y-4 px-1">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-primary/10 p-2 text-primary">
+              <Smartphone className="h-4 w-4" />
             </div>
-
-            <div className="mt-3 rounded-2xl border bg-background p-3.5">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-muted p-2 text-muted-foreground">
-                  <Power className="h-4 w-4" />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium">Sincronització desactivada</p>
-                  <p className="text-sm text-muted-foreground">Cap dispositiu connectat.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 space-y-1.5">
-              <Label htmlFor="sync-passphrase">Contrasenya del grup</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="sync-passphrase"
-                    type={showPassphrase ? 'text' : 'password'}
-                    value={passphrase}
-                    onChange={(e) => setPassphrase(e.target.value)}
-                    onBlur={() => {
-                      void persistPassphrase(passphrase)
-                    }}
-                    placeholder="Mínim 4 caràcters"
-                    disabled={isActive}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassphrase(!showPassphrase)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                    aria-label={showPassphrase ? 'Amagar contrasenya' : 'Mostrar contrasenya'}
-                  >
-                    {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Aquesta contrasenya xifra i protegeix les dades del grup mentre es sincronitzen entre dispositius.
+            <div className="space-y-1">
+              <p className="font-medium">Sincronitzar grup</p>
+              <p className="text-sm text-muted-foreground">
+                Activa la sincronització per mantenir aquest grup actualitzat en tots els dispositius.
               </p>
             </div>
+          </div>
 
-            <div className="mt-3 rounded-2xl bg-primary/5 p-3.5">
-              <p className="mb-2 text-sm font-medium">Com funciona?</p>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">1</span>
-                  <span>Actives la sincronització</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">2</span>
-                  <span>Comparteixes el QR o l’enllaç generat</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">3</span>
-                  <span>L’altre dispositiu entra directament al grup</span>
-                </div>
+          <div className="flex items-start gap-3 rounded-2xl bg-background/70 px-4 py-3">
+            <div className="rounded-full bg-muted p-2 text-muted-foreground">
+              <Power className="h-4 w-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium">Sincronització desactivada</p>
+              <p className="text-sm text-muted-foreground">Cap dispositiu connectat.</p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="sync-passphrase">Contrasenya del grup</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="sync-passphrase"
+                  type={showPassphrase ? 'text' : 'password'}
+                  value={passphrase}
+                  onChange={(e) => setPassphrase(e.target.value)}
+                  onBlur={() => {
+                    void persistPassphrase(passphrase)
+                  }}
+                  placeholder="Mínim 4 caràcters"
+                  disabled={isActive}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassphrase(!showPassphrase)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showPassphrase ? 'Amagar contrasenya' : 'Mostrar contrasenya'}
+                >
+                  {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Aquesta contrasenya xifra i protegeix les dades del grup mentre es sincronitzen entre dispositius.
+            </p>
+          </div>
 
-            {sync.state === 'idle' && (
-              <Button
-                onClick={async () => {
-                  setMode('host')
-                  try {
-                    await persistPassphrase(passphrase)
-                    await sync.startSync()
-                  } catch {
-                    // Error is handled by the sync hook
-                  }
-                }}
-                disabled={!canStart}
-                className="mt-3 w-full"
-              >
-                <QrCode className="mr-2 h-4 w-4" />
-                Activar sincronització
-              </Button>
-            )}
-
-            <div className="mt-2.5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <LockKeyhole className="h-3.5 w-3.5" />
-              <span>Privat per disseny. Sense núvol, sense comptes.</span>
+          <div className="space-y-2 pt-1">
+            <p className="text-sm font-medium">Com funciona?</p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">1</span>
+                <span>Actives la sincronització</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">2</span>
+                <span>Comparteixes el QR o l’enllaç generat</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">3</span>
+                <span>L’altre dispositiu entra directament al grup</span>
+              </div>
             </div>
+          </div>
+
+          {sync.state === 'idle' && (
+            <Button
+              onClick={async () => {
+                setMode('host')
+                try {
+                  await persistPassphrase(passphrase)
+                  await sync.startSync()
+                } catch {
+                  // Error is handled by the sync hook
+                }
+              }}
+              disabled={!canStart}
+              className="w-full rounded-2xl"
+            >
+              <QrCode className="mr-2 h-4 w-4" />
+              Activar sincronització
+            </Button>
+          )}
+
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs text-muted-foreground">
+            <LockKeyhole className="h-3.5 w-3.5" />
+            <span>Privat per disseny. Sense núvol, sense comptes.</span>
           </div>
         </div>
       )}
