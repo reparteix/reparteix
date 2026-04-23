@@ -308,69 +308,71 @@ function HandoffCard({
   onCancel: () => void
 }) {
   return (
-    <div className={`rounded-[28px] border ${embedded ? 'border-primary/20 bg-primary/5' : 'bg-muted/20'} p-4`}>
-      <div className="space-y-4">
+    <div className={`rounded-[24px] border ${embedded ? 'border-primary/20 bg-primary/5' : 'bg-muted/20'} p-3`}>
+      <div className="space-y-3">
         <div className="flex items-start gap-3 rounded-2xl border bg-background/90 p-3">
           <div className="rounded-full bg-success/10 p-2 text-success">
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-semibold text-foreground">Sincronització activa</p>
-            <p className="text-sm text-muted-foreground">Enllaç actiu durant aquesta sessió per connectar un altre dispositiu.</p>
+            <p className="text-xs leading-5 text-muted-foreground">Escaneja el QR o obre l’enllaç en l’altre dispositiu.</p>
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[320px] rounded-[28px] border bg-white p-2 shadow-sm sm:max-w-[360px]">
-          {qrMarkup ? (
-            <div
-              className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
-              dangerouslySetInnerHTML={{ __html: qrMarkup }}
-            />
-          ) : (
-            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-6 text-center text-xs text-muted-foreground">
-              Preparant el QR…
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,188px)_minmax(0,1fr)] sm:items-start">
+          <div className="mx-auto w-full max-w-[188px] rounded-[24px] border bg-white p-2 shadow-sm">
+            {qrMarkup ? (
+              <div
+                className="qr-frame aspect-square w-full overflow-hidden rounded-[18px] bg-white"
+                dangerouslySetInnerHTML={{ __html: qrMarkup }}
+              />
+            ) : (
+              <div className="flex aspect-square w-full items-center justify-center rounded-[18px] bg-muted px-4 text-center text-xs text-muted-foreground">
+                Preparant el QR…
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Escaneja el QR</p>
+              <p className="text-xs leading-5 text-muted-foreground">Si no et va bé, comparteix o copia l’enllaç temporal.</p>
             </div>
-          )}
-        </div>
 
-        <div className="space-y-1 text-center">
-          <p className="text-base font-semibold text-foreground">Escaneja el QR a l’altre dispositiu</p>
-          <p className="text-sm text-muted-foreground">També pots compartir o copiar l’enllaç si tens els dos dispositius a mà.</p>
-        </div>
-
-        <div className="rounded-2xl border bg-background p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link2 className="h-4 w-4" />
-            <span className="truncate">{syncUrl.replace(/^https?:\/\//, '')}</span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Button onClick={onShare} className="w-full">
-            {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
-            {sharedLinkStatus === 'shared' ? 'Enllaç compartit!' : sharedLinkStatus === 'copied' ? 'Enllaç copiat!' : 'Compartir enllaç'}
-          </Button>
-
-          <Button type="button" variant="outline" onClick={onCopy} className="w-full">
-            {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-            {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
-          </Button>
-
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
-            <div className="mb-1 flex items-center gap-2 font-medium">
-              <ShieldCheck className="h-4 w-4" />
-              <span>Privat per disseny</span>
+            <div className="rounded-2xl border bg-background px-3 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Link2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{syncUrl.replace(/^https?:\/\//, '')}</span>
+              </div>
             </div>
-            <ul className="space-y-1 text-sm text-emerald-900/80 dark:text-emerald-100/80">
-              <li>• L’enllaç només obre la connexió entre dispositius.</li>
-              <li>• Les dades viatgen xifrades amb la contrasenya del grup.</li>
-              <li>• L’enllaç actiu caduca en acabar aquesta sessió.</li>
-            </ul>
-          </div>
 
-          <Button type="button" variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
-            Desactivar sincronització
-          </Button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button onClick={onShare} className="w-full">
+                {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
+                {sharedLinkStatus === 'shared' ? 'Compartit' : sharedLinkStatus === 'copied' ? 'Copiat' : 'Compartir'}
+              </Button>
+
+              <Button type="button" variant="outline" onClick={onCopy} className="w-full">
+                {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                {linkCopied ? 'Copiat' : 'Copiar'}
+              </Button>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
+              <div className="flex items-center gap-2 font-medium">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Privat per disseny</span>
+              </div>
+              <p className="mt-1 leading-5 text-emerald-900/80 dark:text-emerald-100/80">
+                Enllaç temporal. Dades xifrades amb la contrasenya del grup.
+              </p>
+            </div>
+
+            <Button type="button" variant="ghost" onClick={onCancel} className="h-9 justify-start px-0 text-xs text-muted-foreground hover:bg-transparent">
+              Desactivar sincronització
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -420,7 +422,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
       return
     }
 
-    createQrSvg(syncUrl, 220)
+    createQrSvg(syncUrl, 176)
       .then((svg) => {
         if (!cancelled) setQrMarkup(svg)
       })
@@ -503,7 +505,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border bg-background p-4">
+            <div className="mt-3 rounded-2xl border bg-background p-3.5">
               <div className="flex items-start gap-3">
                 <div className="rounded-full bg-muted p-2 text-muted-foreground">
                   <Power className="h-4 w-4" />
@@ -515,7 +517,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
               </div>
             </div>
 
-            <div className="mt-4 space-y-1.5">
+            <div className="mt-3 space-y-1.5">
               <Label htmlFor="sync-passphrase">Contrasenya del grup</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -546,7 +548,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
               </p>
             </div>
 
-            <div className="mt-4 rounded-2xl bg-primary/5 p-4">
+            <div className="mt-3 rounded-2xl bg-primary/5 p-3.5">
               <p className="mb-2 text-sm font-medium">Com funciona?</p>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-start gap-2">
@@ -559,7 +561,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">3</span>
-                  <span>Els dispositius es mantenen sincronitzats en temps real</span>
+                  <span>L’altre dispositiu entra directament al grup</span>
                 </div>
               </div>
             </div>
@@ -576,14 +578,14 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
                   }
                 }}
                 disabled={!canStart}
-                className="mt-4 w-full"
+                className="mt-3 w-full"
               >
                 <QrCode className="mr-2 h-4 w-4" />
                 Activar sincronització
               </Button>
             )}
 
-            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-2.5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <LockKeyhole className="h-3.5 w-3.5" />
               <span>Privat per disseny. Sense núvol, sense comptes.</span>
             </div>
