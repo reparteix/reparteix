@@ -308,70 +308,60 @@ function HandoffCard({
   onCancel: () => void
 }) {
   return (
-    <div className={`rounded-[28px] ${embedded ? 'bg-primary/5' : 'bg-muted/20'} px-4 py-4 sm:px-5`}>
-      <div className="space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-full bg-success/10 p-2 text-success">
+    <div className={`${embedded ? 'bg-primary/5' : 'bg-muted/15'} px-2 py-2 sm:px-3`}>
+      <div className="mx-auto flex max-w-[280px] flex-col items-center text-center">
+        <div className="mb-3 flex items-center gap-2 self-start text-sm font-semibold text-foreground">
+          <div className="rounded-full bg-success/10 p-1.5 text-success">
             <CheckCircle2 className="h-4 w-4" />
           </div>
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm font-semibold text-foreground">Sincronització activa</p>
-            <p className="text-sm leading-5 text-muted-foreground">Escaneja aquest QR a l’altre dispositiu o obre-hi l’enllaç temporal.</p>
-          </div>
+          <span>Sincronització activa</span>
         </div>
 
-        <div className="flex flex-col items-center text-center">
-          <div className="w-full max-w-[208px] bg-white p-2 shadow-sm ring-1 ring-black/10 rounded-[24px]">
-            {qrMarkup ? (
-              <div
-                className="qr-frame aspect-square w-full overflow-hidden rounded-[18px] bg-white"
-                dangerouslySetInnerHTML={{ __html: qrMarkup }}
-              />
-            ) : (
-              <div className="flex aspect-square w-full items-center justify-center rounded-[18px] bg-muted px-4 text-center text-xs text-muted-foreground">
-                Preparant el QR…
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 space-y-1">
-            <p className="text-base font-semibold text-foreground">Escaneja el QR</p>
-            <p className="text-sm leading-5 text-muted-foreground">Si no et va bé, comparteix o copia l’enllaç temporal.</p>
-          </div>
-        </div>
-
-        <div className="space-y-2.5">
-          <div className="bg-background/80 px-3 py-2.5 rounded-2xl">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Link2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{syncUrl.replace(/^https?:\/\//, '')}</span>
+        <div className="w-full rounded-[28px] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
+          {qrMarkup ? (
+            <div
+              className="qr-frame aspect-square w-full overflow-hidden rounded-[24px] bg-white"
+              dangerouslySetInnerHTML={{ __html: qrMarkup }}
+            />
+          ) : (
+            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] bg-muted px-4 text-center text-xs text-muted-foreground">
+              Preparant el QR…
             </div>
-          </div>
+          )}
+        </div>
 
-          <Button onClick={onShare} className="w-full shadow-sm">
+        <div className="mt-4 space-y-1">
+          <p className="text-lg font-semibold text-foreground">Escaneja el QR</p>
+          <p className="text-sm leading-5 text-muted-foreground">Obre aquest grup a l’altre dispositiu amb el QR o amb l’enllaç temporal.</p>
+        </div>
+
+        <div className="mt-4 w-full space-y-2">
+          <Button onClick={onShare} className="h-11 w-full rounded-2xl shadow-sm">
             {sharedLinkStatus !== 'idle' ? <Check className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
             {sharedLinkStatus === 'shared' ? 'Enllaç compartit' : sharedLinkStatus === 'copied' ? 'Enllaç copiat' : 'Compartir enllaç'}
           </Button>
 
-          <Button type="button" variant="outline" onClick={onCopy} className="w-full bg-background/90">
+          <Button type="button" variant="outline" onClick={onCopy} className="h-11 w-full rounded-2xl bg-background/90">
             {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
             {linkCopied ? 'Enllaç copiat' : 'Copiar enllaç'}
           </Button>
-
-          <div className="bg-emerald-50/80 px-3 py-2.5 rounded-2xl text-left text-xs text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100">
-            <div className="flex items-center gap-2 font-medium">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Privat per disseny</span>
-            </div>
-            <p className="mt-1 leading-5 text-emerald-900/80 dark:text-emerald-100/80">
-              Enllaç temporal. Dades xifrades amb la contrasenya del grup.
-            </p>
-          </div>
-
-          <Button type="button" variant="ghost" onClick={onCancel} className="h-9 w-full text-xs text-muted-foreground hover:bg-transparent">
-            Desactivar sincronització
-          </Button>
         </div>
+
+        <div className="mt-3 w-full text-left">
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{syncUrl.replace(/^https?:\/\//, '')}</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex w-full items-start gap-2 text-left text-xs text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+          <p className="leading-5">Privat per disseny. Enllaç temporal i dades xifrades amb la contrasenya del grup.</p>
+        </div>
+
+        <Button type="button" variant="ghost" onClick={onCancel} className="mt-3 h-9 px-0 text-xs text-muted-foreground hover:bg-transparent">
+          Desactivar sincronització
+        </Button>
       </div>
     </div>
   )
@@ -420,7 +410,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
       return
     }
 
-    createQrSvg(syncUrl, 176)
+    createQrSvg(syncUrl, 196)
       .then((svg) => {
         if (!cancelled) setQrMarkup(svg)
       })
