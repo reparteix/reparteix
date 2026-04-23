@@ -1,3 +1,19 @@
+# [1.46.0](https://github.com/reparteix/reparteix/compare/v1.45.0...v1.46.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* harden device identity handling ([a22fedf](https://github.com/reparteix/reparteix/commit/a22fedf99d9ebed1760d4cb9e9e83ab542d0a145))
+* offset preferences badge ([53a5c36](https://github.com/reparteix/reparteix/commit/53a5c368d24a2232df6e260c052c00e1caf9aa55))
+* present device id as readonly text ([4f5cc43](https://github.com/reparteix/reparteix/commit/4f5cc439f7edd2ccaa297d65ff72eb31d2bc7f43))
+* sync preferences pending state ([d273496](https://github.com/reparteix/reparteix/commit/d27349680ac5199dedb50a30bdc344db25ddabd3))
+* update pending device setup state live ([285093b](https://github.com/reparteix/reparteix/commit/285093b54ae3411e2adfcf2c2701fe4ea0b58222))
+
+
+### Features
+
+* add local device identity substrate ([ab37fb1](https://github.com/reparteix/reparteix/commit/ab37fb1a093f9096ebbcd4d74ebfb0eb9782decd))
+
 # [1.45.0](https://github.com/reparteix/reparteix/compare/v1.44.0...v1.45.0) (2026-04-23)
 
 
