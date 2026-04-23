@@ -109,7 +109,11 @@ function DeviceIdentityCard() {
   }
 
   const defaultLabel = getDefaultDeviceLabel(identity.deviceId)
-  const needsSetup = needsDeviceLabelSetup(identity)
+  const previewIdentity = {
+    ...identity,
+    deviceLabel: deviceLabel.trim() || defaultLabel,
+  }
+  const needsSetup = needsDeviceLabelSetup(previewIdentity)
 
   return (
     <Card className={needsSetup ? 'border-amber-300 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-950/20' : undefined}>
