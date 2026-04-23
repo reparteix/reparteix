@@ -1,3 +1,24 @@
+# [1.44.0](https://github.com/reparteix/reparteix/compare/v1.43.0...v1.44.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* add soft gray sync modal surface ([475de3b](https://github.com/reparteix/reparteix/commit/475de3b064cea97ae21d656edab692402f784bab))
+* center sync handoff mobile layout ([064d8b1](https://github.com/reparteix/reparteix/commit/064d8b16d00c3639a7b09f773cd9471ab9325b7f))
+* clarify sync setup hierarchy ([f73b223](https://github.com/reparteix/reparteix/commit/f73b2232b4d7c50ff0645dc60d21e83f6862a723))
+* compact active sync card for mobile ([d519be3](https://github.com/reparteix/reparteix/commit/d519be341e5ff57c6f15eb63cc9336d336b59aa9))
+* compact sync handoff layout ([b051bac](https://github.com/reparteix/reparteix/commit/b051bac63e3f8944b0ae7889c60989a7f1f6e054))
+* match sync handoff mockup more literally ([4f78608](https://github.com/reparteix/reparteix/commit/4f78608364148c82139ff019e8e16287429e9d7c))
+* simplify sync handoff surfaces ([779a04b](https://github.com/reparteix/reparteix/commit/779a04b42c141099bbffbd7482ea59f7d6b6a2ab))
+* simplify sync setup screen surfaces ([3b3ba46](https://github.com/reparteix/reparteix/commit/3b3ba467a9f19d27469a30cd0c1989f66b55dd41))
+* use single sync handoff background surface ([bda18f1](https://github.com/reparteix/reparteix/commit/bda18f1817d9ac146d834f86171bf2af52e2d6b8))
+
+
+### Features
+
+* add activity cue to sync waiting state ([b44a341](https://github.com/reparteix/reparteix/commit/b44a341df6cd0d5a33b65b43e0622a1beb795d74))
+* redesign group sync share flow ([f40bb19](https://github.com/reparteix/reparteix/commit/f40bb19a17712d14de47104eb1738ac904970b0c))
+
 # [1.43.0](https://github.com/reparteix/reparteix/compare/v1.42.0...v1.43.0) (2026-04-22)
 
 
