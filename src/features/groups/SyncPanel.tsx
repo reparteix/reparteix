@@ -308,7 +308,7 @@ function HandoffCard({
   onCancel: () => void
 }) {
   return (
-    <div className={`${embedded ? 'bg-primary/5' : 'bg-muted/15'} px-2 py-1.5 sm:px-3`}>
+    <div className={`${embedded ? 'rounded-[28px] bg-slate-50 dark:bg-slate-900/40' : 'bg-muted/15'} px-3 py-2 sm:px-4`}>
       <div className="mx-auto flex max-w-[272px] flex-col items-center text-center">
         <div className="mb-2.5 flex items-center gap-2 self-start text-sm font-semibold text-foreground">
           <div className="rounded-full bg-success/10 p-1.5 text-success">
@@ -477,7 +477,7 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   }
 
   const content = (
-    <div className="space-y-4 rounded-[28px] bg-slate-50 p-3 dark:bg-slate-900/40">
+    <div className="space-y-4">
       {showSetupCopy && !hideSetupWhileWaiting && (
         <div className="space-y-5 px-1">
           <div className="flex items-start gap-3">
