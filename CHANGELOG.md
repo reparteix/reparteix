@@ -1,3 +1,17 @@
+# [1.45.0](https://github.com/reparteix/reparteix/compare/v1.44.0...v1.45.0) (2026-04-23)
+
+
+### Bug Fixes
+
+* improve expense actions accessibility ([3685d50](https://github.com/reparteix/reparteix/commit/3685d500250fed9c7bbca6126bcfb20d5878db20))
+* remove duplicate expense handler ([c3e1f97](https://github.com/reparteix/reparteix/commit/c3e1f97e6922be3c0ef583289bef2fbc2999bdb8))
+
+
+### Features
+
+* add expense duplication flow ([4e29722](https://github.com/reparteix/reparteix/commit/4e297229e5df6801a9dc4392b19206a83d95729d))
+* move expense card actions into overflow menu ([6379249](https://github.com/reparteix/reparteix/commit/6379249d155011b00f91de274e9f132ae40e94a1))
+
 # [1.44.0](https://github.com/reparteix/reparteix/compare/v1.43.0...v1.44.0) (2026-04-23)
 
 
