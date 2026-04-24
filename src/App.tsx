@@ -4,6 +4,7 @@ import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 import { PWAInstallPrompt } from './components/PWAInstallPrompt'
 import { Footer } from './components/Footer'
 import { useFileHandler } from './hooks/useFileHandler'
+import { useTheme } from './hooks/useTheme'
 
 const GroupList = lazy(() => import('./features/groups/GroupList').then((m) => ({ default: m.GroupList })))
 const GroupDetail = lazy(() => import('./features/groups/GroupDetail').then((m) => ({ default: m.GroupDetail })))
@@ -44,6 +45,8 @@ function FileHandlerBridge() {
 }
 
 function App() {
+  useTheme()
+
   return (
     <HashRouter>
       <div className="flex min-h-screen flex-col">
