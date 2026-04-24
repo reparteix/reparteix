@@ -1,4 +1,5 @@
 import type { ActivityEntry, Group } from '@/domain'
+import { getDefaultDeviceLabel, getShortDeviceSuffix } from '@/lib/device-identity'
 
 type Snapshot = Record<string, unknown>
 type ActivityMeta = Record<string, unknown>
@@ -137,10 +138,6 @@ function readMetaString(meta: unknown, key: string): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-function getShortDeviceSuffix(deviceId: string): string {
-  return deviceId.replace(/-/g, '').slice(0, 4).toLowerCase()
-}
-
 export interface ActivityOriginSummary {
   label: string
   detail: string | null
@@ -154,7 +151,7 @@ export function getActivityOriginSummary(entry: ActivityEntry, localDeviceId?: s
     : null
   const deviceId = readMetaString(entry.meta, 'deviceId')
   const deviceLabel = readMetaString(entry.meta, 'deviceLabel')
-  const fallbackDeviceLabel = deviceId ? `Dispositiu ${getShortDeviceSuffix(deviceId)}` : null
+  const fallbackDeviceLabel = deviceId ? getDefaultDeviceLabel(deviceId) : null
   const resolvedLabel = actor ?? deviceLabel ?? fallbackDeviceLabel
 
   if (localDeviceId && deviceId === localDeviceId) {
