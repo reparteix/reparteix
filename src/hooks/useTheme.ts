@@ -3,35 +3,41 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react'
 type Theme = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'reparteix-theme'
+const MEDIA_QUERY = '(prefers-color-scheme: dark)'
 
 function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system'
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
   } catch {
     /* localStorage unavailable */
   }
+
   return 'system'
 }
 
 function getResolvedTheme(theme: Theme): 'light' | 'dark' {
   if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    if (typeof window === 'undefined') return 'light'
+    return window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light'
   }
   return theme
 }
 
 function applyTheme(theme: Theme) {
+  if (typeof document === 'undefined') return
+
   const resolved = getResolvedTheme(theme)
   document.documentElement.classList.toggle('dark', resolved === 'dark')
 }
 
-// --- tiny external store so all consumers stay in sync ---
-let currentTheme: Theme = getStoredTheme()
+let currentTheme: Theme = typeof window === 'undefined' ? 'system' : getStoredTheme()
 const listeners = new Set<() => void>()
 
 function emit() {
-  listeners.forEach((l) => l())
+  listeners.forEach((listener) => listener())
 }
 
 function subscribe(listener: () => void) {
@@ -45,25 +51,28 @@ function getSnapshot(): Theme {
   return currentTheme
 }
 
-// Apply on module load so there's no flash of wrong theme
-applyTheme(currentTheme)
-
-// Listen for system preference changes
-if (typeof window !== 'undefined') {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (currentTheme === 'system') {
-      applyTheme('system')
-      emit()
-    }
-  })
-}
-
 export function useTheme() {
-  const theme = useSyncExternalStore(subscribe, getSnapshot)
+  const theme = useSyncExternalStore<Theme>(subscribe, getSnapshot, () => 'system')
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia(MEDIA_QUERY)
+    const handleChange = () => {
+      if (currentTheme === 'system') {
+        applyTheme('system')
+        emit()
+      }
+    }
+
+    applyTheme(currentTheme)
+    media.addEventListener('change', handleChange)
+    return () => media.removeEventListener('change', handleChange)
+  }, [])
 
   const setTheme = useCallback((next: Theme) => {
     currentTheme = next
