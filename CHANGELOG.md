@@ -1,3 +1,10 @@
+# [1.48.0](https://github.com/reparteix/reparteix/compare/v1.47.1...v1.48.0) (2026-04-24)
+
+
+### Features
+
+* show activity origin in history UI ([7c072c1](https://github.com/reparteix/reparteix/commit/7c072c1e8595eb5e529fdb6504a358ccedecba58))
+
 ## [1.47.1](https://github.com/reparteix/reparteix/compare/v1.47.0...v1.47.1) (2026-04-24)
 
 
