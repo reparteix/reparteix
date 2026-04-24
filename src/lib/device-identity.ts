@@ -17,7 +17,7 @@ function generateDeviceId(): string {
   return crypto.randomUUID()
 }
 
-function getShortDeviceSuffix(deviceId: string): string {
+export function getShortDeviceSuffix(deviceId: string): string {
   return deviceId.replace(/-/g, '').slice(0, 4).toLowerCase()
 }
 

@@ -1,6 +1,8 @@
 import type { ActivityEntry, Group } from '@/domain'
+import { getDefaultDeviceLabel, getShortDeviceSuffix } from '@/lib/device-identity'
 
 type Snapshot = Record<string, unknown>
+type ActivityMeta = Record<string, unknown>
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -128,4 +130,52 @@ export function formatActivityTimestamp(at: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function readMetaString(meta: unknown, key: string): string | null {
+  if (!meta || typeof meta !== 'object') return null
+  const value = (meta as ActivityMeta)[key]
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+export interface ActivityOriginSummary {
+  label: string
+  detail: string | null
+  isLocal: boolean
+  isResolved: boolean
+}
+
+export function getActivityOriginSummary(entry: ActivityEntry, localDeviceId?: string): ActivityOriginSummary {
+  const actor = typeof entry.actor === 'string' && entry.actor.trim() && entry.actor.trim() !== 'local'
+    ? entry.actor.trim()
+    : null
+  const deviceId = readMetaString(entry.meta, 'deviceId')
+  const deviceLabel = readMetaString(entry.meta, 'deviceLabel')
+  const fallbackDeviceLabel = deviceId ? getDefaultDeviceLabel(deviceId) : null
+  const resolvedLabel = actor ?? deviceLabel ?? fallbackDeviceLabel
+
+  if (localDeviceId && deviceId === localDeviceId) {
+    return {
+      label: 'Aquest dispositiu',
+      detail: resolvedLabel && resolvedLabel !== 'Aquest dispositiu' ? resolvedLabel : null,
+      isLocal: true,
+      isResolved: true,
+    }
+  }
+
+  if (resolvedLabel) {
+    return {
+      label: resolvedLabel,
+      detail: deviceId ? `id ${getShortDeviceSuffix(deviceId)}` : null,
+      isLocal: false,
+      isResolved: true,
+    }
+  }
+
+  return {
+    label: 'Origen no resolt',
+    detail: null,
+    isLocal: false,
+    isResolved: false,
+  }
 }
