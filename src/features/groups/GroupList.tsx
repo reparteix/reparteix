@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Users, ChevronRight, Upload, Archive, ChevronDown, Settings, MoreHorizontal } from 'lucide-react'
+import { Plus, Trash2, Users, Upload, Archive, ChevronDown, Settings, MoreHorizontal } from 'lucide-react'
 import { ONBOARDING_COMPLETED_KEY } from './OnboardingWizard'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -136,17 +136,16 @@ export function GroupList() {
               {group.members.filter((m) => !m.deleted).length} membres
             </p>
           </div>
-          <div className="shrink-0 flex flex-col items-end gap-1 text-right">
+          <div className="w-20 shrink-0 self-center text-right">
             {total > 0 && (
-              <span className="text-xs text-muted-foreground max-w-[88px] break-words">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {total.toFixed(2)}&nbsp;{currencySymbol}
               </span>
             )}
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
 
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 self-center">
           <Button
             variant="ghost"
             size="icon"
