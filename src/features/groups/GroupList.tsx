@@ -20,12 +20,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { getLocalDeviceIdentity, needsDeviceLabelSetup } from '@/lib/device-identity'
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-}
-
 export function GroupList() {
   const { groups, groupTotals, loadGroups, addGroup, deleteGroup, importGroup } = useStore()
   const hasPendingDeviceSetup = needsDeviceLabelSetup(getLocalDeviceIdentity())
@@ -104,7 +98,6 @@ export function GroupList() {
 
   const renderGroupCard = (group: (typeof groups)[number]) => {
     const total = groupTotals[group.id] ?? 0
-    const currencySymbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
     return (
     <Card
@@ -139,7 +132,7 @@ export function GroupList() {
           <div className="w-20 shrink-0 self-center text-right">
             {total > 0 && (
               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {total.toFixed(2)}&nbsp;{currencySymbol}
+                {total.toFixed(2)}&nbsp;{group.currency}
               </span>
             )}
           </div>
