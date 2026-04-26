@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Users, ChevronRight, Upload, Archive, ChevronDown, Settings } from 'lucide-react'
+import { Plus, Trash2, Users, Upload, Archive, ChevronDown, Settings, MoreHorizontal } from 'lucide-react'
 import { ONBOARDING_COMPLETED_KEY } from './OnboardingWizard'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +28,7 @@ export function GroupList() {
   const [importStatus, setImportStatus] = useState<'idle' | 'ok' | 'error'>('idle')
   const [importError, setImportError] = useState('')
   const [showArchived, setShowArchived] = useState(false)
+  const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null)
   const [onboardingCompleted] = useState(() => {
     try {
       return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true'
@@ -49,6 +49,12 @@ export function GroupList() {
       createGroupInputRef.current?.focus()
     }
   }, [showForm])
+
+  useEffect(() => {
+    const handleDocumentClick = () => setOpenGroupMenuId(null)
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [])
 
   const handleCancel = () => {
     setShowForm(false)
@@ -90,12 +96,15 @@ export function GroupList() {
   const archivedGroups = groups.filter((g) => g.archived)
   const hasGroups = groups.length > 0
 
-  const renderGroupCard = (group: (typeof groups)[number]) => (
+  const renderGroupCard = (group: (typeof groups)[number]) => {
+    const total = groupTotals[group.id] ?? 0
+
+    return (
     <Card
       key={group.id}
       className={`hover:shadow-md transition-shadow duration-150 ${group.archived ? 'opacity-70' : ''}`}
     >
-      <div className="flex items-stretch p-4 gap-2">
+      <div className="flex items-start gap-3 p-4">
         <button
           onClick={() => navigate(`/group/${group.id}`)}
           className="min-w-0 flex-1 text-left flex items-center gap-3"
@@ -120,49 +129,101 @@ export function GroupList() {
               {group.members.filter((m) => !m.deleted).length} membres
             </p>
           </div>
-          <div className="shrink-0 flex flex-col items-end gap-1 text-right">
-            <Badge variant="secondary">{group.currency}</Badge>
-            {(groupTotals[group.id] ?? 0) > 0 && (
-              <span className="text-xs text-muted-foreground max-w-[88px] break-words">
-                {groupTotals[group.id].toFixed(2)}&nbsp;{group.currency}
+          <div className="w-20 shrink-0 self-center text-right">
+            {total > 0 && (
+              <span className="inline-flex items-baseline justify-end gap-1 whitespace-nowrap text-sm">
+                <span className="font-medium text-foreground/90">
+                  {total.toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {group.currency}
+                </span>
               </span>
             )}
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
-        <Separator orientation="vertical" className="h-auto self-stretch" />
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Eliminar grup"
-              className="shrink-0 self-center text-muted-foreground hover:text-destructive"
+
+        <div className="relative shrink-0 self-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Més accions del grup"
+            aria-haspopup="menu"
+            aria-expanded={openGroupMenuId === group.id}
+            aria-controls={`group-actions-${group.id}`}
+            className="text-muted-foreground"
+            onClick={(e) => {
+              e.stopPropagation()
+              setOpenGroupMenuId((current) => (current === group.id ? null : group.id))
+            }}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+
+          {openGroupMenuId === group.id && (
+            <div
+              id={`group-actions-${group.id}`}
+              role="menu"
+              aria-label={`Accions per a ${group.name}`}
+              className="absolute right-0 top-10 z-20 min-w-[11rem] rounded-xl border bg-popover p-1 shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation()
+                  setOpenGroupMenuId(null)
+                }
+              }}
             >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
-              <AlertDialogDescription>
-                Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteGroup(group.id)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpenGroupMenuId(null)
+                  navigate(`/group/${group.id}/settings`)
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
               >
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <Settings className="h-4 w-4" />
+                Configuració
+              </button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => setOpenGroupMenuId(null)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-muted"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteGroup(group.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
-  )
+    )
+  }
 
   return (
     <div className="min-h-screen bg-muted/50">
