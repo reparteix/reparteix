@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { getLocalDeviceIdentity, needsDeviceLabelSetup } from '@/lib/device-identity'
 
@@ -29,6 +28,7 @@ export function GroupList() {
   const [importError, setImportError] = useState('')
   const [showArchived, setShowArchived] = useState(false)
   const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null)
+  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
   const [onboardingCompleted] = useState(() => {
     try {
       return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true'
@@ -95,6 +95,7 @@ export function GroupList() {
   const activeGroups = groups.filter((g) => !g.archived)
   const archivedGroups = groups.filter((g) => g.archived)
   const hasGroups = groups.length > 0
+  const groupPendingDeletion = deleteGroupId ? groups.find((group) => group.id === deleteGroupId) : null
 
   const renderGroupCard = (group: (typeof groups)[number]) => {
     const total = groupTotals[group.id] ?? 0
@@ -187,36 +188,18 @@ export function GroupList() {
                 Configuració
               </button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => setOpenGroupMenuId(null)}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-muted"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Eliminar
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Estàs segur que vols eliminar el grup &quot;{group.name}&quot;? Aquesta acció no es pot desfer.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteGroup(group.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Eliminar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpenGroupMenuId(null)
+                  setDeleteGroupId(group.id)
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-muted"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar
+              </button>
             </div>
           )}
         </div>
@@ -227,6 +210,32 @@ export function GroupList() {
 
   return (
     <div className="min-h-screen bg-muted/50">
+      <AlertDialog open={deleteGroupId !== null} onOpenChange={(open) => !open && setDeleteGroupId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar grup</AlertDialogTitle>
+            <AlertDialogDescription>
+              {groupPendingDeletion
+                ? `Estàs segur que vols eliminar el grup "${groupPendingDeletion.name}"? Aquesta acció no es pot desfer.`
+                : 'Estàs segur que vols eliminar aquest grup? Aquesta acció no es pot desfer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deleteGroupId) return
+                await deleteGroup(deleteGroupId)
+                setDeleteGroupId(null)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Hero / Header */}
       <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-indigo-800 dark:to-indigo-950 text-white px-4 pt-10 pb-12">
         <div className="max-w-2xl mx-auto">
