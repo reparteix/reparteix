@@ -1,3 +1,26 @@
+## [1.49.2](https://github.com/reparteix/reparteix/compare/v1.49.1...v1.49.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* restore group deletion from settings ([#175](https://github.com/reparteix/reparteix/issues/175)) ([c90531a](https://github.com/reparteix/reparteix/commit/c90531ab1629fb49d666e0c1f63f58fbf74db339))
+
+## [1.49.1](https://github.com/reparteix/reparteix/compare/v1.49.0...v1.49.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* avoid echoing newly imported sync data ([c51dafc](https://github.com/reparteix/reparteix/commit/c51dafc78622e72f2c6dce93c883f74593fe55be))
+* complete sync when no-data races with ack ([c95d242](https://github.com/reparteix/reparteix/commit/c95d2423734686b728cbf536bac330167104b46b))
+* treat completed sync disconnect as success ([b91f03d](https://github.com/reparteix/reparteix/commit/b91f03ddac85c0a6f9f8a1a1971e5197bdcb1d6d))
+
+# [1.49.0](https://github.com/reparteix/reparteix/compare/v1.48.0...v1.49.0) (2026-04-26)
+
+
+### Features
+
+* refine group list actions ([fe8f8a9](https://github.com/reparteix/reparteix/commit/fe8f8a98eed7f457a0e70d3b0fb4d86e560cb47d))
+
 # [1.48.0](https://github.com/reparteix/reparteix/compare/v1.47.1...v1.48.0) (2026-04-24)
 
 

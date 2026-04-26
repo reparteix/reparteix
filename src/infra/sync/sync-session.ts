@@ -126,7 +126,13 @@ export function createSyncSession(
   const MAX_INCOMING_TRANSFER_AGE_MS = 60_000
   let outgoingTransferInFlight = false
   let incomingTransferInFlight = false
-  const peerSyncState = new Map<string, { localDataSent: boolean; localDataApplied: boolean }>()
+  let hadLocalGroupAtSessionStart: boolean | null = null
+  const peerSyncState = new Map<string, {
+    localDataSent: boolean
+    localDataApplied: boolean
+    remoteAppliedLocalData: boolean
+    remoteHadNoData: boolean
+  }>()
   const incomingPayloadChunks = new Map<string, {
     remotePeerId: string
     groupId: string
@@ -159,7 +165,12 @@ export function createSyncSession(
     const existing = peerSyncState.get(remotePeerId)
     if (existing) return existing
 
-    const created = { localDataSent: false, localDataApplied: false }
+    const created = {
+      localDataSent: false,
+      localDataApplied: false,
+      remoteAppliedLocalData: false,
+      remoteHadNoData: false,
+    }
     peerSyncState.set(remotePeerId, created)
     return created
   }
@@ -384,6 +395,11 @@ export function createSyncSession(
     update({ message: 'Preparant dades per enviar…' })
 
     try {
+      if (hadLocalGroupAtSessionStart === false) {
+        conn.send(createSyncAckMessage(groupId, 'no-data'))
+        return
+      }
+
       // Build envelope from local data
       const envelope = await buildEnvelope()
       if (!envelope) {
@@ -452,11 +468,17 @@ export function createSyncSession(
 
     if (message.status === 'ok') {
       if (status.state === 'syncing') {
-        if (syncState?.localDataApplied) {
+        if (syncState) {
+          syncState.remoteAppliedLocalData = true
+        }
+
+        if (syncState?.localDataApplied || syncState?.remoteHadNoData) {
           update({
             state: 'completed',
             lastSuccessAt: new Date().toISOString(),
-            message: 'Sincronització completada. Els dos dispositius ja estan al dia.',
+            message: syncState?.localDataApplied
+              ? 'Sincronització completada. Els dos dispositius ja estan al dia.'
+              : 'Sincronització completada. L’altre dispositiu ha aplicat les dades i no tenia canvis addicionals per enviar.',
           })
           return
         }
@@ -467,7 +489,11 @@ export function createSyncSession(
       }
     } else if (message.status === 'no-data') {
       if (status.state === 'syncing') {
-        if (syncState?.localDataApplied || syncState?.localDataSent) {
+        if (syncState) {
+          syncState.remoteHadNoData = true
+        }
+
+        if (syncState?.localDataApplied || syncState?.localDataSent || syncState?.remoteAppliedLocalData) {
           update({
             state: 'completed',
             lastSuccessAt: new Date().toISOString(),
@@ -498,6 +524,7 @@ export function createSyncSession(
   }
 
   function handlePeerDisconnected(remotePeerId: string) {
+    const syncState = peerSyncState.get(remotePeerId)
     peerSyncState.delete(remotePeerId)
     removeRemotePeer(remotePeerId)
     for (const [key, transfer] of incomingPayloadChunks.entries()) {
@@ -509,6 +536,23 @@ export function createSyncSession(
       const wasTransferring = outgoingTransferInFlight || incomingTransferInFlight
       outgoingTransferInFlight = false
       incomingTransferInFlight = false
+
+      const canTreatAsCompleted = !wasTransferring && (
+        syncState?.localDataApplied ||
+        syncState?.remoteAppliedLocalData
+      )
+
+      if (canTreatAsCompleted) {
+        update({
+          state: 'completed',
+          lastSuccessAt: new Date().toISOString(),
+          message: syncState?.localDataApplied
+            ? 'Sincronització completada. L’altre dispositiu ha tancat la sessió després d’aplicar els canvis.'
+            : 'Sincronització completada. L’altre dispositiu ha rebut i aplicat les dades abans de tancar la sessió.',
+        })
+        return
+      }
+
       update({
         state: 'error',
         error: wasTransferring
@@ -528,6 +572,14 @@ export function createSyncSession(
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────
+
+  async function loadLocalGroupExists(): Promise<boolean> {
+    try {
+      return (await reparteix.getGroup(groupId)) !== null
+    } catch {
+      return false
+    }
+  }
 
   async function buildEnvelope(): Promise<SyncEnvelopeV1 | null> {
     try {
@@ -586,6 +638,7 @@ export function createSyncSession(
       })
 
       try {
+        hadLocalGroupAtSessionStart = await loadLocalGroupExists()
         const roomPeerId = await buildGroupPeerId()
         const peerId = await peerManager.init(roomPeerId)
         update({
@@ -611,6 +664,7 @@ export function createSyncSession(
       })
 
       try {
+        hadLocalGroupAtSessionStart = await loadLocalGroupExists()
         await peerManager.init()
         update({
           state: 'connecting',
@@ -641,6 +695,7 @@ export function createSyncSession(
       })
 
       try {
+        hadLocalGroupAtSessionStart = await loadLocalGroupExists()
         const peerId = await peerManager.init(roomPeerId)
         update({
           state: 'waiting-for-peer',
@@ -658,6 +713,7 @@ export function createSyncSession(
       }
 
       try {
+        hadLocalGroupAtSessionStart = await loadLocalGroupExists()
         await peerManager.init()
         update({
           state: 'connecting',
@@ -674,6 +730,7 @@ export function createSyncSession(
 
     /** Clean up all resources. */
     destroy() {
+      hadLocalGroupAtSessionStart = null
       peerSyncState.clear()
       peerManager.destroy()
       listeners.clear()
