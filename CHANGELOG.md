@@ -1,3 +1,10 @@
+# [1.51.0](https://github.com/reparteix/reparteix/compare/v1.50.0...v1.51.0) (2026-04-27)
+
+
+### Features
+
+* localize numeric formatting ([#177](https://github.com/reparteix/reparteix/issues/177)) ([7b229ae](https://github.com/reparteix/reparteix/commit/7b229ae3c88c1b0fd8bf26feac75682b4487cc56))
+
 # [1.50.0](https://github.com/reparteix/reparteix/compare/v1.49.2...v1.50.0) (2026-04-26)
 
 
