@@ -1,3 +1,10 @@
+## [1.51.1](https://github.com/reparteix/reparteix/compare/v1.51.0...v1.51.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* allow deleting expenses ([#179](https://github.com/reparteix/reparteix/issues/179)) ([535872b](https://github.com/reparteix/reparteix/commit/535872bd78340b354341bd0ed88b8a41d5c26cea))
+
 # [1.51.0](https://github.com/reparteix/reparteix/compare/v1.50.0...v1.51.0) (2026-04-27)
 
 
