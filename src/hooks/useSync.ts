@@ -23,6 +23,9 @@ export interface UseSyncReturn {
   remotePeerIds: string[]
   /** Human-readable status message */
   message: string
+  transferDirection: 'sending' | 'receiving' | null
+  transferCompletedChunks: number
+  transferTotalChunks: number
   /** Error message if state is 'error' */
   error: string | null
   /** Sync report with details of what changed */
@@ -62,6 +65,9 @@ export function useSync({
     lastAttemptAt: null,
     lastSuccessAt: null,
     message: '',
+    transferDirection: null,
+    transferCompletedChunks: 0,
+    transferTotalChunks: 0,
   })
 
   const sessionRef = useRef<ReturnType<typeof createSyncSession> | null>(null)
@@ -133,6 +139,9 @@ export function useSync({
       lastAttemptAt: null,
       lastSuccessAt: null,
       message: '',
+      transferDirection: null,
+      transferCompletedChunks: 0,
+      transferTotalChunks: 0,
     })
   }, [groupId, passphrase])
 
@@ -183,6 +192,9 @@ export function useSync({
     remotePeerId: status.remotePeerId,
     remotePeerIds: status.remotePeerIds,
     message: status.message,
+    transferDirection: status.transferDirection,
+    transferCompletedChunks: status.transferCompletedChunks,
+    transferTotalChunks: status.transferTotalChunks,
     error: status.error,
     report: status.report,
     lastAttemptAt: status.lastAttemptAt,

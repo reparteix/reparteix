@@ -396,6 +396,10 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   const isEmbeddedWaiting = embedded && isWaitingForPeer
   const hideSetupWhileWaiting = isWaitingForPeer
   const syncUrl = canStart ? buildSyncUrl(groupId, passphrase) : ''
+  const transferProgressPercent = sync.transferTotalChunks > 0
+    ? Math.max(0, Math.min(100, (sync.transferCompletedChunks / sync.transferTotalChunks) * 100))
+    : 0
+  const showTransferProgress = sync.transferDirection !== null && sync.transferTotalChunks > 0
   const [qrMarkup, setQrMarkup] = useState('')
 
   useEffect(() => {
@@ -594,6 +598,20 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
             {/* Status message */}
             <div className="space-y-3">
               {!isWaitingForPeer && <p className="text-sm font-medium leading-snug">{sync.message}</p>}
+              {!isWaitingForPeer && showTransferProgress && (
+                <div className="space-y-1.5">
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                      style={{ width: `${transferProgressPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{sync.transferDirection === 'sending' ? 'Enviant dades' : 'Rebent dades'}</span>
+                    <span>{Math.round(transferProgressPercent)}%</span>
+                  </div>
+                </div>
+              )}
               {!isWaitingForPeer && <SyncStepList state={sync.state} compact={embedded} />}
               {sync.error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
