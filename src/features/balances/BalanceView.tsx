@@ -11,13 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { formatMoney } from '@/lib/number-format'
 import { shareText } from '@/lib/web-share'
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-}
 
 interface BalanceViewProps {
   group: Group
@@ -30,7 +25,6 @@ export function BalanceView({ group }: BalanceViewProps) {
 
   const activeMembers = group.members.filter((m) => !m.deleted)
   const memberIds = activeMembers.map((m) => m.id)
-  const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
   const balances = calculateBalances(memberIds, expenses, payments)
   const netting = calculateNetting(balances)
@@ -70,7 +64,7 @@ export function BalanceView({ group }: BalanceViewProps) {
   const buildShareMessage = (fromId: string, toId: string, amount: number) => {
     const debtor = getMemberName(fromId)
     const creditor = getMemberName(toId)
-    return `Hola ${debtor}! Et toca pagar ${amount.toFixed(2)} ${symbol} a ${creditor} del grup "${group.name}" a Reparteix.`
+    return `Hola ${debtor}! Et toca pagar ${formatMoney(amount, group.currency)} a ${creditor} del grup "${group.name}" a Reparteix.`
   }
 
   const buildSettlementSummaryMessage = () => {
@@ -81,7 +75,7 @@ export function BalanceView({ group }: BalanceViewProps) {
     const lines = netting.minimized.map((settlement) => {
       const debtor = getMemberName(settlement.fromId)
       const creditor = getMemberName(settlement.toId)
-      return `• ${debtor} ha de pagar ${settlement.amount.toFixed(2)} ${symbol} a ${creditor}`
+      return `• ${debtor} ha de pagar ${formatMoney(settlement.amount, group.currency)} a ${creditor}`
     })
 
     return [
@@ -89,7 +83,7 @@ export function BalanceView({ group }: BalanceViewProps) {
       '',
       ...lines,
       '',
-      `Total a liquidar: ${totalToSettle.toFixed(2)} ${symbol}`,
+      `Total a liquidar: ${formatMoney(totalToSettle, group.currency)}`,
     ].join('\n')
   }
 
@@ -119,7 +113,7 @@ export function BalanceView({ group }: BalanceViewProps) {
             Total despeses
           </CardDescription>
           <CardTitle className="text-2xl text-indigo-800 dark:text-indigo-200">
-            {totalExpenses.toFixed(2)} {symbol}
+            {formatMoney(totalExpenses, group.currency)}
           </CardTitle>
         </CardHeader>
       </Card>
@@ -152,7 +146,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                     )}
                   >
                     {balance.total > 0 ? '+' : ''}
-                    {balance.total.toFixed(2)} {symbol}
+                    {formatMoney(balance.total, group.currency)}
                   </span>
                 </CardContent>
               </Card>
@@ -201,7 +195,7 @@ export function BalanceView({ group }: BalanceViewProps) {
                 </div>
                 <div className="rounded-xl bg-muted/40 px-3 py-3">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total</p>
-                  <p className="mt-1 text-xl font-semibold">{totalToSettle.toFixed(2)} {symbol}</p>
+                  <p className="mt-1 text-xl font-semibold">{formatMoney(totalToSettle, group.currency)}</p>
                 </div>
               </div>
 
@@ -243,12 +237,12 @@ export function BalanceView({ group }: BalanceViewProps) {
                       <span className="font-semibold">{getMemberName(s.toId)}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {getMemberName(s.fromId)} hauria de pagar <span className="font-medium text-foreground">{s.amount.toFixed(2)} {symbol}</span> a {getMemberName(s.toId)}.
+                      {getMemberName(s.fromId)} hauria de pagar <span className="font-medium text-foreground">{formatMoney(s.amount, group.currency)}</span> a {getMemberName(s.toId)}.
                     </p>
                   </div>
 
                   <Badge variant="outline" className="w-fit border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 font-semibold text-sm px-3 py-1">
-                    {s.amount.toFixed(2)} {symbol}
+                    {formatMoney(s.amount, group.currency)}
                   </Badge>
                 </div>
 

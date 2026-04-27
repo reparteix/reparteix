@@ -25,14 +25,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
-import { reparteix } from '@/sdk'
 import { ItemActivityDialog } from '@/features/groups/ItemActivityDialog'
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-}
+import { formatDecimalInput, formatMoney, parseLocaleNumber } from '@/lib/number-format'
+import { reparteix } from '@/sdk'
 
 interface SettlementListProps {
   group: Group
@@ -48,7 +43,6 @@ export function SettlementList({ group }: SettlementListProps) {
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
 
   const activeMembers = group.members.filter((m) => !m.deleted)
-  const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
   const getMemberName = (id: string) =>
     group.members.find((m) => m.id === id)?.name ?? 'Desconegut'
@@ -76,7 +70,7 @@ export function SettlementList({ group }: SettlementListProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fromId || !toId || !amount || fromId === toId) return
-    const amountNum = parseFloat(amount)
+    const amountNum = parseLocaleNumber(amount)
     if (isNaN(amountNum) || amountNum <= 0) return
 
     if (editingPaymentId) {
@@ -116,7 +110,7 @@ export function SettlementList({ group }: SettlementListProps) {
     setEditingPaymentId(payment.id)
     setFromId(payment.fromId)
     setToId(payment.toId)
-    setAmount(payment.amount.toString())
+    setAmount(formatDecimalInput(payment.amount))
     setShowForm(true)
   }
 
@@ -179,7 +173,8 @@ export function SettlementList({ group }: SettlementListProps) {
                   </div>
                   <div className="flex gap-2">
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Import"
@@ -189,7 +184,7 @@ export function SettlementList({ group }: SettlementListProps) {
                       required
                     />
                     <span className="flex items-center text-muted-foreground">
-                      {symbol}
+                      {group.currency}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -253,7 +248,7 @@ export function SettlementList({ group }: SettlementListProps) {
                   </div>
                   <div className="flex items-center gap-3 ml-4">
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {payment.amount.toFixed(2)} {symbol}
+                      {formatMoney(payment.amount, group.currency)}
                     </span>
                     {!group.archived && (
                       <Button

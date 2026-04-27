@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { formatMoney, parseLocaleNumber } from '@/lib/number-format'
 
 type Step = 1 | 2 | 3
 
@@ -157,7 +158,7 @@ export function OnboardingWizard() {
     e.preventDefault()
     if (!draft.groupId || members.length < 2) return
 
-    const amount = parseFloat(draft.expenseAmount)
+    const amount = parseLocaleNumber(draft.expenseAmount)
     const payer = members[Number(draft.payerIndex)]
     if (!draft.expenseDescription.trim() || !payer || Number.isNaN(amount) || amount <= 0) return
 
@@ -182,7 +183,7 @@ export function OnboardingWizard() {
 
   const cleanMemberNames = draft.memberNames.map((name) => name.trim()).filter(Boolean)
   const canContinueMembers = cleanMemberNames.length >= 2
-  const canContinueExpense = !!draft.expenseDescription.trim() && Number(draft.expenseAmount) > 0 && members.length >= 2
+  const canContinueExpense = !!draft.expenseDescription.trim() && parseLocaleNumber(draft.expenseAmount) > 0 && members.length >= 2
 
   if (!isReady) {
     return <div className="max-w-2xl mx-auto p-4">Carregant…</div>
@@ -346,7 +347,8 @@ export function OnboardingWizard() {
                   <Label htmlFor="expense-amount">Import</Label>
                   <Input
                     id="expense-amount"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     min="0.01"
                     step="0.01"
                     value={draft.expenseAmount}
@@ -407,7 +409,7 @@ export function OnboardingWizard() {
                 </div>
                 <div className="rounded-2xl bg-muted/40 p-3">
                   <div className="text-muted-foreground">Primera despesa</div>
-                  <div className="font-medium">{draft.expenseDescription.trim() || 'Sense definir'}{draft.expenseAmount ? ` · ${draft.expenseAmount} €` : ''}</div>
+                  <div className="font-medium">{draft.expenseDescription.trim() || 'Sense definir'}{draft.expenseAmount && !Number.isNaN(parseLocaleNumber(draft.expenseAmount)) ? ` · ${formatMoney(parseLocaleNumber(draft.expenseAmount))}` : ''}</div>
                 </div>
               </div>
               <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-100">

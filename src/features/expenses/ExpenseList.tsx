@@ -29,12 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { reparteix } from '@/sdk'
 import { ItemActivityDialog } from '@/features/groups/ItemActivityDialog'
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-}
+import { formatDecimalInput, formatMoney, formatPercent, parseLocaleNumber } from '@/lib/number-format'
 
 const MAX_RECEIPT_FILE_SIZE_MB = 12
 const MAX_RECEIPT_DIMENSION = 1600
@@ -188,7 +183,6 @@ export function ExpenseList({ group }: ExpenseListProps) {
   }, [group.id, expenses])
 
   const activeMembers = group.members.filter((m) => !m.deleted)
-  const symbol = CURRENCY_SYMBOLS[group.currency] ?? group.currency
 
   const memberIds = activeMembers.map((m) => m.id)
   const balances = calculateBalances(memberIds, expenses, payments)
@@ -225,13 +219,13 @@ export function ExpenseList({ group }: ExpenseListProps) {
     splitProportions:
       splitType === 'proportional'
         ? Object.fromEntries(
-            splitAmong.map((id) => [id, parseFloat(proportions[id] ?? '1') || 1]),
+            splitAmong.map((id) => [id, parseLocaleNumber(proportions[id] ?? '1') || 1]),
           )
         : undefined,
     splitFixedAmounts:
       splitType === 'fixed'
         ? Object.fromEntries(
-            splitAmong.map((id) => [id, parseFloat(fixedAmounts[id] ?? '0') || 0]),
+            splitAmong.map((id) => [id, parseLocaleNumber(fixedAmounts[id] ?? '0') || 0]),
           )
         : undefined,
   })
@@ -245,7 +239,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const fillExpenseForm = (expense: Expense, options?: { duplicate?: boolean }) => {
     setEditingExpenseId(options?.duplicate ? null : expense.id)
     setDescription(expense.description)
-    setAmount(expense.amount.toString())
+    setAmount(formatDecimalInput(expense.amount))
     setPayerId(expense.payerId)
     setSplitAmong(expense.splitAmong)
     setSplitType(expense.splitType ?? 'equal')
@@ -256,7 +250,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
     )
     setFixedAmounts(
       Object.fromEntries(
-        expense.splitAmong.map((id) => [id, String(expense.splitFixedAmounts?.[id] ?? '')]),
+        expense.splitAmong.map((id) => [id, formatDecimalInput(expense.splitFixedAmounts?.[id] ?? Number.NaN)]),
       ),
     )
     setExpenseDate(options?.duplicate ? getTodayLocalDate() : expense.date)
@@ -279,7 +273,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
     if (!description.trim() || !amount || !payerId || splitAmong.length === 0) return
     if (validationError) return
 
-    const numAmount = parseFloat(amount)
+    const numAmount = parseLocaleNumber(amount)
     const splitFields = buildCurrentSplitFields()
     const baseExpense = {
       groupId: group.id,
@@ -372,19 +366,19 @@ export function ExpenseList({ group }: ExpenseListProps) {
 
   let validationError: string | null = null
   if (splitType === 'fixed' && splitAmong.length > 0 && amount) {
-    const total = parseFloat(amount) || 0
+    const total = parseLocaleNumber(amount) || 0
     const sum = splitAmong.reduce(
-      (s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0),
+      (s, id) => s + (parseLocaleNumber(fixedAmounts[id] ?? '0') || 0),
       0,
     )
     if (sum > total + 0.01) {
-      validationError = `Els imports fixos (${sum.toFixed(2)} ${symbol}) superen el total (${total.toFixed(2)} ${symbol}).`
+      validationError = `Els imports fixos (${formatMoney(sum, group.currency)}) superen el total (${formatMoney(total, group.currency)}).`
     } else if (Math.abs(sum - total) > 0.01) {
-      validationError = `Els imports fixos han de sumar el total (${total.toFixed(2)} ${symbol}). Ara sumen ${sum.toFixed(2)} ${symbol}.`
+      validationError = `Els imports fixos han de sumar el total (${formatMoney(total, group.currency)}). Ara sumen ${formatMoney(sum, group.currency)}.`
     }
   }
 
-  const numAmountPreview = parseFloat(amount)
+  const numAmountPreview = parseLocaleNumber(amount)
   const previewShares: Record<string, number> | null =
     numAmountPreview > 0 && splitAmong.length > 0
       ? computeExpenseShares({
@@ -414,8 +408,8 @@ export function ExpenseList({ group }: ExpenseListProps) {
         expense.splitAmong
           .map((id) => {
             const w = expense.splitProportions![id] ?? 1
-            const pct = total > 0 ? ((w / total) * 100).toFixed(0) : '0'
-            return `${getMemberName(id)} (${pct}%)`
+            const pct = total > 0 ? formatPercent(w / total, 0) : formatPercent(0, 0)
+            return `${getMemberName(id)} (${pct})`
           })
           .join(', ')
       )
@@ -424,7 +418,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
       return (
         'Imports fixos: ' +
         expense.splitAmong
-          .map((id) => `${getMemberName(id)} (${(expense.splitFixedAmounts![id] ?? 0).toFixed(2)} ${symbol})`)
+          .map((id) => `${getMemberName(id)} (${formatMoney(expense.splitFixedAmounts![id] ?? 0, group.currency)})`)
           .join(', ')
       )
     }
@@ -544,7 +538,8 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px]">
                     <div className="flex gap-2">
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="Import"
@@ -554,7 +549,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                         required
                       />
                       <span className="flex items-center text-muted-foreground">
-                        {symbol}
+                        {group.currency}
                       </span>
                     </div>
                     <div className="space-y-1">
@@ -636,7 +631,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   </div>
                   {splitType === 'proportional' && splitAmong.length > 0 && (() => {
                     const totalWeight = splitAmong.reduce(
-                      (s, id) => s + (parseFloat(proportions[id] ?? '1') || 1),
+                      (s, id) => s + (parseLocaleNumber(proportions[id] ?? '1') || 1),
                       0,
                     )
                     return (
@@ -645,13 +640,14 @@ export function ExpenseList({ group }: ExpenseListProps) {
                           Proporcions (parts relatives)
                         </Label>
                         {splitAmong.map((id) => {
-                          const w = parseFloat(proportions[id] ?? '1') || 1
-                          const pct = totalWeight > 0 ? ((w / totalWeight) * 100).toFixed(1) : '0.0'
+                          const w = parseLocaleNumber(proportions[id] ?? '1') || 1
+                          const pct = totalWeight > 0 ? formatPercent(w / totalWeight, 1) : formatPercent(0, 1)
                           return (
                             <div key={id} className="flex items-center gap-2">
                               <span className="text-sm w-24 truncate">{getMemberName(id)}</span>
                               <Input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 min="0.01"
                                 step="0.01"
                                 value={proportions[id] ?? '1'}
@@ -664,7 +660,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                                 className="w-24"
                               />
                               <span className="text-xs text-muted-foreground w-12 text-right tabular-nums">
-                                {pct}%
+                                {pct}
                               </span>
                             </div>
                           )
@@ -676,26 +672,27 @@ export function ExpenseList({ group }: ExpenseListProps) {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm text-muted-foreground">
-                          Imports fixos ({symbol})
+                          Imports fixos ({group.currency})
                         </Label>
                         <span className={cn(
                           'text-xs font-medium',
-                          amount && Math.abs(splitAmong.reduce((s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0), 0) - (parseFloat(amount) || 0)) <= 0.01
+                          amount && Math.abs(splitAmong.reduce((s, id) => s + (parseLocaleNumber(fixedAmounts[id] ?? '0') || 0), 0) - (parseLocaleNumber(amount) || 0)) <= 0.01
                             ? 'text-success'
                             : 'text-destructive',
                         )}>
-                          {splitAmong.reduce((s, id) => s + (parseFloat(fixedAmounts[id] ?? '0') || 0), 0).toFixed(2)} / {(parseFloat(amount) || 0).toFixed(2)} {symbol}
+                          {formatMoney(splitAmong.reduce((s, id) => s + (parseLocaleNumber(fixedAmounts[id] ?? '0') || 0), 0), group.currency)} / {formatMoney(parseLocaleNumber(amount) || 0, group.currency)}
                         </span>
                       </div>
                       {splitAmong.map((id) => (
                         <div key={id} className="flex items-center gap-2">
                           <span className="text-sm w-24 truncate">{getMemberName(id)}</span>
                           <Input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             min="0"
                             step="0.01"
                             value={fixedAmounts[id] ?? ''}
-                            placeholder="0.00"
+                            placeholder="0,00"
                             onChange={(e) =>
                               setFixedAmounts((prev) => ({
                                 ...prev,
@@ -704,7 +701,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                             }
                             className="w-28"
                           />
-                          <span className="text-sm text-muted-foreground">{symbol}</span>
+                          <span className="text-sm text-muted-foreground">{group.currency}</span>
                         </div>
                       ))}
                     </div>
@@ -724,7 +721,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                             <div key={id} className="flex justify-between text-sm">
                               <span>{getMemberName(id)}</span>
                               <span className="font-medium tabular-nums">
-                                {share.toFixed(2)} {symbol}
+                                {formatMoney(share, group.currency)}
                               </span>
                             </div>
                           )
@@ -732,7 +729,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                         <div className="flex justify-between text-xs text-muted-foreground border-t pt-1 mt-1">
                           <span>Total</span>
                           <span className="tabular-nums">
-                            {Object.values(previewShares).reduce((s, v) => s + v, 0).toFixed(2)} {symbol}
+                            {formatMoney(Object.values(previewShares).reduce((s, v) => s + v, 0), group.currency)}
                           </span>
                         </div>
                       </div>
@@ -885,7 +882,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   {formatDate(date)}
                 </div>
                 <div className="text-xs font-semibold text-muted-foreground">
-                  {items.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
+                  {formatMoney(items.reduce((s, e) => s + e.amount, 0), group.currency)}
                 </div>
               </div>
               <div className="space-y-2">
@@ -924,7 +921,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
                         </div>
                         <div className="text-right ml-4 flex flex-col items-end gap-1">
                           <div className="font-semibold">
-                            {expense.amount.toFixed(2)} {symbol}
+                            {formatMoney(expense.amount, group.currency)}
                           </div>
                           <div className="flex items-center gap-1">
                             {expense.receiptImage && (
@@ -1055,7 +1052,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
             <div className="flex items-center justify-between px-3 pt-1 text-sm font-medium text-muted-foreground">
               <span>Total ({visibleExpenses.length} despeses)</span>
               <span>
-                {visibleExpenses.reduce((s, e) => s + e.amount, 0).toFixed(2)} {symbol}
+                {formatMoney(visibleExpenses.reduce((s, e) => s + e.amount, 0), group.currency)}
               </span>
             </div>
           )}
@@ -1089,7 +1086,7 @@ export function ExpenseList({ group }: ExpenseListProps) {
             <div className="absolute left-2 top-2 max-w-[70vw] rounded-lg bg-card/95 px-3 py-2 shadow">
               <p className="text-sm font-medium">{viewingReceipt.description}</p>
               <p className="text-xs text-muted-foreground">
-                {viewingReceipt.payerName} ha pagat · {viewingReceipt.amount.toFixed(2)} {symbol}
+                {viewingReceipt.payerName} ha pagat · {formatMoney(viewingReceipt.amount, group.currency)}
               </p>
             </div>
             <button

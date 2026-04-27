@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { getLocalDeviceIdentity, needsDeviceLabelSetup } from '@/lib/device-identity'
+import { formatMoney } from '@/lib/number-format'
 
 export function GroupList() {
   const { groups, groupTotals, loadGroups, addGroup, deleteGroup, importGroup } = useStore()
@@ -134,10 +135,7 @@ export function GroupList() {
             {total > 0 && (
               <span className="inline-flex items-baseline justify-end gap-1 whitespace-nowrap text-sm">
                 <span className="font-medium text-foreground/90">
-                  {total.toFixed(2)}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {group.currency}
+                  {formatMoney(total, group.currency)}
                 </span>
               </span>
             )}

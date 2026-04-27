@@ -1,19 +1,13 @@
 import type { ActivityEntry, Group } from '@/domain'
 import { getDefaultDeviceLabel, getShortDeviceSuffix } from '@/lib/device-identity'
+import { formatMoney as formatLocalizedMoney } from '@/lib/number-format'
 
 type Snapshot = Record<string, unknown>
 type ActivityMeta = Record<string, unknown>
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-}
-
 function formatMoney(value: unknown, currency = 'EUR'): string | null {
   if (typeof value !== 'number') return null
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency
-  return `${value.toFixed(2)} ${symbol}`
+  return formatLocalizedMoney(value, currency)
 }
 
 function formatValue(value: unknown, currency = 'EUR'): string | null {
