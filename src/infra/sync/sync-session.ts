@@ -710,6 +710,8 @@ export function createSyncSession(
           update({ state: 'error', error: friendly, message: `Error: ${friendly}` })
           throw err
         }
+
+        peerManager.destroy()
       }
 
       try {

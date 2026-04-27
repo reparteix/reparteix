@@ -173,6 +173,19 @@ export function createPeerManager(options: PeerManagerOptions) {
      * Resolves with the assigned peer ID.
      */
     async init(customPeerId?: string): Promise<string> {
+      if (pendingConnectReject) {
+        pendingConnectReject(new Error('La connexió anterior s\'ha reinicialitzat'))
+        pendingConnectReject = null
+      }
+
+      for (const conn of connections.values()) {
+        conn.close()
+      }
+      connections.clear()
+      peer?.destroy()
+      peer = null
+      localPeerId = null
+
       setState('connecting')
 
       // Dynamic import — PeerJS is a browser-only dependency
