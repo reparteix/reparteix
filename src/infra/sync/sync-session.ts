@@ -544,9 +544,10 @@ export function createSyncSession(
         }
 
         if (remotePeerId && maybeCompleteSync(remotePeerId)) {
-        } else {
-          update({ message: 'El peer no té dades per aquest grup.' })
+          return
         }
+
+        update({ message: 'El peer no té dades per aquest grup.' })
       }
     } else if (message.status === 'error') {
       update({
