@@ -55,6 +55,9 @@ export interface SyncSessionStatus {
   lastSuccessAt: string | null
   /** Human-readable progress message */
   message: string
+  transferDirection: 'sending' | 'receiving' | null
+  transferCompletedChunks: number
+  transferTotalChunks: number
 }
 
 export type SyncSessionListener = (status: SyncSessionStatus) => void
@@ -80,6 +83,9 @@ export function createSyncSession(
     lastAttemptAt: null,
     lastSuccessAt: null,
     message: 'Inicialitzant…',
+    transferDirection: null,
+    transferCompletedChunks: 0,
+    transferTotalChunks: 0,
   }
 
   function update(patch: Partial<SyncSessionStatus>) {
@@ -132,6 +138,7 @@ export function createSyncSession(
     localDataApplied: boolean
     remoteAppliedLocalData: boolean
     remoteHadNoData: boolean
+    localHadNoData: boolean
   }>()
   const incomingPayloadChunks = new Map<string, {
     remotePeerId: string
@@ -170,17 +177,55 @@ export function createSyncSession(
       localDataApplied: false,
       remoteAppliedLocalData: false,
       remoteHadNoData: false,
+      localHadNoData: false,
     }
     peerSyncState.set(remotePeerId, created)
     return created
+  }
+
+  function resetTransferProgress() {
+    update({
+      transferDirection: null,
+      transferCompletedChunks: 0,
+      transferTotalChunks: 0,
+    })
+  }
+
+  function updateTransferProgress(direction: 'sending' | 'receiving', completedChunks: number, totalChunks: number) {
+    update({
+      transferDirection: direction,
+      transferCompletedChunks: completedChunks,
+      transferTotalChunks: totalChunks,
+    })
+  }
+
+  function maybeCompleteSync(remotePeerId: string): boolean {
+    const syncState = getPeerSyncState(remotePeerId)
+
+    const inboundSideDone = syncState.localDataApplied || syncState.remoteHadNoData
+    const outboundSideDone = syncState.remoteAppliedLocalData || syncState.localHadNoData
+
+    if (!inboundSideDone || !outboundSideDone) return false
+
+    resetTransferProgress()
+    update({
+      state: 'completed',
+      lastSuccessAt: new Date().toISOString(),
+      message: syncState.localDataApplied
+        ? 'Sincronització completada. Els dos dispositius ja estan al dia.'
+        : 'Sincronització completada. No hi havia canvis pendents per intercanviar.',
+    })
+    return true
   }
 
   async function sendEncryptedPayload(conn: PeerConnection, targetGroupId: string, payload: EncryptedPayload) {
     const syncDataMessage = createSyncDataMessage(targetGroupId, payload)
 
     if (getEncodedMessageLength(syncDataMessage) <= MAX_SYNC_CHUNK_SIZE) {
+      updateTransferProgress('sending', 1, 1)
       update({ message: 'Enviant dades…' })
       conn.send(syncDataMessage)
+      resetTransferProgress()
       update({ message: 'Dades enviades. Esperant aplicació…' })
       return
     }
@@ -225,10 +270,12 @@ export function createSyncSession(
     const total = chunks.length
     outgoingTransferInFlight = true
     for (const [index, chunk] of chunks.entries()) {
-      update({ message: `Enviant dades grans… (${index + 1}/${total})` })
+      updateTransferProgress('sending', index + 1, total)
+      update({ message: 'Enviant dades grans…' })
       conn.send(createSyncDataChunkMessage(targetGroupId, transferId, index, total, chunk))
     }
     outgoingTransferInFlight = false
+    resetTransferProgress()
     update({ message: 'Dades enviades. Esperant aplicació…' })
   }
 
@@ -277,12 +324,14 @@ export function createSyncSession(
     const receivedCount = transfer.chunks.filter((value) => value.length > 0).length
     const isComplete = receivedCount === total
     if (!isComplete) {
-      update({ message: `Rebent dades grans… (${receivedCount}/${total})` })
+      updateTransferProgress('receiving', receivedCount, total)
+      update({ message: 'Rebent dades grans…' })
       return
     }
 
     incomingPayloadChunks.delete(transferKey)
     incomingTransferInFlight = false
+    updateTransferProgress('receiving', total, total)
 
     let payload: EncryptedPayload
     try {
@@ -396,6 +445,7 @@ export function createSyncSession(
 
     try {
       if (hadLocalGroupAtSessionStart === false) {
+        getPeerSyncState(remotePeerId).localHadNoData = true
         conn.send(createSyncAckMessage(groupId, 'no-data'))
         return
       }
@@ -403,6 +453,7 @@ export function createSyncSession(
       // Build envelope from local data
       const envelope = await buildEnvelope()
       if (!envelope) {
+        getPeerSyncState(remotePeerId).localHadNoData = true
         conn.send(createSyncAckMessage(groupId, 'no-data'))
         return
       }
@@ -442,11 +493,17 @@ export function createSyncSession(
       conn?.send(createSyncAckMessage(groupId, 'ok'))
       getPeerSyncState(remotePeerId).localDataApplied = true
 
+      resetTransferProgress()
+
+      if (maybeCompleteSync(remotePeerId)) {
+        update({ report, message: buildReportSummary(report) })
+        return
+      }
+
       update({
-        state: 'completed',
+        state: 'syncing',
         report,
-        lastSuccessAt: new Date().toISOString(),
-        message: buildReportSummary(report),
+        message: 'Canvis rebuts i aplicats. Esperant confirmació final de l’altre dispositiu…',
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error aplicant dades'
@@ -472,14 +529,7 @@ export function createSyncSession(
           syncState.remoteAppliedLocalData = true
         }
 
-        if (syncState?.localDataApplied || syncState?.remoteHadNoData) {
-          update({
-            state: 'completed',
-            lastSuccessAt: new Date().toISOString(),
-            message: syncState?.localDataApplied
-              ? 'Sincronització completada. Els dos dispositius ja estan al dia.'
-              : 'Sincronització completada. L’altre dispositiu ha aplicat les dades i no tenia canvis addicionals per enviar.',
-          })
+        if (remotePeerId && maybeCompleteSync(remotePeerId)) {
           return
         }
 
@@ -493,12 +543,7 @@ export function createSyncSession(
           syncState.remoteHadNoData = true
         }
 
-        if (syncState?.localDataApplied || syncState?.localDataSent || syncState?.remoteAppliedLocalData) {
-          update({
-            state: 'completed',
-            lastSuccessAt: new Date().toISOString(),
-            message: 'Sincronització completada. L’altre dispositiu no tenia canvis addicionals per enviar.',
-          })
+        if (remotePeerId && maybeCompleteSync(remotePeerId)) {
         } else {
           update({ message: 'El peer no té dades per aquest grup.' })
         }
@@ -537,9 +582,9 @@ export function createSyncSession(
       outgoingTransferInFlight = false
       incomingTransferInFlight = false
 
-      const canTreatAsCompleted = !wasTransferring && (
-        syncState?.localDataApplied ||
-        syncState?.remoteAppliedLocalData
+      const canTreatAsCompleted = !wasTransferring && !!syncState && (
+        (syncState.localDataApplied || syncState.remoteHadNoData) &&
+        (syncState.remoteAppliedLocalData || syncState.localHadNoData)
       )
 
       if (canTreatAsCompleted) {

@@ -81,6 +81,10 @@ export function SyncFromUrl() {
     groupId,
     passphrase,
   })
+  const transferProgressPercent = sync.transferTotalChunks > 0
+    ? Math.max(0, Math.min(100, (sync.transferCompletedChunks / sync.transferTotalChunks) * 100))
+    : 0
+  const showTransferProgress = sync.transferDirection !== null && sync.transferTotalChunks > 0
 
   useEffect(() => {
     if (passphrase) {
@@ -238,6 +242,21 @@ export function SyncFromUrl() {
             <p className="text-sm font-medium leading-snug">
               {sync.message || 'Connectant amb l\'altre dispositiu…'}
             </p>
+
+            {showTransferProgress && (
+              <div className="space-y-1.5">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                    style={{ width: `${transferProgressPercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{sync.transferDirection === 'sending' ? 'Enviant dades' : 'Rebent dades'}</span>
+                  <span>{Math.round(transferProgressPercent)}%</span>
+                </div>
+              </div>
+            )}
 
             {/* Error details */}
             {sync.state === 'error' && sync.error && (
