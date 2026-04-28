@@ -44,6 +44,19 @@ const expenses: Expense[] = [
     deleted: true,
     archived: false,
   },
+  {
+    id: 'e4',
+    groupId: 'g2',
+    description: 'Altre grup',
+    amount: 500,
+    payerId: 'clara',
+    splitAmong: ['clara'],
+    date: '2026-04-14',
+    createdAt: '2026-04-14T10:00:00.000Z',
+    updatedAt: '2026-04-14T10:00:00.000Z',
+    deleted: false,
+    archived: false,
+  },
 ]
 
 const payments: Payment[] = [
@@ -69,11 +82,22 @@ const payments: Payment[] = [
     updatedAt: '2026-04-13T10:00:00.000Z',
     deleted: true,
   },
+  {
+    id: 'p3',
+    groupId: 'g2',
+    fromId: 'clara',
+    toId: 'anna',
+    amount: 999,
+    date: '2026-04-14',
+    createdAt: '2026-04-14T10:00:00.000Z',
+    updatedAt: '2026-04-14T10:00:00.000Z',
+    deleted: false,
+  },
 ]
 
 describe('calculateGroupExecutiveSummary', () => {
   it('builds the executive summary from active expenses and payments', () => {
-    const summary = calculateGroupExecutiveSummary(members, expenses, payments)
+    const summary = calculateGroupExecutiveSummary('g1', members, expenses, payments)
 
     expect(summary).toMatchObject({
       totalExpenses: 90,
@@ -95,7 +119,7 @@ describe('calculateGroupExecutiveSummary', () => {
   })
 
   it('returns a safe empty summary with no data', () => {
-    const summary = calculateGroupExecutiveSummary([], [], [])
+    const summary = calculateGroupExecutiveSummary('g1', [], [], [])
 
     expect(summary).toEqual({
       totalExpenses: 0,

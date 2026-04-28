@@ -23,12 +23,17 @@ function roundMoney(value: number): number {
 }
 
 export function calculateGroupExecutiveSummary(
+  groupId: string,
   memberIds: string[],
   expenses: Expense[],
   payments: Payment[],
 ): GroupExecutiveSummary {
-  const activeExpenses = expenses.filter((expense) => !expense.deleted)
-  const activePayments = payments.filter((payment) => !payment.deleted)
+  const activeExpenses = expenses.filter(
+    (expense) => expense.groupId === groupId && !expense.deleted,
+  )
+  const activePayments = payments.filter(
+    (payment) => payment.groupId === groupId && !payment.deleted,
+  )
 
   const totalExpenses = roundMoney(
     activeExpenses.reduce((sum, expense) => sum + expense.amount, 0),

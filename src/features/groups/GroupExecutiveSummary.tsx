@@ -30,6 +30,7 @@ export function GroupExecutiveSummary({ group }: GroupExecutiveSummaryProps) {
   const memberById = new Map(activeMembers.map((member) => [member.id, member]))
 
   const summary = calculateGroupExecutiveSummary(
+    group.id,
     activeMembers.map((member) => member.id),
     expenses,
     payments,
