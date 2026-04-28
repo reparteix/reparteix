@@ -1,4 +1,4 @@
-import { ReceiptText, CreditCard, Wallet, CalendarRange, Trophy, Activity } from 'lucide-react'
+import { CalendarRange, CreditCard, ReceiptText, Wallet } from 'lucide-react'
 import type { Group } from '@/domain/entities'
 import { calculateGroupExecutiveSummary } from '@/domain/services'
 import { formatMoney } from '@/lib/number-format'
@@ -15,13 +15,18 @@ const dateFormatter = new Intl.DateTimeFormat('ca-ES', {
   year: 'numeric',
 })
 
+function formatDate(date: string): string {
+  return dateFormatter.format(new Date(date))
+}
+
 function formatDateRange(start: string | null, end: string | null): string {
-  if (!start || !end) return 'Encara no hi ha despeses'
+  if (!start || !end) return 'Sense període encara'
+  if (start === end) return formatDate(start)
+  return `${formatDate(start)} – ${formatDate(end)}`
+}
 
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-
-  return `${dateFormatter.format(startDate)} → ${dateFormatter.format(endDate)}`
+function pluralizeExpense(count: number): string {
+  return `${count} despesa${count === 1 ? '' : 'es'}`
 }
 
 export function GroupExecutiveSummary({ group }: GroupExecutiveSummaryProps) {
@@ -38,11 +43,11 @@ export function GroupExecutiveSummary({ group }: GroupExecutiveSummaryProps) {
 
   if (summary.expenseCount === 0 && summary.paymentCount === 0) {
     return (
-      <Card>
+      <Card className="border-dashed shadow-none">
         <CardHeader>
           <CardTitle>Resum del grup</CardTitle>
           <CardDescription>
-            Quan comenceu a registrar despeses i pagaments, aquí hi veuràs el resum executiu del grup.
+            Encara no hi ha prou moviment. Quan afegiu despeses, aquí sortirà una lectura ràpida del grup.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -57,122 +62,83 @@ export function GroupExecutiveSummary({ group }: GroupExecutiveSummaryProps) {
     ? memberById.get(summary.topPayerByCount.memberId)
     : null
 
-  const kpis = [
+  const statusText = summary.outstandingBalanceTotal > 0.01
+    ? `Queden ${formatMoney(summary.outstandingBalanceTotal, group.currency)} per quadrar entre membres.`
+    : 'El grup està quadrat: ara mateix no hi ha saldo pendent.'
+
+  const detailRows = [
     {
-      label: 'Total gastat',
-      value: formatMoney(summary.totalExpenses, group.currency),
+      label: 'Moviment',
+      value: `${pluralizeExpense(summary.expenseCount)} · ${summary.paymentCount} pagament${summary.paymentCount === 1 ? '' : 's'}`,
       icon: ReceiptText,
     },
     {
-      label: 'Despeses',
-      value: String(summary.expenseCount),
-      icon: Activity,
-    },
-    {
-      label: 'Pagaments',
-      value: String(summary.paymentCount),
-      icon: CreditCard,
-    },
-    {
-      label: 'Mitjana per despesa',
-      value: formatMoney(summary.averageExpense, group.currency),
+      label: 'Mitjana',
+      value: `${formatMoney(summary.averageExpense, group.currency)} per despesa`,
       icon: Wallet,
     },
     {
-      label: 'Saldo pendent',
-      value: formatMoney(summary.outstandingBalanceTotal, group.currency),
-      icon: Wallet,
-    },
-    {
-      label: 'Període actiu',
+      label: 'Període',
       value: formatDateRange(summary.firstExpenseDate, summary.lastExpenseDate),
       icon: CalendarRange,
     },
   ]
 
+  const insights = [
+    topPayerByAmount && summary.topPayerByAmount
+      ? `${topPayerByAmount.name} és qui més ha avançat: ${formatMoney(summary.topPayerByAmount.value, group.currency)}.`
+      : null,
+    topPayerByCount && summary.topPayerByCount
+      ? `${topPayerByCount.name} ha registrat més despeses: ${pluralizeExpense(summary.topPayerByCount.value)}.`
+      : null,
+  ].filter(Boolean)
+
   return (
     <div className="space-y-4 pb-4">
-      <Card className="border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950">
-        <CardHeader>
-          <CardTitle>Resum executiu</CardTitle>
-          <CardDescription>
-            Una lectura ràpida del que ha passat al grup fins ara.
-          </CardDescription>
+      <Card className="overflow-hidden shadow-none">
+        <CardHeader className="space-y-3 pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <CardDescription>Resum del grup</CardDescription>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              {activeMembers.length} membre{activeMembers.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div>
+            <CardTitle className="text-3xl leading-tight">
+              {formatMoney(summary.totalExpenses, group.currency)}
+            </CardTitle>
+            <p className="mt-2 text-sm text-muted-foreground">{statusText}</p>
+          </div>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          {kpis.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="rounded-xl bg-background/80 px-4 py-3 shadow-sm">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <Icon className="h-3.5 w-3.5" />
+
+        <CardContent className="space-y-1 pt-0">
+          {detailRows.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="flex items-center justify-between gap-4 border-t py-3 first:border-t-0">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon className="h-4 w-4" />
                 {label}
               </div>
-              <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
+              <div className="text-right text-sm font-medium">{value}</div>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
+      {insights.length > 0 && (
+        <Card className="bg-muted/30 shadow-none">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4" />
-              Qui ha avançat més
+              <CreditCard className="h-4 w-4" />
+              Lectura ràpida
             </CardTitle>
-            <CardDescription>
-              Membre que més import ha pagat en despeses del grup.
-            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {topPayerByAmount && summary.topPayerByAmount ? (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: topPayerByAmount.color }}
-                  />
-                  <span className="font-medium">{topPayerByAmount.name}</span>
-                </div>
-                <span className="font-semibold">
-                  {formatMoney(summary.topPayerByAmount.value, group.currency)}
-                </span>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Encara no hi ha prou dades.</p>
-            )}
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            {insights.map((insight) => (
+              <p key={insight}>• {insight}</p>
+            ))}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4" />
-              Qui ha pagat més cops
-            </CardTitle>
-            <CardDescription>
-              Membre amb més despeses registrades com a pagador.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {topPayerByCount && summary.topPayerByCount ? (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: topPayerByCount.color }}
-                  />
-                  <span className="font-medium">{topPayerByCount.name}</span>
-                </div>
-                <span className="font-semibold">
-                  {summary.topPayerByCount.value} despesa{summary.topPayerByCount.value === 1 ? '' : 'es'}
-                </span>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Encara no hi ha prou dades.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      )}
     </div>
   )
 }
