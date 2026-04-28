@@ -9,6 +9,7 @@ import { useStore } from '../../store'
 import { ExpenseList } from '../expenses/ExpenseList'
 import { BalanceView } from '../balances/BalanceView'
 import { SettlementList } from '../settlements/SettlementList'
+import { GroupExecutiveSummary } from './GroupExecutiveSummary'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -301,8 +302,11 @@ export function GroupDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="expenses" className="flex-1 flex flex-col min-h-0">
+      <Tabs defaultValue="summary" className="flex-1 flex flex-col min-h-0">
         <TabsList className="w-full shrink-0">
+          <TabsTrigger value="summary" className="flex-1">
+            Resum
+          </TabsTrigger>
           <TabsTrigger value="expenses" className="flex-1">
             Despeses
           </TabsTrigger>
@@ -314,6 +318,9 @@ export function GroupDetail() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="summary" className="flex-1 overflow-y-auto min-h-0 pb-4">
+          <GroupExecutiveSummary group={group} />
+        </TabsContent>
         <TabsContent value="expenses" className="flex-1 overflow-y-auto min-h-0 pb-4">
           <ExpenseList group={group} />
         </TabsContent>
