@@ -1,3 +1,12 @@
+## [1.51.2](https://github.com/reparteix/reparteix/compare/v1.51.1...v1.51.2) (2026-05-02)
+
+
+### Bug Fixes
+
+* improve sync progress and completion state ([891c934](https://github.com/reparteix/reparteix/commit/891c9341d110e4920c03e09cab5cd81c83e21e58))
+* reset peer state before sync fallback ([49205fa](https://github.com/reparteix/reparteix/commit/49205fa9fe35ca03a515d3f9e51a8f3aac165458))
+* satisfy sync progress lint ([002d6f4](https://github.com/reparteix/reparteix/commit/002d6f40cd509b4f6d5f153754cb4aadde95019d))
+
 ## [1.51.1](https://github.com/reparteix/reparteix/compare/v1.51.0...v1.51.1) (2026-04-27)
 
 
