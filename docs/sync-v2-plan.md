@@ -118,7 +118,7 @@ Goal: make the system operationally useful in real life.
 - [ ] identify which entities can stay LWW and which need CRDT semantics
 - [ ] prototype Yjs schema for group data
 - [ ] define persistence strategy for replicated document state
-- [ ] define migration path from snapshot sync to incremental sync
+- [x] define migration path from snapshot sync to incremental sync (ADR-003)
 
 ### Security
 
