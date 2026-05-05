@@ -11,20 +11,8 @@
     <meta name="description" content="Aplicació de repartiment de despeses — local-first i 100% offline" />
     <script>
       (() => {
-        const storageKey = 'reparteix-theme'
-        const darkQuery = '(prefers-color-scheme: dark)'
-        let theme = 'system'
-
-        try {
-          const stored = localStorage.getItem(storageKey)
-          if (stored === 'light' || stored === 'dark' || stored === 'system') theme = stored
-        } catch {
-          // localStorage unavailable
-        }
-
-        const prefersDark = window.matchMedia?.(darkQuery).matches ?? false
-        const resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme
-        document.documentElement.classList.toggle('dark', resolved === 'dark')
+        const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+        document.documentElement.classList.toggle('dark', prefersDark)
       })()
     </script>
     <style>
@@ -33,13 +21,24 @@
         background: #ffffff;
       }
 
+      body {
+        background: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          background: #171717;
+        }
+
+        body {
+          background: #171717;
+        }
+      }
+
       :root.dark {
         color-scheme: dark;
         background: #171717;
-      }
-
-      body {
-        background: #ffffff;
       }
 
       :root.dark body {
