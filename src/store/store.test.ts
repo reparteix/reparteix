@@ -252,6 +252,44 @@ describe('expenses', () => {
     expect(groupTotals[group.id]).toBe(60)
   })
 
+  it('loadGroupData ordena les despeses del mateix dia per hora de creació descendent', async () => {
+    const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
+    const members = group.members
+    const baseExpense = {
+      groupId: group.id,
+      amount: 10,
+      payerId: members[0].id,
+      splitAmong: members.map((m) => m.id),
+      date: '2024-01-15',
+      archived: false,
+      deleted: false,
+    }
+
+    await db.expenses.bulkAdd([
+      {
+        ...baseExpense,
+        id: 'expense-older',
+        description: 'Primera',
+        createdAt: '2024-01-15T09:00:00.000Z',
+        updatedAt: '2024-01-15T09:00:00.000Z',
+      },
+      {
+        ...baseExpense,
+        id: 'expense-newer',
+        description: 'Segona',
+        createdAt: '2024-01-15T10:00:00.000Z',
+        updatedAt: '2024-01-15T10:00:00.000Z',
+      },
+    ])
+
+    await useStore.getState().loadGroupData(group.id)
+
+    expect(useStore.getState().expenses.map((expense) => expense.id)).toEqual([
+      'expense-newer',
+      'expense-older',
+    ])
+  })
+
   it("updateExpense actualitza les dades de la despesa a l'estat", async () => {
     const group = await createGroupWithMembers('Viatge', ['Anna', 'Bernat'])
     const members = group.members
