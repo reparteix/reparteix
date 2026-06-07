@@ -373,11 +373,20 @@ export const reparteix = {
 
   /** List all non-deleted expenses for a group. */
   async listExpenses(groupId: string): Promise<Expense[]> {
-    return db.expenses
+    const expenses = await db.expenses
       .where('groupId')
       .equals(groupId)
       .filter((e) => !e.deleted)
       .toArray()
+
+    return expenses.sort((a, b) => {
+      const dateOrder = b.date.localeCompare(a.date)
+      if (dateOrder !== 0) return dateOrder
+
+      const aCreatedAt = a.createdAt || a.updatedAt || ''
+      const bCreatedAt = b.createdAt || b.updatedAt || ''
+      return bCreatedAt.localeCompare(aCreatedAt)
+    })
   },
 
   /** Add an expense and return it. Throws if the group is archived. */

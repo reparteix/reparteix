@@ -153,10 +153,12 @@ export function ExpenseList({ group }: ExpenseListProps) {
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
   const [openExpenseMenuId, setOpenExpenseMenuId] = useState<string | null>(null)
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null)
+  const [highlightedExpenseId, setHighlightedExpenseId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   const receiptLoadRequestRef = useRef(0)
+  const expenseCardRefs = useRef(new Map<string, HTMLDivElement>())
 
   useEffect(() => {
     return () => {
@@ -199,6 +201,23 @@ export function ExpenseList({ group }: ExpenseListProps) {
     return () => document.removeEventListener('click', handleDocumentClick)
   }, [])
 
+  useEffect(() => {
+    if (!highlightedExpenseId) return
+
+    const frameId = window.requestAnimationFrame(() => {
+      expenseCardRefs.current.get(highlightedExpenseId)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    })
+    const timeoutId = window.setTimeout(() => setHighlightedExpenseId(null), 4500)
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.clearTimeout(timeoutId)
+    }
+  }, [highlightedExpenseId, showArchived, visibleExpenses.length])
+
   const resetForm = () => {
     receiptLoadRequestRef.current += 1
     setEditingExpenseId(null)
@@ -213,6 +232,14 @@ export function ExpenseList({ group }: ExpenseListProps) {
     setReceiptImage(null)
     setReceiptError(null)
     setShowForm(false)
+  }
+
+  const setExpenseCardRef = (expenseId: string) => (node: HTMLDivElement | null) => {
+    if (node) {
+      expenseCardRefs.current.set(expenseId, node)
+    } else {
+      expenseCardRefs.current.delete(expenseId)
+    }
   }
 
   const buildCurrentSplitFields = () => ({
@@ -305,7 +332,9 @@ export function ExpenseList({ group }: ExpenseListProps) {
         computedShares,
       })
     } else {
-      await addExpense({ ...baseExpense, computedShares })
+      const newExpense = await addExpense({ ...baseExpense, computedShares })
+      setShowArchived(false)
+      setHighlightedExpenseId(newExpense.id)
     }
 
     resetForm()
@@ -917,11 +946,22 @@ export function ExpenseList({ group }: ExpenseListProps) {
                   const updates = expenseActivity.get(expense.id) ?? []
                   const isEdited = updates.length > 0
                   return (
-                    <Card key={expense.id} className={cn(showArchived && 'opacity-75')}>
+                    <Card
+                      key={expense.id}
+                      ref={setExpenseCardRef(expense.id)}
+                      className={cn(
+                        'scroll-mt-20 transition-colors duration-500',
+                        showArchived && 'opacity-75',
+                        highlightedExpenseId === expense.id && 'border-success bg-success/10 shadow-sm',
+                      )}
+                    >
                       <CardContent className="flex items-center justify-between p-3">
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <div className="font-medium">{expense.description}</div>
+                            {highlightedExpenseId === expense.id && (
+                              <Badge className="bg-success text-success-foreground">Afegida ara</Badge>
+                            )}
                             {isEdited && (
                               <ItemActivityDialog
                                 group={group}
