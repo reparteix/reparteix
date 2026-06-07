@@ -5,8 +5,46 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#863bff" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Aplicació de repartiment de despeses — local-first i 100% offline" />
+    <script>
+      (() => {
+        const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+        document.documentElement.classList.toggle('dark', prefersDark)
+      })()
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        background: #ffffff;
+      }
+
+      body {
+        background: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          background: #171717;
+        }
+
+        body {
+          background: #171717;
+        }
+      }
+
+      :root.dark {
+        color-scheme: dark;
+        background: #171717;
+      }
+
+      :root.dark body {
+        background: #171717;
+      }
+    </style>
     <title>Reparteix</title>
   </head>
   <body>
