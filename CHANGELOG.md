@@ -1,3 +1,11 @@
+## [1.51.3](https://github.com/reparteix/reparteix/compare/v1.51.2...v1.51.3) (2026-06-07)
+
+
+### Bug Fixes
+
+* highlight newly added expense ([6fcaa46](https://github.com/reparteix/reparteix/commit/6fcaa4673e5897c2837794d3088a7f0aa760ef83))
+* order same-day expenses by creation time ([9a3abb1](https://github.com/reparteix/reparteix/commit/9a3abb17e45309fe9df3424ed35b1f28f2a2efc4))
+
 ## [1.51.2](https://github.com/reparteix/reparteix/compare/v1.51.1...v1.51.2) (2026-05-02)
 
 
