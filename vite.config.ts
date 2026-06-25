@@ -22,7 +22,7 @@ export default defineConfig({
         name: 'Reparteix',
         short_name: 'Reparteix',
         description: 'Aplicació de repartiment de despeses — local-first i 100% offline',
-        theme_color: '#863bff',
+        theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
         lang: 'ca',
