@@ -1,3 +1,11 @@
+## [1.51.4](https://github.com/reparteix/reparteix/compare/v1.51.3...v1.51.4) (2026-06-25)
+
+
+### Bug Fixes
+
+* align startup splash with system theme ([bedcf74](https://github.com/reparteix/reparteix/commit/bedcf747baf58c4fe85a9310db364525aabac197))
+* respect system theme during startup splash ([eab09f3](https://github.com/reparteix/reparteix/commit/eab09f308c0cca84785a76885adc8e832595c7f6))
+
 ## [1.51.3](https://github.com/reparteix/reparteix/compare/v1.51.2...v1.51.3) (2026-06-07)
 
 
