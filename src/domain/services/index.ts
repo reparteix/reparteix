@@ -24,6 +24,12 @@ export {
 export { getMemberColor } from './colors'
 
 export {
+  calculateGroupExecutiveSummary,
+  type GroupExecutiveSummary,
+  type GroupSummaryLeader,
+} from './reporting'
+
+export {
   generateSalt,
   deriveGroupKey,
   encryptPayload,
