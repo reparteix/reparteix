@@ -4,19 +4,21 @@ import {
   calculateBalances,
   calculateSettlements,
   calculateNetting,
+  calculateGroupExecutiveSummary,
   isExpenseArchivable,
   computeSyncMerge,
   getMemberColor,
   type Balance,
   type Settlement,
   type NettingResult,
+  type GroupExecutiveSummary,
   type SyncReport,
 } from './domain/services'
 import { db } from './infra/db'
 import { getLocalDeviceIdentity } from './lib/device-identity'
 
-export type { Group, Expense, Payment, Member, ActivityEntry, ActivityAction, Balance, Settlement, NettingResult, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
-export { calculateBalances, calculateSettlements, calculateNetting }
+export type { Group, Expense, Payment, Member, ActivityEntry, ActivityAction, Balance, Settlement, NettingResult, GroupExecutiveSummary, GroupExport, ReparteixExportV1, SyncEnvelopeV1, SyncReport }
+export { calculateBalances, calculateSettlements, calculateNetting, calculateGroupExecutiveSummary }
 
 
 function generateId(): string {
