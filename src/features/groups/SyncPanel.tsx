@@ -376,6 +376,11 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
   )
 
   const [passphrase, setPassphrase] = useState(rememberedPassphrase)
+  const [previousRememberedPassphrase, setPreviousRememberedPassphrase] = useState(rememberedPassphrase)
+  if (rememberedPassphrase !== previousRememberedPassphrase) {
+    setPreviousRememberedPassphrase(rememberedPassphrase)
+    setPassphrase(rememberedPassphrase)
+  }
   const [showPassphrase, setShowPassphrase] = useState(false)
   const [mode, setMode] = useState<'idle' | 'host' | 'join'>('idle')
   const [sharedLinkStatus, setSharedLinkStatus] = useState<'idle' | 'shared' | 'copied'>('idle')
@@ -400,26 +405,22 @@ export function SyncPanel({ groupId, embedded = false, onActiveStateChange }: Sy
     ? Math.max(0, Math.min(100, (sync.transferCompletedChunks / sync.transferTotalChunks) * 100))
     : 0
   const showTransferProgress = sync.transferDirection !== null && sync.transferTotalChunks > 0
-  const [qrMarkup, setQrMarkup] = useState('')
-
-  useEffect(() => {
-    setPassphrase(rememberedPassphrase)
-  }, [rememberedPassphrase])
+  const [qrResult, setQrResult] = useState({ url: '', markup: '' })
+  const qrMarkup = qrResult.url === syncUrl ? qrResult.markup : ''
 
   useEffect(() => {
     let cancelled = false
 
     if (!syncUrl) {
-      setQrMarkup('')
       return
     }
 
     createQrSvg(syncUrl, 184)
       .then((svg) => {
-        if (!cancelled) setQrMarkup(svg)
+        if (!cancelled) setQrResult({ url: syncUrl, markup: svg })
       })
       .catch(() => {
-        if (!cancelled) setQrMarkup('')
+        if (!cancelled) setQrResult({ url: syncUrl, markup: '' })
       })
 
     return () => {

@@ -40,11 +40,19 @@ const DEFAULT_DRAFT: DraftState = {
   payerIndex: '0',
 }
 
+function loadDraft(): DraftState {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored ? { ...DEFAULT_DRAFT, ...JSON.parse(stored) } : DEFAULT_DRAFT
+  } catch {
+    return DEFAULT_DRAFT
+  }
+}
+
 export function OnboardingWizard() {
   const navigate = useNavigate()
   const { groups, addGroup, addMember, addExpense, loadGroups } = useStore()
-  const [draft, setDraft] = useState<DraftState>(DEFAULT_DRAFT)
-  const [isReady, setIsReady] = useState(false)
+  const [draft, setDraft] = useState<DraftState>(loadDraft)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -53,25 +61,11 @@ export function OnboardingWizard() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        setDraft({ ...DEFAULT_DRAFT, ...JSON.parse(stored) })
-      }
-    } catch {
-      // ignore draft load failures
-    } finally {
-      setIsReady(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isReady) return
-    try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
     } catch {
       // ignore draft save failures
     }
-  }, [draft, isReady])
+  }, [draft])
 
   const activeGroup = useMemo(
     () => groups.find((group) => group.id === draft.groupId),
@@ -184,10 +178,6 @@ export function OnboardingWizard() {
   const cleanMemberNames = draft.memberNames.map((name) => name.trim()).filter(Boolean)
   const canContinueMembers = cleanMemberNames.length >= 2
   const canContinueExpense = !!draft.expenseDescription.trim() && parseLocaleNumber(draft.expenseAmount) > 0 && members.length >= 2
-
-  if (!isReady) {
-    return <div className="max-w-2xl mx-auto p-4">Carregant…</div>
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-muted/30 to-muted/60 px-4 py-6 sm:py-10">
